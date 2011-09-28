@@ -1,0 +1,151 @@
+from __future__ import division
+import GeoMACH
+import numpy, scipy, pylab, copy, time
+import math
+import scipy.sparse, scipy.sparse.linalg
+import mpl_toolkits.mplot3d.axes3d as p3
+
+
+class oml:
+
+    def importCGNSsurf(self, filename):
+        n = GeoMACH.nsurfaces2(filename)  
+        z,sizes = GeoMACH.surfacesizes2(filename, n) 
+        P0 = []
+        for i in range(n):
+            P0.append(GeoMACH.getsurface2(filename,z[i],sizes[i,0],sizes[i,1]))
+        self.importSurfaces(P0)
+
+    def importSurfaces(self, P):
+        self.computeTopology(P)
+        self.computeGroups(P)
+        self.computeTessellation(P)
+        self.computeParameterValues()
+        self.computeJacobian()
+        self.computeFit()
+        self.computePoints()
+        
+    def computeTopology(self, P):
+        self.nsurf = len(P)
+        print '# Surfaces =',self.nsurf
+        Ps = numpy.zeros((self.nsurf,3,3,3),order='F')
+        for k in range(self.nsurf):
+            n = P[k].shape[0:2]
+            for i in range(2):
+                for j in range(2):
+                    Ps[k,i*2,j*2] = P[k][-i,-j]
+            left = 0.5*(P[k][0,int(numpy.ceil((n[1]-1)/2.0))] + P[k][0,int(numpy.floor((n[1]-1)/2.0))])
+            right = 0.5*(P[k][-1,int(numpy.ceil((n[1]-1)/2.0))] + P[k][-1,int(numpy.floor((n[1]-1)/2.0))])
+            bottom = 0.5*(P[k][int(numpy.ceil((n[0]-1)/2.0)),0] + P[k][int(numpy.floor((n[0]-1)/2.0)),0])
+            top = 0.5*(P[k][int(numpy.ceil((n[0]-1)/2.0)),-1] + P[k][int(numpy.floor((n[0]-1)/2.0)),-1])
+            Ps[k,0,1] = left
+            Ps[k,2,1] = right
+            Ps[k,1,0] = bottom
+            Ps[k,1,2] = top
+        self.nvert,self.nedge,self.surf_vert,self.surf_edge = GeoMACH.computetopology(self.nsurf,1e-15,1e-5,Ps)
+        self.vert_count,self.edge_count = GeoMACH.countveptrs(self.nsurf,self.nvert,self.nedge,self.surf_vert,self.surf_edge)
+        print '# Vertices =',self.nvert
+        print '# Edges =',self.nedge
+
+    def computeGroups(self, P):
+        self.ngroup,self.edge_group = GeoMACH.computegroups(self.nsurf,self.nedge,self.surf_edge)
+        ns = numpy.zeros((self.nsurf,2),order='F')
+        for k in range(self.nsurf):
+            ns[k,:] = P[k].shape[0:2]
+        k = 4
+        ratio = 4.0
+        self.nD, self.group_k, self.group_m, self.group_n = GeoMACH.getkmn(k, self.nsurf, self.nedge, self.ngroup, ratio, ns, self.surf_edge, self.edge_group)
+        self.group_d = GeoMACH.getd(self.ngroup,self.nD,self.group_k,self.group_m)
+        print '# Groups =',self.ngroup
+
+    def computeTessellation(self, P):
+        self.surf_index_P = GeoMACH.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
+        self.edge_index_P = GeoMACH.getedgeindices(self.nedge, self.ngroup, self.edge_group, self.group_n)
+        self.surf_index_C = GeoMACH.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
+        self.edge_index_C = GeoMACH.getedgeindices(self.nedge, self.ngroup, self.edge_group, self.group_m)
+        self.nP = self.nvert
+        self.nP += self.edge_index_P[-1,1]
+        self.nP += self.surf_index_P[-1,1]
+        print '# Points =',self.nP
+        self.P = numpy.zeros((self.nP,3),order='F')
+        for k in range(self.nsurf):
+            n1 = P[k].shape[0]
+            n2 = P[k].shape[1]
+            GeoMACH.populatep(self.nP, n1, n2, k+1, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.vert_count, self.edge_count, self.surf_index_P, self.edge_index_P, P[k], self.P)
+        GeoMACH.avgboundaries(self.nP, self.nedge, self.ngroup, self.nvert, self.edge_group, self.group_n, self.vert_count, self.edge_count, self.edge_index_P, self.P)
+        self.vert_symm, self.edge_symm = GeoMACH.determinesymm(2, 1e-10, 1e-8, self.nP, self.nedge, self.ngroup, self.nvert, self.edge_group, self.group_n, self.P)
+        if 0:
+            fig = pylab.figure()
+            ax = p3.Axes3D(fig)
+            ax.scatter(self.P[:,0],self.P[:,1],self.P[:,2])
+            pylab.show()
+
+    def computeParameterValues(self):
+        self.nT = 0
+        self.nT += self.edge_index_P[-1,1]
+        self.nT += 2*self.surf_index_P[-1,1]
+        self.T = GeoMACH.initializet(self.nT, self.nD, self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_n, self.group_d)
+        
+    def computeJacobian(self):
+        self.nC = self.nvert
+        self.nC += self.edge_index_C[-1,1]
+        self.nC += self.surf_index_C[-1,1]
+        print '# Control points =',self.nC
+        self.nJ = GeoMACH.getjnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_k,self.group_n,self.vert_count,self.edge_count)
+        Ja, Ji, Jj = GeoMACH.getjacobian(self.nP, self.nJ, self.nT, self.nD, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_n, self.group_d, self.surf_index_P, self.edge_index_P, self.surf_index_C, self.edge_index_C, self.edge_count, self.T)
+        self.J = scipy.sparse.csr_matrix((Ja,(Ji,Jj)))
+        print '# Jacobian non-zeros =',self.J.nnz
+        self.C = numpy.zeros((self.nC,3),order='F')
+
+    def computeFit(self):  
+        JT = self.J.transpose()
+        JTJ = JT.dot(self.J)
+        JTB = JT.dot(self.P)
+        for i in range(3):
+            #self.C[:,i] = scipy.sparse.linalg.lsqr(self.J,self.P[:,i],show=False)[0]
+            ta = time.time()
+            self.C[:,i] = scipy.sparse.linalg.gmres(JTJ,JTB[:,i])[0]
+            tb = time.time()
+            print tb-ta
+
+    def computeSolve(self):  
+        JT = self.J.transpose()
+        JTJ = JT.dot(self.J)
+        JTB = JT.dot(self.P)
+        ta = time.time()
+        invJTJ = scipy.sparse.linalg.splu(JTJ)
+        tb = time.time()
+        print tb-ta
+        for i in range(3):
+            ta = time.time()
+            self.C[:,i] = invJTJ.solve(JTB[:,i])
+            tb = time.time()
+            print tb-ta
+
+    def computePoints(self):
+        for i in range(3):
+            self.P[:,i] = self.J.dot(self.C[:,i])
+
+    def computeFilletedC(self):
+        GeoMACH.computefilletedc(2, self.nC, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_m, self.vert_count, self.edge_count, self.vert_symm, self.edge_symm, self.surf_index_C, self.edge_index_C, self.C)
+        self.computePoints()
+
+    def plot(self,mirror=False):
+        m = GeoMACH.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
+        n = GeoMACH.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
+        fig = pylab.figure()
+        ax = p3.Axes3D(fig)
+        for i in range(self.nsurf):
+            if 0:
+                C = GeoMACH.getsurfacep(i+1, self.nC, m[i,0], m[i,1], self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_m, self.surf_index_C, self.edge_index_C, self.C)
+                for j in range(C.shape[0]):
+                    ax.scatter(C[j,:,0],C[j,:,1],C[j,:,2])
+                if mirror:
+                    for j in range(C.shape[0]):
+                        ax.scatter(C[j,:,0],-C[j,:,1],C[j,:,2])
+            if 1:
+                P = GeoMACH.getsurfacep(i+1, self.nP, n[i,0], n[i,1], self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
+                ax.plot_wireframe(P[:,:,0],P[:,:,1],P[:,:,2])
+                if mirror:
+                    ax.plot_wireframe(P[:,:,0],-P[:,:,1],P[:,:,2])
+        pylab.show()

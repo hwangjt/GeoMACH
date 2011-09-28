@@ -1,0 +1,20 @@
+subroutine computeDerivative(surf, nB, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_m, group_n, surf_index_C, edge_index_C, Ba, Bi, Bj)
+
+  implicit none
+  
+  !Fortran-python interface directives
+  !f2py intent(in) surf, nB, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_m, group_n, surf_index_C, edge_index_C
+  !f2py intent(out) Ba, Bi, Bj
+  !f2py depend(nsurf) surf_vert
+  !f2py depend(nsurf) surf_edge
+  !f2py depend(nedge) edge_group
+  !f2py depend(ngroup) group_m, group_n
+  !f2py depend(nsurf) surf_index_C
+  !f2py depend(nedge) edge_index_C
+  !f2py depend(nB) Ba, Bi, Bj
+
+  !Input
+  integer, intent(in) ::  surf, nB, nsurf, nedge, ngroup, nvert
+  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), edge_group(nedge), group_m(ngroup), group_n(ngroup), surf_index_C(nsurf,2), edge_index_C(nedge,2)
+  double precision, intent(in) ::  Ba(nB)
+  integer, intent(in) ::  Bi(nB), Bj(nB)

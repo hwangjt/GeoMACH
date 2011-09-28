@@ -1,0 +1,165 @@
+subroutine getJnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_k, group_n, nJ)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_k, group_n
+  !f2py intent(out) nJ
+  !f2py depend(nsurf) surf_edge
+  !f2py depend(nedge) edge_group
+  !f2py depend(ngroup) group_k
+  !f2py depend(ngroup) group_n
+
+  !Input
+  integer, intent(in) ::  nsurf, nedge, ngroup, nvert
+  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), group_k(ngroup), group_n(ngroup)
+
+  !Output
+  integer, intent(out) ::  nJ
+
+  !Working
+  integer i, ugroup, vgroup
+
+  nJ = nvert
+  do i=1,nedge
+     nJ = nJ + group_k(edge_group(i))*(group_n(edge_group(i)) - 2)
+  end do
+  do i=1,nsurf
+     ugroup = edge_group(abs(surf_edge(i,1,1)))
+     vgroup = edge_group(abs(surf_edge(i,2,1)))
+     nJ = nJ + group_k(ugroup)*group_k(vgroup)*(group_n(ugroup)-2)*(group_n(vgroup)-2)
+  end do
+
+end subroutine getJnnz
+
+
+
+subroutine getJacobian(nP, nJ, nT, nD, nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_k, group_m, group_n, group_d, T, Ja, Jr, Jc)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) nP, nJ, nT, nD, nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_k, group_m, group_n, group_d, T
+  !f2py intent(out) Ja, Jr, Jc
+  !f2py depend(nsurf) surf_edge
+  !f2py depend(nedge) edge_group
+  !f2py depend(ngroup) group_k
+  !f2py depend(ngroup) group_m
+  !f2py depend(ngroup) group_n
+  !f2py depend(nD) group_d
+  !f2py depend(nT) T
+  !f2py depend(nJ) Ja
+  !f2py depend(nP) Jr
+  !f2py depend(nJ) Jc
+
+  !Input
+  integer, intent(in) ::  nP, nJ, nT, nD, nsurf, nedge, ngroup, nvert
+  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), group_k(ngroup), group_m(ngroup), group_n(ngroup)
+  double precision, intent(in) ::  group_d(nD), T(nT)
+
+  !Output
+  double precision, intent(out) ::  Ja(nJ)
+  integer, intent(out) ::  Jr(nP+1)
+  integer, intent(out) ::  Jc(nJ)
+
+  !Working
+  integer i,u,v
+  integer ugroup, vgroup
+  integer index1, index2
+  integer nu,nv
+  double precision, allocatable, dimension(:,:,:) ::  bufferT
+  double precision, allocatable, dimension(:) ::  bufferD1, bufferD2
+
+  do i=1,nvert
+     Jr(i) = i
+  end do
+  index1 = nvert + 1
+  index2 = nvert + 1
+  do i=1,nedge
+     do u=2,group_n(edge_group(i)) - 1
+        Jr(index1) = index2
+        index1 = index1 + 1
+        index2 = index2 + group_k(edge_group(i))
+     end do
+  end do
+  do i=1,nsurf
+     ugroup = edge_group(abs(surf_edge(i,1,1)))
+     vgroup = edge_group(abs(surf_edge(i,2,1)))
+     do v=2,group_n(vgroup) - 1
+        do u=2,group_n(ugroup) - 1
+           Jr(index1) = index2
+           index1 = index1 + 1
+           index2 = index2 + group_k(ugroup)*group_k(vgroup)
+        end do
+     end do
+  end do
+  
+  do i=1,nsurf
+     ugroup = edge_group(abs(surf_edge(i,1,1)))
+     vgroup = edge_group(abs(surf_edge(i,2,1)))
+     ku = group_k(ugroup)
+     kv = group_k(vgroup)
+     mu = group_m(ugroup)
+     mv = group_m(vgroup)
+     nu = group_n(ugroup)
+     nv = group_n(vgroup)
+     allocate(bufferT(nu,nv,2))
+     allocate(bufferD1(ku+mu))
+     allocate(bufferD2(kv+mv))
+     call extractD(ugroup, ngroup, nD, ku+mu, group_k, group_m, group_d, bufferD1)
+     call extractD(vgroup, ngroup, nD, kv+mv, group_k, group_m, group_d, bufferD2)
+     do u=1,2
+        do v=1,nv
+           bufferT(1+(u-1)*(nu-1),v,1) = u-1
+        end do
+     end do
+     do u=1,nu
+        do v=1,2
+           bufferT(u,1+(v-1)*(nv-1),2) = v-1
+        end do
+     end do
+     do v=1,2
+        call getEdgeIndex(abs(surf_edge(i,1,v)), nedge, ngroup, edge_group, group_n, index1, index2)
+        index1 = index1 + nvert + 1
+        index2 = index2 + nvert
+        if (surf_edge(i,1,v) .gt. 0) then
+           bufferT(2:nu-1,1+(v-1)*(nv-1),1) = T(index1:index2)
+        else
+           bufferT(2:nu-1,1+(v-1)*(nv-1),1) = T(index2:index1:-1)
+        end if
+     end do
+     do u=1,2
+        call getEdgeIndex(abs(surf_edge(i,2,u)), nedge, ngroup, edge_group, group_n, index1, index2)
+        index1 = index1 + nvert + 1
+        index2 = index2 + nvert
+        if (surf_edge(i,2,u) .gt. 0) then
+           bufferT(1+(u-1)*(nu-1),2:nv-1,2) = T(index1:index2)
+        else
+           bufferT(1+(u-1)*(nu-1),2:nv-1,2) = T(index2:index1:-1)
+        end if
+     end do
+     call getEdgeIndex(nedge, nedge, ngroup, edge_group, group_n, u, v)
+     call getSurfIndex(i, nsurf, nedge, ngroup, surf_edge, edge_group, group_n, index1, index2)
+     index1 = 2*index1
+     index1 = index1 + nvert + v + 1
+     do v=2,nv-1
+        do u=2,nu-1
+           bufferT(u,v,1) = T(index1)
+           index1 = index1 + 1
+        end do
+     end do
+     do v=2,nv-1
+        do u=2,nu-1
+           bufferT(u,v,2) = T(index1)
+           index1 = index1 + 1
+        end do
+     end do
+     
+     deallocate(bufferT)
+     deallocate(bufferD1)
+     deallocate(bufferD2)
+  end do
+  Ja(:) = 0
+  Jc(:) = 0
+
+end subroutine getJacobian
