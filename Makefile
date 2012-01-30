@@ -16,8 +16,7 @@ SRC_FILES = src/basis/basis.f90 \
 	src/oml/computeKnots.f90 \
 	src/oml/computeParameters.f90 \
         src/oml/computeJacobian.f90 \
-	src/oml/computeJacobianF.f90 \
-	src/oml/computeFilletedC.f90 \
+        src/oml/computeDOFmapping.f90 \
 	src/oml/computeDerivative.f90 \
 	src/oml/computeProjection.f90 \
 	src/oml/plotSurfaces.f90

@@ -10,6 +10,7 @@ from collections import deque
 class oml:
 
     def importSurfaces(self, P, ratio=4.0):
+        self.symmPlane = 1
         self.initializeTopology(P)
         self.initializeBsplines(ratio)
         self.computeCindices()
@@ -67,10 +68,10 @@ class oml:
         print '# Vertices =',self.nvert
         print '# Edges =',self.nedge
         self.vert_count,self.edge_count = GeoMACH.countveptrs(self.nsurf,self.nvert,self.nedge,self.surf_vert,self.surf_edge)
-        self.vert_fillet = numpy.ones(self.nvert,bool)
-        self.edge_fillet = numpy.ones(self.nedge,bool)
         self.ngroup,self.edge_group = GeoMACH.computegroups(self.nsurf,self.nedge,self.surf_edge)
         print '# Groups =',self.ngroup
+        self.surf_c1 = numpy.zeros((self.nsurf,3,3),bool,order='F')
+        self.edge_c1 = numpy.zeros((self.nedge,2),bool,order='F')
 
     def initializeBsplines(self, ratio):
         k = 4
@@ -82,7 +83,17 @@ class oml:
             n2 = P[k].shape[1]
             GeoMACH.populatep(self.nP, n1, n2, k+1, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.vert_count, self.edge_count, self.surf_index_P, self.edge_index_P, P[k], self.P)
         GeoMACH.avgboundaries(self.nP, self.nedge, self.ngroup, self.nvert, self.edge_group, self.group_n, self.vert_count, self.edge_count, self.edge_index_P, self.P)
-        self.vert_symm, self.edge_symm = GeoMACH.determinesymm(2, 1e-10, 1e-8, self.nP, self.nedge, self.ngroup, self.nvert, self.edge_group, self.group_n, self.P)
+        self.vert_symm, self.edge_symm = GeoMACH.determinesymm(self.symmPlane+1, 1e-10, 1e-8, self.nP, self.nedge, self.ngroup, self.nvert, self.edge_group, self.group_n, self.P)
+
+    def computeQindices(self):
+        self.surf_index_Q = GeoMACH.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
+        self.edge_index_Q = GeoMACH.getedgeindicesq(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m, self.surf_c1)
+        self.vert_index_Q = GeoMACH.getvertindicesq(self.nsurf, self.nedge, self.nvert, self.surf_vert, self.surf_edge, self.surf_c1, self.edge_c1)
+        self.nQ = 0
+        self.nQ += max(self.vert_index_Q)
+        self.nQ += self.edge_index_Q[-1,1]
+        self.nQ += self.surf_index_Q[-1,1]
+        print '# Degrees of freedom =',self.nQ
 
     def computeCindices(self):
         self.surf_index_C = GeoMACH.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
@@ -120,23 +131,13 @@ class oml:
         self.J = scipy.sparse.csr_matrix((Ja,(Ji,Jj)))
         print '# Jacobian non-zeros =',self.J.nnz
 
-    def computeJacobianF(self, symm=False):
-        Ja, Ji, Jj = GeoMACH.getjacobian(self.nP, self.nJ, self.nT, self.nD, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_n, self.group_d, self.surf_index_P, self.edge_index_P, self.surf_index_C, self.edge_index_C, self.edge_count, self.T)
-        self.nJf = GeoMACH.getjfnnz(self.nJ,self.nC,self.nedge,self.ngroup,self.nvert,self.edge_group,self.group_m,self.vert_count,self.edge_count,self.edge_index_C,Jj)
-        if symm:
-            vert_symm = self.vert_symm
-            edge_symm = self.edge_symm
-        else:
-            vert_symm = numpy.zeros(self.nvert,bool)
-            edge_symm = numpy.zeros(self.nedge,bool)
-        Ja, Ji, Jj = GeoMACH.getjacobianf(self.nJf, self.nJ, self.nC, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_m, self.vert_count, self.edge_count, self.surf_index_C, self.edge_index_C, vert_symm, edge_symm, Ja, Ji+1, Jj+1)
-        if symm:
-            self.Jfs = scipy.sparse.csr_matrix((Ja,(Ji,Jj)))
-        else:
-            self.Jf = scipy.sparse.csr_matrix((Ja,(Ji,Jj)))
-        self.nCf = self.Jf.shape[1]
-        print '# Filleted control points =',self.nCf
-        print '# Filleted jacobian non-zeros =',self.Jf.nnz
+        self.computeQindices()
+        self.nM = GeoMACH.getmnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C, self.edge_index_Q, self.vert_index_Q, self.surf_c1, self.edge_c1)
+        Ma, Mi, Mj = GeoMACH.getdofmapping(self.nM,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C,self.edge_index_C,self.edge_index_Q,self.vert_index_Q,self.surf_c1,self.edge_c1)
+        self.M = scipy.sparse.csr_matrix((Ma,(Mi,Mj)))
+        print self.J.shape, self.M.shape
+        self.J = self.J.dot(self.M)
+        self.C = numpy.zeros((self.J.shape[1],3),order='F')
 
     def computeControlPts(self):  
         JT = self.J.transpose()
@@ -148,9 +149,6 @@ class oml:
     def computePoints(self):
         for i in range(3):
             self.P[:,i] = self.J.dot(self.C[:,i])
-
-    def computeFilletedC(self):
-        GeoMACH.computefilletedc(2, self.nC, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_m, self.vert_count, self.edge_count, self.vert_symm, self.edge_symm, self.surf_index_C, self.edge_index_C, self.C)
 
     def computePt(self,i,u,v,uder=0,vder=0):
         P = GeoMACH.computept(i+1,uder,vder,self.nD,self.nC,self.nsurf,self.nedge,self.ngroup,self.nvert,u,v,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.C)
@@ -192,12 +190,28 @@ class oml:
             minP,minu,minv = GeoMACH.computeprojection(surf+1,nu,nv,self.nD,self.nT,self.nC,P0.shape[0],P0.shape[1],self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.T,self.C,P0,self.P)
             return minP,surf,minu,minv
 
+    def write2Tec(self,filename):
+        f = open(filename+'.dat','w')
+        f.write('title = "GeoMACH output"\n')
+        f.write('variables = "x", "y", "z"\n')
+        for surf in range(self.nsurf):
+            ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
+            vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
+            nu = self.group_n[ugroup-1]
+            nv = self.group_n[vgroup-1]      
+            f.write('zone i='+str(nu)+', j='+str(nv)+', DATAPACKING=POINT\n')
+            P = GeoMACH.getsurfacep(surf+1, self.nP, nu, nv, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
+            for v in range(nv):
+                for u in range(nu):
+                    f.write(str(P[u,v,0]) + ' ' + str(P[u,v,1]) + ' ' + str(P[u,v,2]) + '\n')
+        f.close()
+
     def plot(self,fig,mirror=True):
         ax = p3.Axes3D(fig)
         m = GeoMACH.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
         n = GeoMACH.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
         for i in range(self.nsurf):
-            if 1:
+            if 0:
                 C = GeoMACH.getsurfacep(i+1, self.nC, m[i,0], m[i,1], self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_m, self.surf_index_C, self.edge_index_C, self.C)
                 for j in range(C.shape[0]):
                     ax.scatter(C[j,:,0],C[j,:,1],C[j,:,2])
@@ -205,6 +219,7 @@ class oml:
                     for j in range(C.shape[0]):
                         ax.scatter(C[j,:,0],-C[j,:,1],C[j,:,2])
             if 1:
+                ax.scatter(self.C[:,0],self.C[:,1],self.C[:,2])
                 P = GeoMACH.getsurfacep(i+1, self.nP, n[i,0], n[i,1], self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
                 ax.plot_wireframe(P[:,:,0],P[:,:,1],P[:,:,2])
                 if mirror:
@@ -216,4 +231,7 @@ class oml:
             maxs[i] = max(self.P[:,i])
         length = max(maxs-mins)
         limits = [-length/2.0,length/2.0]
-        ax.scatter(limits+length/2.0,limits,limits)
+        ax.scatter(limits,limits,limits,s=0.0)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
