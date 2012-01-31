@@ -33,31 +33,13 @@ for i in range(n[0]):
 
 oml1 = oml.oml()
 oml1.importSurfaces(P0)
-#oml1.C[10,0] -= 0.3
+oml1.C[10,0] -= 0.3
 oml1.computePoints()
 
 for i in range(oml1.nedge):
     if oml1.edge_symm[i]:
         oml1.edge_c1[i,:] = True
-#oml1.surf_c1[:,:,:] = True
-#oml1.surf_c1[0,0,1] = False
-#oml1.surf_c1[1,0,1] = False
-#oml1.surf_c1[3,1,0] = False
-#oml1.surf_c1[4,1,0] = False
-#oml1.surf_c1[0,0,2] = False
-#oml1.surf_c1[3,2,0] = False
-#oml1.surf_c1[0,2,1] = True
-#oml1.surf_c1[2,0,1] = True
-#oml1.surf_c1[0,2,0] = True
-#oml1.surf_c1[2,0,0] = True
-#oml1.surf_c1[4,0,2] = True
-oml1.computeJacobian()
-oml1.computeControlPts()
-#C = numpy.zeros((oml1.C.shape[0]-1,oml1.C.shape[1]),order='F')
-#C[1:] = oml1.C[2:]
-#C[0,:] = oml1.C[0,:]
-#oml1.C = C
-oml1.computePoints()
+oml1.updateBsplines()
 
 oml1.plot(pylab.figure(),False)
 pylab.show()

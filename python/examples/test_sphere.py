@@ -65,8 +65,7 @@ for k in range(2):
 
 oml1 = oml.oml()
 oml1.importSurfaces(P0)
-oml1.computeJacobianF()
-oml1.computeFilletedC()
+
 oml1.computePoints()
 
 P,s,u,v = oml1.computeProjection(numpy.array([0.5,-1,0.1],order='F'))
@@ -80,22 +79,6 @@ print oml1.computePt(0,0.1,0.4,0,1)
 print '2nd parametric derivative test:'
 print (oml1.computePt(0,0.1,0.4+2*h) - 2*oml1.computePt(0,0.1,0.4+h) + oml1.computePt(0,0.1,0.4))/h**2
 print oml1.computePt(0,0.1,0.4,0,2)
-
-k = 1
-P0 = copy.copy(oml1.P)
-Jf = numpy.zeros((oml1.nP,oml1.nCf))
-h = 1.0
-oml1.computeJacobianF(True)
-for i in range(oml1.nCf):
-    oml1.C[oml1.nC-oml1.nCf+i,k] += h
-    oml1.computeFilletedC()
-    oml1.computePoints()
-    oml1.C[oml1.nC-oml1.nCf+i,k] -= h
-    P = oml1.P
-    for j in range(oml1.nP):
-        Jf[j,i] = P[j,k] - P0[j,k]
-print numpy.linalg.norm(Jf-oml1.Jfs.todense())
-oml1.computeFilletedC()
 
 for i in range(oml1.ngroup):
     oml1.group_n[i] -= 4

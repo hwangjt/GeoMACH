@@ -13,6 +13,7 @@ class oml:
         self.symmPlane = 1
         self.initializeTopology(P)
         self.initializeBsplines(ratio)
+        self.computeQindices()
         self.computeCindices()
         self.computePindices()
         self.initializePoints(P)
@@ -31,6 +32,7 @@ class oml:
         self.importSurfaces(P0)
 
     def updateBsplines(self):
+        self.computeQindices()
         self.computeCindices()
         self.computeKnots()
         self.computeParameters()
@@ -131,18 +133,16 @@ class oml:
         self.J = scipy.sparse.csr_matrix((Ja,(Ji,Jj)))
         print '# Jacobian non-zeros =',self.J.nnz
 
-        self.computeQindices()
         self.nM = GeoMACH.getmnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C, self.edge_index_Q, self.vert_index_Q, self.surf_c1, self.edge_c1)
         Ma, Mi, Mj = GeoMACH.getdofmapping(self.nM,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C,self.edge_index_C,self.edge_index_Q,self.vert_index_Q,self.surf_c1,self.edge_c1)
         self.M = scipy.sparse.csr_matrix((Ma,(Mi,Mj)))
-        print self.J.shape, self.M.shape
         self.J = self.J.dot(self.M)
-        self.C = numpy.zeros((self.J.shape[1],3),order='F')
 
     def computeControlPts(self):  
         JT = self.J.transpose()
         JTJ = JT.dot(self.J)
         JTB = JT.dot(self.P)
+        self.C = numpy.zeros((self.J.shape[1],3),order='F')
         for i in range(3):
             self.C[:,i] = scipy.sparse.linalg.gmres(JTJ,JTB[:,i])[0]
 
@@ -218,8 +218,9 @@ class oml:
                 if mirror:
                     for j in range(C.shape[0]):
                         ax.scatter(C[j,:,0],-C[j,:,1],C[j,:,2])
-            if 1:
+            if 0:
                 ax.scatter(self.C[:,0],self.C[:,1],self.C[:,2])
+            if 1:
                 P = GeoMACH.getsurfacep(i+1, self.nP, n[i,0], n[i,1], self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
                 ax.plot_wireframe(P[:,:,0],P[:,:,1],P[:,:,2])
                 if mirror:
