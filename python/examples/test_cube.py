@@ -4,6 +4,8 @@ sys.path.append(sys.path[0]+'/../')
 import oml
 import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
+from mayavi import mlab
+
 
 n = [40,40]
 P0 = []
@@ -36,10 +38,13 @@ oml1.importSurfaces(P0)
 oml1.C[10,0] -= 0.3
 oml1.computePoints()
 
-for i in range(oml1.nedge):
-    if oml1.edge_symm[i]:
-        oml1.edge_c1[i,:] = True
+oml1.edge_c1[0,0] = True
+oml1.surf_c1[-1,:] = True
+oml1.edge_c1[3,1] = True
 oml1.updateBsplines()
+
+#oml1.plotm(mlab.figure(),False)
+#mlab.show()
 
 oml1.plot(pylab.figure(),False)
 pylab.show()

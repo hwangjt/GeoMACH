@@ -259,7 +259,7 @@ subroutine getsurface(filename, z, normal, location, ni, nj, P)
   call cg_coord_read_f(cg, cg_base, z,'CoordinateY',RealDouble,start,cg_zone_size,coorY,errorstatus)
   call cg_coord_read_f(cg, cg_base, z,'CoordinateZ',RealDouble,start,cg_zone_size,coorZ,errorstatus)
 
-  if (location==.True.) then
+  if (location .eqv. .True.) then
      if (normal==1) then
         do j=1,nj
            do i=1,ni
@@ -285,7 +285,7 @@ subroutine getsurface(filename, z, normal, location, ni, nj, P)
            end do
         end do
      end if
-  else if (location==.False.) then
+  else if (location .eqv. .False.) then
      if (normal==1) then
         do j=1,nj
            do i=1,ni

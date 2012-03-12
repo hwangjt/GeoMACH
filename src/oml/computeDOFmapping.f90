@@ -1,9 +1,9 @@
-subroutine getMnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m, surf_index, edge_index, vert_index, surf_c1, edge_c1, nM)
+subroutine getMnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m, surf_index, edge_index, vert_index, edge_count, surf_c1, edge_c1, nM)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m, surf_index, edge_index, vert_index, surf_c1, surf_c2
+  !f2py intent(in) nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m, surf_index, edge_index, vert_index, edge_count, surf_c1, surf_c2
   !f2py intent(out) nM
   !f2py depend(nsurf) surf_edge
   !f2py depend(nedge) edge_group
@@ -11,12 +11,13 @@ subroutine getMnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m, 
   !f2py depend(nsurf) surf_index
   !f2py depend(nedge) edge_index
   !f2py depend(nvert) vert_index
+  !f2py depend(nedge) edge_count
   !f2py depend(nsurf) surf_c1
   !f2py depend(nedge) edge_c1
   
   !Input
   integer, intent(in) ::  nsurf, nedge, ngroup, nvert
-  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), group_m(ngroup), surf_index(nsurf,2), edge_index(nedge,2), vert_index(nvert)
+  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), group_m(ngroup), surf_index(nsurf,2), edge_index(nedge,2), vert_index(nvert), edge_count(nedge)
   logical, intent(in) ::  surf_c1(nsurf,3,3), edge_c1(nedge,2)
 
   !Output
@@ -57,7 +58,7 @@ subroutine getMnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m, 
   do edge=1,nedge
      do i=1,2
         if (edge_c1(edge,i)) then
-           nM = nM + 1
+           nM = nM + edge_count(edge)
         end if
      end do
   end do
@@ -67,12 +68,12 @@ end subroutine getMnnz
 
 
 
-subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_m, surf_index_C, edge_index_C, edge_index_Q, vert_index_Q, surf_c1, edge_c1, Ma, Mi, Mj)
+subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_m, surf_index_C, edge_index_C, edge_index_Q, vert_index_Q, edge_count, surf_c1, edge_c1, Ma, Mi, Mj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_m, surf_index_C, edge_index_C, edge_index_Q, vert_index_Q, surf_c1, edge_c1
+  !f2py intent(in) nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_m, surf_index_C, edge_index_C, edge_index_Q, vert_index_Q, edge_count, surf_c1, edge_c1
   !f2py intent(out) Ma, Mi, Mj
   !f2py depend(nsurf) surf_vert
   !f2py depend(nsurf) surf_edge
@@ -82,13 +83,14 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, 
   !f2py depend(nedge) edge_index_C
   !f2py depend(nedge) edge_index_Q
   !f2py depend(nvert) vert_index_Q
+  !f2py depend(nedge) edge_count
   !f2py depend(nsurf) surf_c1
   !f2py depend(nedge) edge_c1
   !f2py depend(nM) Ma, Mi, Mj
   
   !Input
   integer, intent(in) ::  nM, nsurf, nedge, ngroup, nvert
-  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), edge_group(nedge), group_m(ngroup), surf_index_C(nsurf,2), edge_index_C(nedge,2), edge_index_Q(nedge,2), vert_index_Q(nvert)
+  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), edge_group(nedge), group_m(ngroup), surf_index_C(nsurf,2), edge_index_C(nedge,2), edge_index_Q(nedge,2), vert_index_Q(nvert), edge_count(nedge)
   logical, intent(in) ::  surf_c1(nsurf,3,3), edge_c1(nedge,2)
 
   !Output
@@ -98,8 +100,8 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, 
   !Working
   integer surf, edge, vert
   integer iM, u, v, i, j
-  integer edge_c1count(nedge), vert_c1count(nvert)
   integer ugroup, vgroup, mu, mv
+  double precision edge_c1count(nedge), vert_c1count(nvert)
 
   Ma(:) = 0.0
   Mi(:) = 0
@@ -126,16 +128,16 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, 
      do i=1,2
         do j=1,2
            if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. (surf_edge(surf,1,i) .gt. 0)) then
-              vert_c1count(surf_vert(surf,j,i)) = vert_c1count(surf_vert(surf,j,i)) + 1
+              vert_c1count(surf_vert(surf,j,i)) = vert_c1count(surf_vert(surf,j,i)) + 1.0/edge_count(abs(surf_edge(surf,1,i)))
            end if
            if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. (surf_edge(surf,1,i) .lt. 0)) then
-              vert_c1count(surf_vert(surf,3-j,i)) = vert_c1count(surf_vert(surf,3-j,i)) + 1
+              vert_c1count(surf_vert(surf,3-j,i)) = vert_c1count(surf_vert(surf,3-j,i)) + 1.0/edge_count(abs(surf_edge(surf,1,i)))
            end if
            if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. (surf_edge(surf,2,i) .gt. 0)) then
-              vert_c1count(surf_vert(surf,i,j)) = vert_c1count(surf_vert(surf,i,j)) + 1
+              vert_c1count(surf_vert(surf,i,j)) = vert_c1count(surf_vert(surf,i,j)) + 1.0/edge_count(abs(surf_edge(surf,2,i)))
            end if
            if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. (surf_edge(surf,2,i) .lt. 0)) then
-              vert_c1count(surf_vert(surf,i,3-j)) = vert_c1count(surf_vert(surf,i,3-j)) + 1
+              vert_c1count(surf_vert(surf,i,3-j)) = vert_c1count(surf_vert(surf,i,3-j)) + 1.0/edge_count(abs(surf_edge(surf,2,i)))
            end if
         end do
      end do
@@ -206,52 +208,34 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, 
      end do
      do i=1,2
         do j=1,2
-           if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. (surf_edge(surf,1,i) .gt. 0)) then
-              edge = surf_edge(surf,1,i)
+           edge = surf_edge(surf,1,i)
+           if ((edge_c1(abs(edge),j)) .and. (edge .gt. 0)) then
               vert = surf_vert(surf,j,i)
-              Ma(iM) = 1.0/vert_c1count(vert)
+              Ma(iM) = 1.0/vert_c1count(vert)/edge_count(abs(edge))
               Mi(iM) = vert
-              if (ieor((j .eq. 1),(edge .gt. 0))) then 
-                 Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + group_m(edge_group(abs(edge))) - 2
-              else
-                 Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1
-              end if
+              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + (j-1)*(group_m(edge_group(abs(edge))) - 3)
               iM = iM + 1
            end if
-           if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. (surf_edge(surf,1,i) .lt. 0)) then
-              edge = surf_edge(surf,1,i)
+           if ((edge_c1(abs(edge),j)) .and. (edge .lt. 0)) then
               vert = surf_vert(surf,3-j,i)
-              Ma(iM) = 1.0/vert_c1count(vert)
+              Ma(iM) = 1.0/vert_c1count(vert)/edge_count(abs(edge))
               Mi(iM) = vert
-              if (ieor((j .eq. 1),(edge .gt. 0))) then 
-                 Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + group_m(edge_group(abs(edge))) - 2
-              else
-                 Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1
-              end if
+              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + (j-1)*(group_m(edge_group(abs(edge))) - 3)
               iM = iM + 1
            end if
-           if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. (surf_edge(surf,2,i) .gt. 0)) then
-              edge = surf_edge(surf,2,i)
+           edge = surf_edge(surf,2,i)
+           if ((edge_c1(abs(edge),j)) .and. (edge .gt. 0)) then
               vert = surf_vert(surf,i,j)
-              Ma(iM) = 1.0/vert_c1count(vert)
+              Ma(iM) = 1.0/vert_c1count(vert)/edge_count(abs(edge))
               Mi(iM) = vert
-              if (ieor((j .eq. 1),(edge .gt. 0))) then 
-                 Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + group_m(edge_group(abs(edge))) - 2
-              else
-                 Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1
-              end if
+              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + (j-1)*(group_m(edge_group(abs(edge))) - 3)
               iM = iM + 1
            end if
-           if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. (surf_edge(surf,2,i) .lt. 0)) then
-              edge = surf_edge(surf,2,i)
+           if ((edge_c1(abs(edge),j)) .and. (edge .lt. 0)) then
               vert = surf_vert(surf,i,3-j)
-              Ma(iM) = 1.0/vert_c1count(vert)
+              Ma(iM) = 1.0/vert_c1count(vert)/edge_count(abs(edge))
               Mi(iM) = vert
-              if (ieor((j .eq. 1),(edge .gt. 0))) then 
-                 Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + group_m(edge_group(abs(edge))) - 2
-              else
-                 Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1
-              end if
+              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + (j-1)*(group_m(edge_group(abs(edge))) - 3)
               iM = iM + 1
            end if
         end do
