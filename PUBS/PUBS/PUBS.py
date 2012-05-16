@@ -1,5 +1,5 @@
 from __future__ import division
-import bspline2d_lib
+import PUBSlib
 import export2EGADS
 import numpy, scipy, pylab, copy, time
 import math
@@ -8,7 +8,7 @@ import mpl_toolkits.mplot3d.axes3d as p3
 from mayavi import mlab
 
 
-class bspline2d:
+class PUBS(object):
 
     def importSurfaces(self, P, ratio=3.0):
         self.symmPlane = 2
@@ -25,11 +25,11 @@ class bspline2d:
         self.computePoints()
 
     def importCGNSsurf(self, filename):
-        n = bspline2d_lib.nsurfaces2(filename)  
-        z,sizes = bspline2d_lib.surfacesizes2(filename, n) 
+        n = PUBSlib.nsurfaces2(filename)  
+        z,sizes = PUBSlib.surfacesizes2(filename, n) 
         P0 = []
         for i in range(n):
-            P0.append(bspline2d_lib.getsurface2(filename,z[i],sizes[i,0],sizes[i,1]))
+            P0.append(PUBSlib.getsurface2(filename,z[i],sizes[i,0],sizes[i,1]))
         self.importSurfaces(P0)
 
     def updateBsplines(self):
@@ -67,31 +67,31 @@ class bspline2d:
         self.ns = numpy.zeros((self.nsurf,2),order='F')
         for k in range(self.nsurf):
             self.ns[k,:] = P[k].shape[0:2]
-        self.nvert,self.nedge,self.surf_vert,self.surf_edge = bspline2d_lib.computetopology(self.nsurf,1e-15,1e-5,Ps)
+        self.nvert,self.nedge,self.surf_vert,self.surf_edge = PUBSlib.computetopology(self.nsurf,1e-15,1e-5,Ps)
         print '# Vertices =',self.nvert
         print '# Edges =',self.nedge
-        self.vert_count,self.edge_count = bspline2d_lib.countveptrs(self.nsurf,self.nvert,self.nedge,self.surf_vert,self.surf_edge)
-        self.ngroup,self.edge_group = bspline2d_lib.computegroups(self.nsurf,self.nedge,self.surf_edge)
+        self.vert_count,self.edge_count = PUBSlib.countveptrs(self.nsurf,self.nvert,self.nedge,self.surf_vert,self.surf_edge)
+        self.ngroup,self.edge_group = PUBSlib.computegroups(self.nsurf,self.nedge,self.surf_edge)
         print '# Groups =',self.ngroup
         self.surf_c1 = numpy.zeros((self.nsurf,3,3),bool,order='F')
         self.edge_c1 = numpy.zeros((self.nedge,2),bool,order='F')
 
     def initializeBsplines(self, ratio):
         k = 4
-        self.group_k, self.group_m, self.group_n = bspline2d_lib.getkmn(k, self.nsurf, self.nedge, self.ngroup, ratio, self.ns, self.surf_edge, self.edge_group)
+        self.group_k, self.group_m, self.group_n = PUBSlib.getkmn(k, self.nsurf, self.nedge, self.ngroup, ratio, self.ns, self.surf_edge, self.edge_group)
 
     def initializePoints(self, P):
         for k in range(self.nsurf):
             n1 = P[k].shape[0]
             n2 = P[k].shape[1]
-            bspline2d_lib.populatep(self.nP, n1, n2, k+1, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.vert_count, self.edge_count, self.surf_index_P, self.edge_index_P, P[k], self.P)
-        bspline2d_lib.avgboundaries(self.nP, self.nedge, self.ngroup, self.nvert, self.edge_group, self.group_n, self.vert_count, self.edge_count, self.edge_index_P, self.P)
-        self.vert_symm, self.edge_symm = bspline2d_lib.determinesymm(self.symmPlane+1, 1e-10, 1e-8, self.nP, self.nedge, self.ngroup, self.nvert, self.edge_group, self.group_n, self.P)
+            PUBSlib.populatep(self.nP, n1, n2, k+1, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.vert_count, self.edge_count, self.surf_index_P, self.edge_index_P, P[k], self.P)
+        PUBSlib.avgboundaries(self.nP, self.nedge, self.ngroup, self.nvert, self.edge_group, self.group_n, self.vert_count, self.edge_count, self.edge_index_P, self.P)
+        self.vert_symm, self.edge_symm = PUBSlib.determinesymm(self.symmPlane+1, 1e-10, 1e-8, self.nP, self.nedge, self.ngroup, self.nvert, self.edge_group, self.group_n, self.P)
 
     def computeQindices(self):
-        self.surf_index_Q = bspline2d_lib.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
-        self.edge_index_Q = bspline2d_lib.getedgeindicesq(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m, self.surf_c1)
-        self.vert_index_Q = bspline2d_lib.getvertindicesq(self.nsurf, self.nedge, self.nvert, self.surf_vert, self.surf_edge, self.surf_c1, self.edge_c1)
+        self.surf_index_Q = PUBSlib.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
+        self.edge_index_Q = PUBSlib.getedgeindicesq(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m, self.surf_c1)
+        self.vert_index_Q = PUBSlib.getvertindicesq(self.nsurf, self.nedge, self.nvert, self.surf_vert, self.surf_edge, self.surf_c1, self.edge_c1)
         self.nQ = 0
         self.nQ += max(self.vert_index_Q)
         self.nQ += max(self.edge_index_Q[:,1])
@@ -99,8 +99,8 @@ class bspline2d:
         print '# Degrees of freedom =',self.nQ
 
     def computeCindices(self):
-        self.surf_index_C = bspline2d_lib.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
-        self.edge_index_C = bspline2d_lib.getedgeindices(self.nedge, self.ngroup, self.edge_group, self.group_m)
+        self.surf_index_C = PUBSlib.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
+        self.edge_index_C = PUBSlib.getedgeindices(self.nedge, self.ngroup, self.edge_group, self.group_m)
         self.nD = 0
         for i in range(self.ngroup):
             self.nD += self.group_m[i] + self.group_k[i]
@@ -111,8 +111,8 @@ class bspline2d:
         print '# Control points =',self.nC
 
     def computePindices(self):
-        self.surf_index_P = bspline2d_lib.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
-        self.edge_index_P = bspline2d_lib.getedgeindices(self.nedge, self.ngroup, self.edge_group, self.group_n)
+        self.surf_index_P = PUBSlib.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
+        self.edge_index_P = PUBSlib.getedgeindices(self.nedge, self.ngroup, self.edge_group, self.group_n)
         self.nT = 0
         self.nT += self.edge_index_P[-1,1]
         self.nT += 2*self.surf_index_P[-1,1]
@@ -123,19 +123,19 @@ class bspline2d:
         print '# Points =',self.nP
 
     def computeKnots(self):
-        self.group_d = bspline2d_lib.getd(self.ngroup,self.nD,self.group_k,self.group_m)
+        self.group_d = PUBSlib.getd(self.ngroup,self.nD,self.group_k,self.group_m)
 
     def computeParameters(self):
-        self.T = bspline2d_lib.initializet(self.nT, self.nD, self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_n, self.group_d)
+        self.T = PUBSlib.initializet(self.nT, self.nD, self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_n, self.group_d)
         
     def computeJacobian(self):
-        self.nJ = bspline2d_lib.getjnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_k,self.group_n,self.vert_count,self.edge_count)
-        Ja, Ji, Jj = bspline2d_lib.getjacobian(self.nP, self.nJ, self.nT, self.nD, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_n, self.group_d, self.surf_index_P, self.edge_index_P, self.surf_index_C, self.edge_index_C, self.edge_count, self.T)
+        self.nJ = PUBSlib.getjnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_k,self.group_n,self.vert_count,self.edge_count)
+        Ja, Ji, Jj = PUBSlib.getjacobian(self.nP, self.nJ, self.nT, self.nD, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_n, self.group_d, self.surf_index_P, self.edge_index_P, self.surf_index_C, self.edge_index_C, self.edge_count, self.T)
         self.J = scipy.sparse.csr_matrix((Ja,(Ji,Jj)))
         print '# Jacobian non-zeros =',self.J.nnz
 
-        self.nM = bspline2d_lib.getmnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C, self.edge_index_Q, self.vert_index_Q, self.edge_count, self.surf_c1, self.edge_c1)
-        Ma, Mi, Mj = bspline2d_lib.getdofmapping(self.nM,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C,self.edge_index_C,self.edge_index_Q,self.vert_index_Q, self.edge_count,self.surf_c1,self.edge_c1)
+        self.nM = PUBSlib.getmnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C, self.edge_index_Q, self.vert_index_Q, self.edge_count, self.surf_c1, self.edge_c1)
+        Ma, Mi, Mj = PUBSlib.getdofmapping(self.nM,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C,self.edge_index_C,self.edge_index_Q,self.vert_index_Q, self.edge_count,self.surf_c1,self.edge_c1)
         self.M = scipy.sparse.csr_matrix((Ma,(Mi,Mj)))
         self.JM = self.J.dot(self.M)
 
@@ -200,7 +200,7 @@ class bspline2d:
             return nvert + max(edge_index[:,1]) + surf_index[surf,0] + (v-1)*(mu-2) + (u-1)
 
     def computePt(self,surf,u,v,uder=0,vder=0):
-        P = bspline2d_lib.computept(surf+1,uder,vder,self.nD,self.nC,self.nsurf,self.nedge,self.ngroup,self.nvert,u,v,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.C)
+        P = PUBSlib.computept(surf+1,uder,vder,self.nD,self.nC,self.nsurf,self.nedge,self.ngroup,self.nvert,u,v,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.C)
         return P
 
     def computeProjection(self,P0,surf=None):
@@ -213,7 +213,7 @@ class bspline2d:
                 vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
                 nu = self.group_n[ugroup-1]
                 nv = self.group_n[vgroup-1]   
-                minP,minu,minv = bspline2d_lib.computeprojection(surf+1,nu,nv,self.nD,self.nT,self.nC,P0.shape[0],P0.shape[1],self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.T,self.C,P0,self.P)
+                minP,minu,minv = PUBSlib.computeprojection(surf+1,nu,nv,self.nD,self.nT,self.nC,P0.shape[0],P0.shape[1],self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.T,self.C,P0,self.P)
                 projections.append([minP,minu,minv])
             minP = numpy.zeros((P0.shape[0],P0.shape[1],3))
             mins = numpy.zeros((P0.shape[0],P0.shape[1]),int)
@@ -236,12 +236,12 @@ class bspline2d:
             vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
             nu = self.group_n[ugroup-1]
             nv = self.group_n[vgroup-1]      
-            minP,minu,minv = bspline2d_lib.computeprojection(surf+1,nu,nv,self.nD,self.nT,self.nC,P0.shape[0],P0.shape[1],self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.T,self.C,P0,self.P)
+            minP,minu,minv = PUBSlib.computeprojection(surf+1,nu,nv,self.nD,self.nT,self.nC,P0.shape[0],P0.shape[1],self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.T,self.C,P0,self.P)
             return minP,surf,minu,minv
 
     def write2Tec(self,filename):
         f = open(filename+'.dat','w')
-        f.write('title = "bspline2d_lib output"\n')
+        f.write('title = "PUBSlib output"\n')
         f.write('variables = "x", "y", "z"\n')
         for surf in range(self.nsurf):
             ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
@@ -249,7 +249,7 @@ class bspline2d:
             nu = self.group_n[ugroup-1]
             nv = self.group_n[vgroup-1]      
             f.write('zone i='+str(nu)+', j='+str(nv)+', DATAPACKING=POINT\n')
-            P = bspline2d_lib.getsurfacep(surf+1, self.nP, nu, nv, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
+            P = PUBSlib.getsurfacep(surf+1, self.nP, nu, nv, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
             for v in range(nv):
                 for u in range(nu):
                     f.write(str(P[u,v,0]) + ' ' + str(P[u,v,1]) + ' ' + str(P[u,v,2]) + '\n')
@@ -257,7 +257,7 @@ class bspline2d:
 
     def write2TecC(self,filename):
         f = open(filename+'.dat','w')
-        f.write('title = "bspline2d_lib output"\n')
+        f.write('title = "PUBSlib output"\n')
         f.write('variables = "x", "y", "z"\n')        
         f.write('zone i='+str(self.nC)+', DATAPACKING=POINT\n')
         for i in range(self.nC):
@@ -271,7 +271,7 @@ class bspline2d:
             vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
             nu = self.group_n[ugroup-1]
             nv = self.group_n[vgroup-1]      
-            P = bspline2d_lib.getsurfacep(surf+1, self.nP, nu, nv, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
+            P = PUBSlib.getsurfacep(surf+1, self.nP, nu, nv, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
             Ps.append(P[:,:,:])
             Ps.append(copy.copy(P[::-1,:,:]))
             Ps[-1][:,:,2] *= -1
@@ -279,22 +279,22 @@ class bspline2d:
 
     def plotm(self,fig,mirror=True):
         mlab.figure(fig)
-        m = bspline2d_lib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
-        n = bspline2d_lib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
+        m = PUBSlib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
+        n = PUBSlib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
         for i in range(self.nsurf):
             if 1:
-                P = bspline2d_lib.getsurfacep(i+1, self.nP, n[i,0], n[i,1], self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
+                P = PUBSlib.getsurfacep(i+1, self.nP, n[i,0], n[i,1], self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
                 mlab.mesh(P[:,:,0],P[:,:,1],P[:,:,2],color=(65/256,105/256,225/256))
                 if mirror:
                     mlab.mesh(P[:,:,0],P[:,:,1],-P[:,:,2],color=(65/256,105/256,225/256))
 
     def plot(self,fig,mirror=True):
         ax = p3.Axes3D(fig)
-        m = bspline2d_lib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
-        n = bspline2d_lib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
+        m = PUBSlib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
+        n = PUBSlib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
         for i in range(self.nsurf):
             if 0:
-                C = bspline2d_lib.getsurfacep(i+1, self.nC, m[i,0], m[i,1], self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_m, self.surf_index_C, self.edge_index_C, self.C)
+                C = PUBSlib.getsurfacep(i+1, self.nC, m[i,0], m[i,1], self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_m, self.surf_index_C, self.edge_index_C, self.C)
                 for j in range(C.shape[0]):
                     ax.scatter(C[j,:,0],C[j,:,1],C[j,:,2])
                 if mirror:
@@ -303,7 +303,7 @@ class bspline2d:
             if 0:
                 ax.scatter(self.C[:,0],self.C[:,1],self.C[:,2])
             if 1:
-                P = bspline2d_lib.getsurfacep(i+1, self.nP, n[i,0], n[i,1], self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
+                P = PUBSlib.getsurfacep(i+1, self.nP, n[i,0], n[i,1], self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, self.P)
                 ax.plot_wireframe(P[:,:,0],P[:,:,1],P[:,:,2])
                 if mirror:
                     ax.plot_wireframe(P[:,:,0],-P[:,:,1],P[:,:,2])

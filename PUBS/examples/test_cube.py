@@ -1,7 +1,7 @@
 from __future__ import division
 import sys
-sys.path.append(sys.path[0]+'/../bspline2d')
-import bspline2d
+sys.path.append(sys.path[0]+'/../PUBS')
+import PUBS
 import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
 from mayavi import mlab
@@ -33,7 +33,7 @@ for i in range(n[0]):
         P0[4][i,j,1] = -j/(n[1]-1)
         P0[4][i,j,2] = -1
 
-oml1 = bspline2d.bspline2d()
+oml1 = PUBS.PUBS()
 oml1.importSurfaces(P0)
 
 oml1.C[10,0] -= 0.3
