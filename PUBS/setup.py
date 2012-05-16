@@ -1,5 +1,5 @@
 import os.path
-#import setuptools
+import setuptools
 import sys
 
 from numpy.distutils.core import setup
@@ -30,13 +30,13 @@ sources = [
     'PUBS/src/patchwork/computeDerivative.f90', 
     'PUBS/src/patchwork/computeProjection.f90', 
     'PUBS/src/patchwork/plotSurfaces.f90',
-    'PUBS/src/PUBS.py'
+    'PUBS/PUBS.py'
     ]
 
 config = Configuration(name='PUBS')
 config.add_extension('PUBSlib', sources=sources, include_dirs=include_dirs, library_dirs=library_dirs, libraries=libraries)
 
-kwds = {'install_requires':['numpy','scipy','pylab'],
+kwds = {'install_requires':['numpy','scipy'],
         'version': '0.1',
         'zip_safe': False,
         'license': 'public domain',

@@ -2,3 +2,5 @@
 *~
 */build/*
 *.so
+*.dat
+*.egg-info

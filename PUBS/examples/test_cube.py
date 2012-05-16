@@ -1,6 +1,5 @@
 from __future__ import division
 import sys
-sys.path.append(sys.path[0]+'/../PUBS')
 import PUBS
 import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
