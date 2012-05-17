@@ -1,4 +1,7 @@
-subroutine computeDerivativeSurface(surf, uder, vder, nB, nT, nD, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_k, group_m, group_n, group_d, surf_index_P, edge_index_P, surf_index_C, edge_index_C, T, Ba, Bi, Bj)
+subroutine computeDerivativeSurface(surf, uder, vder, nB, nT, nD, nsurf, nedge,& 
+           ngroup, nvert, surf_vert, surf_edge, edge_group, group_k, group_m, &
+           group_n, group_d, surf_index_P, edge_index_P, surf_index_C, &
+           edge_index_C, T, Ba, Bi, Bj)
 
   implicit none
   
@@ -18,10 +21,13 @@ subroutine computeDerivativeSurface(surf, uder, vder, nB, nT, nD, nsurf, nedge, 
   !f2py depend(nB) Ba, Bi, Bj
 
   !Input
-  integer, intent(in) ::  surf, uder, vder, nB, nT, nD, nsurf, nedge, ngroup, nvert
-  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), edge_group(nedge), group_k(ngroup), group_m(ngroup), group_n(ngroup)
+  integer, intent(in) ::  surf, uder, vder, nB, nT, nD, nsurf, nedge, ngroup, & 
+                          nvert
+  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), &
+           edge_group(nedge), group_k(ngroup), group_m(ngroup), group_n(ngroup)
   double precision, intent(in) ::  group_d(nD)
-  integer, intent(in) ::  surf_index_P(nsurf,2), edge_index_P(nedge,2), surf_index_C(nsurf,2), edge_index_C(nedge,2)
+  integer, intent(in) ::  surf_index_P(nsurf,2), edge_index_P(nedge,2), & 
+           surf_index_C(nsurf,2), edge_index_C(nedge,2)
   double precision, intent(in) ::  T(nT)
 
   !Output
@@ -54,11 +60,14 @@ subroutine computeDerivativeSurface(surf, uder, vder, nB, nT, nD, nsurf, nedge, 
   allocate(mappingP(nu,nv))
   allocate(Bu(ku))
   allocate(Bv(kv))
-  call extractSurfaceT(surf, nu, nv, nT, nsurf, nedge, surf_edge, surf_index_P, edge_index_P, T, bufferT)
+  call extractSurfaceT(surf, nu, nv, nT, nsurf, nedge, surf_edge, surf_index_P,&
+       edge_index_P, T, bufferT)
   call extractD(ugroup, ngroup, nD, ku+mu, group_k, group_m, group_d, bufferD1)
   call extractD(vgroup, ngroup, nD, kv+mv, group_k, group_m, group_d, bufferD2)
-  call getMapping(surf, mu, mv, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_m, surf_index_C, edge_index_C, mappingC)
-  call getMapping(surf, nu, nv, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_n, surf_index_P, edge_index_P, mappingP)
+  call getMapping(surf, mu, mv, nsurf, nedge, ngroup, nvert, surf_vert, &
+       surf_edge, edge_group, group_m, surf_index_C, edge_index_C, mappingC)
+  call getMapping(surf, nu, nv, nsurf, nedge, ngroup, nvert, surf_vert, & 
+       surf_edge, edge_group, group_n, surf_index_P, edge_index_P, mappingP)
   iB = 1
   do u=1,nu
      do v=1,nv
@@ -102,7 +111,10 @@ end subroutine computeDerivativeSurface
 
 
 
-subroutine computeDerivativeSpecified(surf, uder, vder, nB, n1, n2, nD, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_k, group_m, group_n, group_d, surf_index_P, edge_index_P, surf_index_C, edge_index_C, bufferT, Ba, Bi, Bj)
+subroutine computeDerivativeSpecified(surf, uder, vder, nB, n1, n2, nD, nsurf, &
+           nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_k, & 
+           group_m, group_n, group_d, surf_index_P, edge_index_P, surf_index_C,&
+           edge_index_C, bufferT, Ba, Bi, Bj)
 
   implicit none
   
@@ -122,10 +134,13 @@ subroutine computeDerivativeSpecified(surf, uder, vder, nB, n1, n2, nD, nsurf, n
   !f2py depend(nB) Ba, Bi, Bj
 
   !Input
-  integer, intent(in) ::  surf, uder, vder, nB, n1, n2, nD, nsurf, nedge, ngroup, nvert
-  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), edge_group(nedge), group_k(ngroup), group_m(ngroup), group_n(ngroup)
+  integer, intent(in) ::  surf, uder, vder, nB, n1, n2, nD, nsurf, nedge, & 
+           ngroup, nvert
+  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), & 
+           edge_group(nedge), group_k(ngroup), group_m(ngroup), group_n(ngroup)
   double precision, intent(in) ::  group_d(nD)
-  integer, intent(in) ::  surf_index_P(nsurf,2), edge_index_P(nedge,2), surf_index_C(nsurf,2), edge_index_C(nedge,2)
+  integer, intent(in) ::  surf_index_P(nsurf,2), edge_index_P(nedge,2), & 
+           surf_index_C(nsurf,2), edge_index_C(nedge,2)
   double precision, intent(in) ::  bufferT(n1,n2,2)
 
   !Output
@@ -158,8 +173,10 @@ subroutine computeDerivativeSpecified(surf, uder, vder, nB, n1, n2, nD, nsurf, n
   allocate(Bv(kv))
   call extractD(ugroup, ngroup, nD, ku+mu, group_k, group_m, group_d, bufferD1)
   call extractD(vgroup, ngroup, nD, kv+mv, group_k, group_m, group_d, bufferD2)
-  call getMapping(surf, mu, mv, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_m, surf_index_C, edge_index_C, mappingC)
-  call getMapping(surf, nu, nv, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_n, surf_index_P, edge_index_P, mappingP)
+  call getMapping(surf, mu, mv, nsurf, nedge, ngroup, nvert, surf_vert, & 
+       surf_edge, edge_group, group_m, surf_index_C, edge_index_C, mappingC)
+  call getMapping(surf, nu, nv, nsurf, nedge, ngroup, nvert, surf_vert, & 
+       surf_edge, edge_group, group_n, surf_index_P, edge_index_P, mappingP)
   iB = 1
   do u=1,n1
      do v=1,n2
@@ -202,7 +219,10 @@ end subroutine computeDerivativeSpecified
 
 
 
-subroutine computeDerivativeSingle(surf, uder, vder, nB, nD, nsurf, nedge, ngroup, nvert, t, surf_vert, surf_edge, edge_group, group_k, group_m, group_n, group_d, surf_index_P, edge_index_P, surf_index_C, edge_index_C, Ba, Bi, Bj)
+subroutine computeDerivativeSingle(surf, uder, vder, nB, nD, nsurf, nedge, & 
+           ngroup, nvert, t, surf_vert, surf_edge, edge_group, group_k, & 
+           group_m, group_n, group_d, surf_index_P, edge_index_P, surf_index_C,&
+           edge_index_C, Ba, Bi, Bj)
 
   implicit none
   
@@ -223,9 +243,12 @@ subroutine computeDerivativeSingle(surf, uder, vder, nB, nD, nsurf, nedge, ngrou
   !Input
   integer, intent(in) ::  surf, uder, vder, nB, nD, nsurf, nedge, ngroup, nvert
   double precision, intent(in) ::  t(2)
-  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), edge_group(nedge), group_k(ngroup), group_m(ngroup), group_n(ngroup)
+  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), & 
+                          edge_group(nedge), group_k(ngroup), group_m(ngroup),& 
+                          group_n(ngroup)
   double precision, intent(in) ::  group_d(nD)
-  integer, intent(in) ::  surf_index_P(nsurf,2), edge_index_P(nedge,2), surf_index_C(nsurf,2), edge_index_C(nedge,2)
+  integer, intent(in) ::  surf_index_P(nsurf,2), edge_index_P(nedge,2), &
+                          surf_index_C(nsurf,2), edge_index_C(nedge,2)
 
   !Output
   double precision, intent(out) ::  Ba(nB)
@@ -257,8 +280,10 @@ subroutine computeDerivativeSingle(surf, uder, vder, nB, nD, nsurf, nedge, ngrou
   allocate(Bv(kv))
   call extractD(ugroup, ngroup, nD, ku+mu, group_k, group_m, group_d, bufferD1)
   call extractD(vgroup, ngroup, nD, kv+mv, group_k, group_m, group_d, bufferD2)
-  call getMapping(surf, mu, mv, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_m, surf_index_C, edge_index_C, mappingC)
-  call getMapping(surf, nu, nv, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_n, surf_index_P, edge_index_P, mappingP)
+  call getMapping(surf, mu, mv, nsurf, nedge, ngroup, nvert, surf_vert, & 
+       surf_edge, edge_group, group_m, surf_index_C, edge_index_C, mappingC)
+  call getMapping(surf, nu, nv, nsurf, nedge, ngroup, nvert, surf_vert, &
+       surf_edge, edge_group, group_n, surf_index_P, edge_index_P, mappingP)
   iB = 1
   if (uder.eq.0) then
      call basis(ku,ku+mu,t(1),bufferD1,Bu,i0)

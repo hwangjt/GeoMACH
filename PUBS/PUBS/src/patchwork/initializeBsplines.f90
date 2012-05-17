@@ -1,4 +1,5 @@
-subroutine getKMN(k, nsurf, nedge, ngroup, ratio, ns, surf_edge, edge_group, group_k, group_m, group_n)
+subroutine getKMN(k, nsurf, nedge, ngroup, ratio, ns, surf_edge, edge_group, &
+           group_k, group_m, group_n)
 
   implicit none
 

@@ -7,8 +7,8 @@ SRC_FILES = PUBS/src/bspline/basis.f90 \
 	PUBS/src/bspline/paramuni.f90 \
 	PUBS/src/tensor/curve.f90 \
 	PUBS/src/tensor/surface.f90 \
-	PUBS/src/fileIO/readcgnsvol.f90 \
-	PUBS/src/fileIO/readcgnssurf.f90 \
+#	PUBS/src/fileIO/readcgnsvol.f90 \
+#	PUBS/src/fileIO/readcgnssurf.f90 \
 	PUBS/src/patchwork/initializeTopology.f90 \
 	PUBS/src/patchwork/initializeBsplines.f90 \
 	PUBS/src/patchwork/initializePoints.f90 \
@@ -30,7 +30,7 @@ g95:
 	-mv PUBSlib.so ./PUBS/
 
 gfortran:
-	f2py --fcompiler=gnu95 -I$(CGNS_INCLUDE) -c ${SRC_FILES} -m PUBSlib ${LIB_CGNS}
+	f2py --fcompiler=gnu95 -I$(CGNS_INCLUDE) -c ${SRC_FILES} -m PUBSlib 
 	-mv PUBSlib.so ./PUBS/
 
 intel:

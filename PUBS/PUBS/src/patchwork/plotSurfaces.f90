@@ -1,4 +1,5 @@
-subroutine getSurfaceSizes(nsurf, nedge, ngroup, surf_edge, edge_group, group_n, n)
+subroutine getSurfaceSizes(nsurf, nedge, ngroup, surf_edge, edge_group, & 
+           group_n, n)
 
   implicit none
 
@@ -12,7 +13,8 @@ subroutine getSurfaceSizes(nsurf, nedge, ngroup, surf_edge, edge_group, group_n,
 
   !Input
   integer, intent(in) ::  nsurf, nedge, ngroup
-  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), group_n(ngroup)
+  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), &
+                          group_n(ngroup)
 
   !Output
   integer, intent(out) ::  n(nsurf,2)
@@ -29,7 +31,9 @@ end subroutine getSurfaceSizes
 
 
 
-subroutine getSurfaceP(surf, nP, nu, nv, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_n, surf_index_P, edge_index_P, P, surfP)
+subroutine getSurfaceP(surf, nP, nu, nv, nsurf, nedge, ngroup, nvert, &
+           surf_vert, surf_edge, edge_group, group_n, surf_index_P, &
+           edge_index_P, P, surfP)
 
   implicit none
   
@@ -46,7 +50,9 @@ subroutine getSurfaceP(surf, nP, nu, nv, nsurf, nedge, ngroup, nvert, surf_vert,
 
   !Input
   integer, intent(in) ::  surf, nP, nu, nv, nsurf, nedge, ngroup, nvert
-  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), edge_group(nedge), group_n(ngroup), surf_index_P(nsurf,2), edge_index_P(nedge,2)
+  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), &
+                          edge_group(nedge), group_n(ngroup), &
+                          surf_index_P(nsurf,2), edge_index_P(nedge,2)
   double precision, intent(in) ::  P(nP,3)
 
   !Output

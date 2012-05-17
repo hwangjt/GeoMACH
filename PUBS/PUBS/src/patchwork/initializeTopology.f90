@@ -1,4 +1,5 @@
-subroutine computeTopology(nsurf, vtol, etol, P, nvert, nedge, surf_vert, surf_edge)
+subroutine computeTopology(nsurf, vtol, etol, P, nvert, nedge, surf_vert, & 
+           surf_edge)
 
   implicit none
 
@@ -68,14 +69,16 @@ subroutine computeTopology(nsurf, vtol, etol, P, nvert, nedge, surf_vert, surf_e
                     do u2=1,3,2
                        du2 = 0
                        dv2 = 1
-                       call checkEdge(nsurf,edge,surf1,surf2,u1,v1,u2,v2,du1,dv1,du2,dv2,etol,P,surf_ptrs)
+                       call checkEdge(nsurf,edge,surf1,surf2,u1,v1,u2,v2,du1, &
+                            dv1,du2,dv2,etol,P,surf_ptrs)
                     end do
                  end do
                  do v2=1,3,2
                     do u2=2,2
                        du2 = 1
                        dv2 = 0
-                       call checkEdge(nsurf,edge,surf1,surf2,u1,v1,u2,v2,du1,dv1,du2,dv2,etol,P,surf_ptrs)
+                       call checkEdge(nsurf,edge,surf1,surf2,u1,v1,u2,v2,du1, &
+                            dv1,du2,dv2,etol,P,surf_ptrs)
                     end do
                  end do
               end do
@@ -94,14 +97,16 @@ subroutine computeTopology(nsurf, vtol, etol, P, nvert, nedge, surf_vert, surf_e
                     do u2=1,3,2
                        du2 = 0
                        dv2 = 1
-                       call checkEdge(nsurf,edge,surf1,surf2,u1,v1,u2,v2,du1,dv1,du2,dv2,etol,P,surf_ptrs)
+                       call checkEdge(nsurf,edge,surf1,surf2,u1,v1,u2,v2,du1, & 
+                            dv1,du2,dv2,etol,P,surf_ptrs)
                     end do
                  end do
                  do v2=1,3,2
                     do u2=2,2
                        du2 = 1
                        dv2 = 0
-                       call checkEdge(nsurf,edge,surf1,surf2,u1,v1,u2,v2,du1,dv1,du2,dv2,etol,P,surf_ptrs)
+                       call checkEdge(nsurf,edge,surf1,surf2,u1,v1,u2,v2,du1, & 
+                            dv1,du2,dv2,etol,P,surf_ptrs)
                     end do
                  end do
               end do
@@ -128,12 +133,14 @@ end subroutine computeTopology
 
 
 
-subroutine checkEdge(nsurf, edge, surf1, surf2, u1, v1, u2, v2, du1, dv1, du2, dv2, etol, P, surf_ptrs)
+subroutine checkEdge(nsurf, edge, surf1, surf2, u1, v1, u2, v2, du1, dv1, du2, & 
+           dv2, etol, P, surf_ptrs)
 
   implicit none
 
   !Input
-  integer, intent(in) ::  nsurf, edge, surf1, surf2, u1, v1, u2, v2, du1, dv1, du2, dv2
+  integer, intent(in) ::  nsurf, edge, surf1, surf2, u1, v1, u2, v2, du1, dv1, & 
+           du2, dv2
   double precision, intent (in) ::  etol, P(nsurf,3,3,3)
 
   !Output
@@ -145,9 +152,14 @@ subroutine checkEdge(nsurf, edge, surf1, surf2, u1, v1, u2, v2, du1, dv1, du2, d
   if (surf_ptrs(surf2,u2,v2) .eq. 0) then
      dP(:) = P(surf1,u1,v1,:) - P(surf2,u2,v2,:)
      norm = (dP(1)**2+dP(2)**2+dP(3)**2)**0.5
-     if ((norm .lt. etol) .and. (surf_ptrs(surf1,u1-du1,v1-dv1) .eq. surf_ptrs(surf2,u2-du2,v2-dv2)) .and. (surf_ptrs(surf1,u1+du1,v1+dv1) .eq. surf_ptrs(surf2,u2+du2,v2+dv2))) then
+     if ((norm .lt. etol) .and. (surf_ptrs(surf1,u1-du1,v1-dv1) .eq.  & 
+        surf_ptrs(surf2,u2-du2,v2-dv2)) .and. (surf_ptrs(surf1,u1+du1,v1+dv1) & 
+        .eq. surf_ptrs(surf2,u2+du2,v2+dv2))) then
         surf_ptrs(surf2,u2,v2) = edge
-     else if ((norm .lt. etol) .and. (surf_ptrs(surf1,u1-du1,v1-dv1) .eq. surf_ptrs(surf2,u2+du2,v2+dv2)) .and. (surf_ptrs(surf1,u1+du1,v1+dv1) .eq. surf_ptrs(surf2,u2-du2,v2-dv2))) then
+        
+     else if ((norm .lt. etol) .and. (surf_ptrs(surf1,u1-du1,v1-dv1) .eq. &
+        surf_ptrs(surf2,u2+du2,v2+dv2)) .and. (surf_ptrs(surf1,u1+du1,v1+dv1) & 
+        .eq. surf_ptrs(surf2,u2-du2,v2-dv2))) then
         surf_ptrs(surf2,u2,v2) = -edge
      end if
   end if
@@ -156,7 +168,8 @@ end subroutine checkEdge
 
 
 
-subroutine countVEptrs(nsurf, nvert, nedge, surf_vert, surf_edge, vert_count, edge_count)
+subroutine countVEptrs(nsurf, nvert, nedge, surf_vert, surf_edge, vert_count, & 
+           edge_count)
 
   implicit none
 
@@ -185,12 +198,14 @@ subroutine countVEptrs(nsurf, nvert, nedge, surf_vert, surf_edge, vert_count, ed
   do surf=1,nsurf
      do v=1,2
         do u=1,2
-           vert_count(abs(surf_vert(surf,u,v))) = vert_count(abs(surf_vert(surf,u,v))) + 1
+           vert_count(abs(surf_vert(surf,u,v))) = & 
+           vert_count(abs(surf_vert(surf,u,v))) + 1
         end do
      end do
      do v=1,2
         do u=1,2       
-           edge_count(abs(surf_edge(surf,u,v))) = edge_count(abs(surf_edge(surf,u,v))) + 1  
+           edge_count(abs(surf_edge(surf,u,v))) = & 
+           edge_count(abs(surf_edge(surf,u,v))) + 1  
         end do
      end do
   end do

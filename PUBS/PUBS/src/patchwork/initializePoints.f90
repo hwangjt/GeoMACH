@@ -1,4 +1,6 @@
-subroutine populateP(nP, n1, n2, surf, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_n, vert_count, edge_count, surf_index_P, edge_index_P, P0, P)
+subroutine populateP(nP, n1, n2, surf, nsurf, nedge, ngroup, nvert, surf_vert, &
+           surf_edge, edge_group, group_n, vert_count, edge_count, & 
+           surf_index_P, edge_index_P, P0, P)
 
   implicit none
 
@@ -18,7 +20,8 @@ subroutine populateP(nP, n1, n2, surf, nsurf, nedge, ngroup, nvert, surf_vert, s
 
   !Input
   integer, intent(in) ::  nP, n1, n2, surf, nsurf, nedge, ngroup, nvert
-  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), edge_group(nedge)
+  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), & 
+                          edge_group(nedge)
   integer, intent(in) ::  group_n(ngroup), vert_count(nvert), edge_count(nedge)
   integer, intent(in) ::  surf_index_P(nsurf,2), edge_index_P(nedge,2)
   double precision, intent(in) ::  P0(n1,n2,3)
@@ -85,7 +88,8 @@ end subroutine populateP
 
 
 
-subroutine avgBoundaries(nP, nedge, ngroup, nvert, edge_group, group_n, vert_count, edge_count, edge_index_P, P)
+subroutine avgBoundaries(nP, nedge, ngroup, nvert, edge_group, group_n, & 
+           vert_count, edge_count, edge_index_P, P)
 
   implicit none
 
@@ -101,7 +105,8 @@ subroutine avgBoundaries(nP, nedge, ngroup, nvert, edge_group, group_n, vert_cou
 
   !Input
   integer, intent(in) ::  nP, nedge, ngroup, nvert
-  integer, intent(in) ::  edge_group(nedge), group_n(ngroup), vert_count(nvert), edge_count(nedge), edge_index_P(nedge,2)
+  integer, intent(in) ::  edge_group(nedge), group_n(ngroup), & 
+           vert_count(nvert), edge_count(nedge), edge_index_P(nedge,2)
 
   !Output
   double precision, intent(inout) ::  P(nP,3)
@@ -129,7 +134,8 @@ subroutine avgBoundaries(nP, nedge, ngroup, nvert, edge_group, group_n, vert_cou
 end subroutine avgBoundaries
 
 
-subroutine determineSymm(axis, vtol, etol, nP, nedge, ngroup, nvert, edge_group, group_n, P, vert_symm, edge_symm)
+subroutine determineSymm(axis, vtol, etol, nP, nedge, ngroup, nvert, & 
+           edge_group, group_n, P, vert_symm, edge_symm)
 
   implicit none
 

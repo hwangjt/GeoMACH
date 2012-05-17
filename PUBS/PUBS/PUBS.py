@@ -5,7 +5,7 @@ import numpy, scipy, pylab, copy, time
 import math
 import scipy.sparse, scipy.sparse.linalg
 import mpl_toolkits.mplot3d.axes3d as p3
-from mayavi import mlab
+#from mayavi import mlab
 
 
 class PUBS(object):

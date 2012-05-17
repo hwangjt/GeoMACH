@@ -31,7 +31,8 @@ end subroutine extractD
 
 
 
-subroutine initializeT(nT, nD, nsurf, nedge, ngroup, surf_edge, edge_group, group_k, group_m, group_n, group_d, T)
+subroutine initializeT(nT, nD, nsurf, nedge, ngroup, surf_edge, edge_group, & 
+           group_k, group_m, group_n, group_d, T)
 
   implicit none
 
@@ -47,7 +48,8 @@ subroutine initializeT(nT, nD, nsurf, nedge, ngroup, surf_edge, edge_group, grou
 
   !Input
   integer, intent(in) ::  nT, nD, nsurf, nedge, ngroup
-  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), group_k(ngroup), group_m(ngroup), group_n(ngroup)
+  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), & 
+                          group_k(ngroup), group_m(ngroup), group_n(ngroup)
   double precision, intent(in) ::  group_d(nD)
 
   !Output
@@ -89,7 +91,8 @@ subroutine initializeT(nT, nD, nsurf, nedge, ngroup, surf_edge, edge_group, grou
      nv = group_n(vgroup)
      allocate(bufferD(ku+mu))
      allocate(bufferT(nu))
-     call extractD(ugroup, ngroup, nD, ku+mu, group_k, group_m, group_d, bufferD)
+     call extractD(ugroup, ngroup, nD, ku+mu, group_k, group_m, & 
+          group_d, bufferD)
      call paramuni(ku+mu,mu,nu,bufferD,bufferT)
      do v=2,nv-1
         do u=2,nu-1
@@ -101,7 +104,8 @@ subroutine initializeT(nT, nD, nsurf, nedge, ngroup, surf_edge, edge_group, grou
      deallocate(bufferT)
      allocate(bufferD(kv+mv))
      allocate(bufferT(nv))
-     call extractD(vgroup, ngroup, nD, kv+mv, group_k, group_m, group_d, bufferD)
+     call extractD(vgroup, ngroup, nD, kv+mv, group_k, group_m, & 
+          group_d, bufferD)
      call paramuni(kv+mv,mv,nv,bufferD,bufferT)
      do v=2,nv-1
         do u=2,nu-1

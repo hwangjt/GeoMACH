@@ -2,12 +2,21 @@ from __future__ import division
 import numpy, pylab
 import sys
 sys.path.append(sys.path[0]+'/../')
-import oml
+import PUBS
 import mpl_toolkits.mplot3d.axes3d as p3
 from mayavi import mlab
 
 
-class configuration:
+class configuration(object):
+    
+    def __init__(self): 
+        self.components = {}
+        
+    def __gettattr__(self,name):
+        return self.components[name]
+    
+    def add(self,name,component): 
+        self.components[name] = component    
 
     def assembleComponents(self):
         Ps = []
@@ -22,7 +31,7 @@ class configuration:
             Ps.extend(self.components[k].Ps)
             self.components[k].Ps = []
 
-        self.oml0 = oml.oml()
+        self.oml0 = PUBS.PUBS()
         self.oml0.importSurfaces(Ps)
 
         for k in range(len(self.components)):

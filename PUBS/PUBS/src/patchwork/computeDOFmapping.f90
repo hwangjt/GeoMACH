@@ -1,4 +1,5 @@
-subroutine getMnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m, surf_index, edge_index, vert_index, edge_count, surf_c1, edge_c1, nM)
+subroutine getMnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m,&
+           surf_index, edge_index, vert_index, edge_count, surf_c1, edge_c1, nM)
 
   implicit none
 
@@ -17,7 +18,10 @@ subroutine getMnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m, 
   
   !Input
   integer, intent(in) ::  nsurf, nedge, ngroup, nvert
-  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), group_m(ngroup), surf_index(nsurf,2), edge_index(nedge,2), vert_index(nvert), edge_count(nedge)
+  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), &
+                          group_m(ngroup), surf_index(nsurf,2), & 
+                          edge_index(nedge,2), vert_index(nvert), & 
+                          edge_count(nedge)
   logical, intent(in) ::  surf_c1(nsurf,3,3), edge_c1(nedge,2)
 
   !Output
@@ -68,7 +72,9 @@ end subroutine getMnnz
 
 
 
-subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_m, surf_index_C, edge_index_C, edge_index_Q, vert_index_Q, edge_count, surf_c1, edge_c1, Ma, Mi, Mj)
+subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge,&
+           edge_group, group_m, surf_index_C, edge_index_C, edge_index_Q, &
+           vert_index_Q, edge_count, surf_c1, edge_c1, Ma, Mi, Mj)
 
   implicit none
 
@@ -90,7 +96,10 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, 
   
   !Input
   integer, intent(in) ::  nM, nsurf, nedge, ngroup, nvert
-  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), edge_group(nedge), group_m(ngroup), surf_index_C(nsurf,2), edge_index_C(nedge,2), edge_index_Q(nedge,2), vert_index_Q(nvert), edge_count(nedge)
+  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), &
+           edge_group(nedge), group_m(ngroup), surf_index_C(nsurf,2), &
+           edge_index_C(nedge,2), edge_index_Q(nedge,2), vert_index_Q(nvert), &
+           edge_count(nedge)
   logical, intent(in) ::  surf_c1(nsurf,3,3), edge_c1(nedge,2)
 
   !Output
@@ -112,32 +121,47 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, 
   do surf=1,nsurf
      do i=1,2
         if (surf_c1(surf,2,2*i-1)) then
-           edge_c1count(abs(surf_edge(surf,1,i))) = edge_c1count(abs(surf_edge(surf,1,i))) + 1
+           edge_c1count(abs(surf_edge(surf,1,i))) = &
+           edge_c1count(abs(surf_edge(surf,1,i))) + 1
         end if
         if (surf_c1(surf,2*i-1,2)) then
-           edge_c1count(abs(surf_edge(surf,2,i))) = edge_c1count(abs(surf_edge(surf,2,i))) + 1
+           edge_c1count(abs(surf_edge(surf,2,i))) = &
+           edge_c1count(abs(surf_edge(surf,2,i))) + 1
         end if
      end do
      do i=1,2
         do j=1,2
            if (surf_c1(surf,2*i-1,2*j-1)) then
-              vert_c1count(surf_vert(surf,i,j)) = vert_c1count(surf_vert(surf,i,j)) + 1
+              vert_c1count(surf_vert(surf,i,j)) = & 
+              vert_c1count(surf_vert(surf,i,j)) + 1
            end if
         end do
      end do
      do i=1,2
         do j=1,2
-           if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. (surf_edge(surf,1,i) .gt. 0)) then
-              vert_c1count(surf_vert(surf,j,i)) = vert_c1count(surf_vert(surf,j,i)) + 1.0/edge_count(abs(surf_edge(surf,1,i)))
+           if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. &
+              (surf_edge(surf,1,i) .gt. 0)) then
+              vert_c1count(surf_vert(surf,j,i)) = &
+              vert_c1count(surf_vert(surf,j,i)) + &
+              1.0/edge_count(abs(surf_edge(surf,1,i)))
            end if
-           if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. (surf_edge(surf,1,i) .lt. 0)) then
-              vert_c1count(surf_vert(surf,3-j,i)) = vert_c1count(surf_vert(surf,3-j,i)) + 1.0/edge_count(abs(surf_edge(surf,1,i)))
+           if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. & 
+              (surf_edge(surf,1,i) .lt. 0)) then
+              vert_c1count(surf_vert(surf,3-j,i)) = &
+              vert_c1count(surf_vert(surf,3-j,i)) + &
+              1.0/edge_count(abs(surf_edge(surf,1,i)))
            end if
-           if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. (surf_edge(surf,2,i) .gt. 0)) then
-              vert_c1count(surf_vert(surf,i,j)) = vert_c1count(surf_vert(surf,i,j)) + 1.0/edge_count(abs(surf_edge(surf,2,i)))
+           if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. &
+              (surf_edge(surf,2,i) .gt. 0)) then
+              vert_c1count(surf_vert(surf,i,j)) = &
+              vert_c1count(surf_vert(surf,i,j)) + &
+              1.0/edge_count(abs(surf_edge(surf,2,i)))
            end if
-           if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. (surf_edge(surf,2,i) .lt. 0)) then
-              vert_c1count(surf_vert(surf,i,3-j)) = vert_c1count(surf_vert(surf,i,3-j)) + 1.0/edge_count(abs(surf_edge(surf,2,i)))
+           if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. &
+              (surf_edge(surf,2,i) .lt. 0)) then
+              vert_c1count(surf_vert(surf,i,3-j)) = &
+              vert_c1count(surf_vert(surf,i,3-j)) + &
+              1.0/edge_count(abs(surf_edge(surf,2,i)))
            end if
         end do
      end do
@@ -174,9 +198,11 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, 
               Ma(iM) = 1.0/edge_c1count(edge)
               Mi(iM) = nvert + edge_index_C(edge,1) + u
               if (surf_edge(surf,1,i) .gt. 0) then
-                 Mj(iM) = maxval(vert_index_Q) + maxval(edge_index_Q(:,2)) + surf_index_C(surf,1) + u + (i-1)*(mv-3)*(mu-2)
+                 Mj(iM) = maxval(vert_index_Q) + maxval(edge_index_Q(:,2)) + &
+                 surf_index_C(surf,1) + u + (i-1)*(mv-3)*(mu-2)
               else
-                 Mj(iM) = maxval(vert_index_Q) + maxval(edge_index_Q(:,2)) + surf_index_C(surf,1) + mu - 1 - u + (i-1)*(mv-3)*(mu-2)
+                 Mj(iM) = maxval(vert_index_Q) + maxval(edge_index_Q(:,2)) + &
+                 surf_index_C(surf,1) + mu - 1 - u + (i-1)*(mv-3)*(mu-2)
               end if
               iM = iM + 1 
            end do
@@ -187,9 +213,11 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, 
               Ma(iM) = 1.0/edge_c1count(edge)
               Mi(iM) = nvert + edge_index_C(edge,1) + v
               if (surf_edge(surf,2,i) .gt. 0) then
-                 Mj(iM) = maxval(vert_index_Q) + maxval(edge_index_Q(:,2)) + surf_index_C(surf,1) + 1 + (v-1)*(mu-2) + (i-1)*(mu-3)
+                 Mj(iM) = maxval(vert_index_Q) + maxval(edge_index_Q(:,2)) + &
+                 surf_index_C(surf,1) + 1 + (v-1)*(mu-2) + (i-1)*(mu-3)
               else
-                 Mj(iM) = maxval(vert_index_Q) + maxval(edge_index_Q(:,2)) + surf_index_C(surf,1) + 1 + (mv-2-v)*(mu-2) + (i-1)*(mu-3)
+                 Mj(iM) = maxval(vert_index_Q) + maxval(edge_index_Q(:,2)) + &
+                 surf_index_C(surf,1) + 1 + (mv-2-v)*(mu-2) + (i-1)*(mu-3)
               end if
               iM = iM + 1 
            end do
@@ -201,7 +229,8 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, 
               vert = surf_vert(surf,i,j)
               Ma(iM) = 1.0/vert_c1count(vert)
               Mi(iM) = vert
-              Mj(iM) = maxval(vert_index_Q) + maxval(edge_index_Q(:,2)) + surf_index_C(surf,1) + 1 + (i-1)*(mu-3) + (j-1)*(mv-3)*(mu-2)
+              Mj(iM) = maxval(vert_index_Q) + maxval(edge_index_Q(:,2)) + &
+              surf_index_C(surf,1) + 1 + (i-1)*(mu-3) + (j-1)*(mv-3)*(mu-2)
               iM = iM + 1
            end if
         end do
@@ -213,14 +242,16 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, 
               vert = surf_vert(surf,j,i)
               Ma(iM) = 1.0/vert_c1count(vert)/edge_count(abs(edge))
               Mi(iM) = vert
-              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + (j-1)*(group_m(edge_group(abs(edge))) - 3)
+              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + &
+              (j-1)*(group_m(edge_group(abs(edge))) - 3)
               iM = iM + 1
            end if
            if ((edge_c1(abs(edge),j)) .and. (edge .lt. 0)) then
               vert = surf_vert(surf,3-j,i)
               Ma(iM) = 1.0/vert_c1count(vert)/edge_count(abs(edge))
               Mi(iM) = vert
-              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + (j-1)*(group_m(edge_group(abs(edge))) - 3)
+              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + &
+              (j-1)*(group_m(edge_group(abs(edge))) - 3)
               iM = iM + 1
            end if
            edge = surf_edge(surf,2,i)
@@ -228,14 +259,16 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, 
               vert = surf_vert(surf,i,j)
               Ma(iM) = 1.0/vert_c1count(vert)/edge_count(abs(edge))
               Mi(iM) = vert
-              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + (j-1)*(group_m(edge_group(abs(edge))) - 3)
+              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + &
+              (j-1)*(group_m(edge_group(abs(edge))) - 3)
               iM = iM + 1
            end if
            if ((edge_c1(abs(edge),j)) .and. (edge .lt. 0)) then
               vert = surf_vert(surf,i,3-j)
               Ma(iM) = 1.0/vert_c1count(vert)/edge_count(abs(edge))
               Mi(iM) = vert
-              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + (j-1)*(group_m(edge_group(abs(edge))) - 3)
+              Mj(iM) = maxval(vert_index_Q) + edge_index_Q(abs(edge),1) + 1 + &
+              (j-1)*(group_m(edge_group(abs(edge))) - 3)
               iM = iM + 1
            end if
         end do

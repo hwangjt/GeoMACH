@@ -32,7 +32,8 @@ end subroutine getEdgeIndices
 
 
 
-subroutine getSurfIndices(nsurf, nedge, ngroup, surf_edge, edge_group, group_n, surf_index)
+subroutine getSurfIndices(nsurf, nedge, ngroup, surf_edge, edge_group, group_n,& 
+           surf_index)
 
   implicit none
 
@@ -58,7 +59,8 @@ subroutine getSurfIndices(nsurf, nedge, ngroup, surf_edge, edge_group, group_n, 
   i2 = 0
   do surf=1,nsurf
      i1 = i2
-     i2 = i2 + (group_n(edge_group(abs(surf_edge(surf,1,1)))) - 2)*(group_n(edge_group(abs(surf_edge(surf,2,1)))) - 2)
+     i2 = i2 + (group_n(edge_group(abs(surf_edge(surf,1,1)))) - 2) * & 
+          (group_n(edge_group(abs(surf_edge(surf,2,1)))) - 2)
      surf_index(surf,1) = i1
      surf_index(surf,2) = i2
   end do
@@ -67,7 +69,8 @@ end subroutine getSurfIndices
 
 
 
-subroutine getEdgeIndicesQ(nsurf, nedge, ngroup, surf_edge, edge_group, group_n, surf_c1, edge_index)
+subroutine getEdgeIndicesQ(nsurf, nedge, ngroup, surf_edge, edge_group, & 
+           group_n, surf_c1, edge_index)
 
   implicit none
 
@@ -82,7 +85,8 @@ subroutine getEdgeIndicesQ(nsurf, nedge, ngroup, surf_edge, edge_group, group_n,
 
   !Input
   integer, intent(in) ::  nsurf, nedge, ngroup
-  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), group_n(ngroup)
+  integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), & 
+                          group_n(ngroup)
   logical, intent(in) ::  surf_c1(nsurf,3,3)
 
   !Output
@@ -123,7 +127,8 @@ end subroutine getEdgeIndicesQ
 
 
 
-subroutine getVertIndicesQ(nsurf, nedge, nvert, surf_vert, surf_edge, surf_c1, edge_c1, vert_index)
+subroutine getVertIndicesQ(nsurf, nedge, nvert, surf_vert, surf_edge, surf_c1,& 
+           edge_c1, vert_index)
 
   implicit none
 
@@ -159,16 +164,20 @@ subroutine getVertIndicesQ(nsurf, nedge, nvert, surf_vert, surf_edge, surf_c1, e
      end do
      do i=1,2
         do j=1,2
-           if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. (surf_edge(surf,1,i) .gt. 0)) then
+           if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. (surf_edge(surf,1,i)& 
+              .gt. 0)) then
               dof(surf_vert(surf,j,i)) = .false.
            end if
-           if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. (surf_edge(surf,1,i) .lt. 0)) then
+           if ((edge_c1(abs(surf_edge(surf,1,i)),j)) .and. (surf_edge(surf,1,i)&
+              .lt. 0)) then
               dof(surf_vert(surf,3-j,i)) = .false.
            end if
-           if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. (surf_edge(surf,2,i) .gt. 0)) then
+           if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. (surf_edge(surf,2,i)&
+              .gt. 0)) then
               dof(surf_vert(surf,i,j)) = .false.
            end if
-           if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. (surf_edge(surf,2,i) .lt. 0)) then
+           if ((edge_c1(abs(surf_edge(surf,2,i)),j)) .and. (surf_edge(surf,2,i)&
+              .lt. 0)) then
               dof(surf_vert(surf,i,3-j)) = .false.
            end if
         end do

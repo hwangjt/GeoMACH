@@ -3,7 +3,7 @@ import sys
 import PUBS
 import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
-from mayavi import mlab
+#from mayavi import mlab
 
 
 n = [40,40]
@@ -33,8 +33,8 @@ for i in range(n[0]):
         P0[4][i,j,2] = -1
 
 oml1 = PUBS.PUBS()
-oml1.importSurfaces(P0)
 
+oml1.importSurfaces(P0)
 oml1.C[10,0] -= 0.3
 oml1.computePoints()
 oml1.edge_c1[0,0] = True
@@ -44,6 +44,7 @@ oml1.updateBsplines()
 
 #oml1.plotm(mlab.figure(),False)
 #mlab.show()
+
 
 oml1.plot(pylab.figure(),False)
 pylab.show()
