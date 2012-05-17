@@ -34,7 +34,8 @@ subroutine nsurfaces2(filename, n)
   end if
 
   cg_base = 1
-  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, cg_base_physdim, errorstatus)
+  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, &
+       cg_base_physdim, errorstatus)
   if (errorstatus .eq. CG_ERROR) call cg_error_exit_f
   if (cg_base_celldim .ne. 2 .or. cg_base_physdim .ne. 3) then
      print *, 'The cell and physical dimensions must be 2 and 3, respectively'
@@ -50,9 +51,11 @@ subroutine nsurfaces2(filename, n)
 
   n = 0
   do cg_zone=1, cg_nzones
-     call cg_zone_read_f(cg, cg_base, cg_zone, cg_zone_name, cg_zone_size, errorstatus)
+     call cg_zone_read_f(cg, cg_base, cg_zone, cg_zone_name, cg_zone_size, & 
+          errorstatus)
      if (errorstatus .eq. CG_ERROR) call cg_error_exit_f
-     if ((cg_zone_name(1:6) == 'NSWall').or.(cg_zone_name(1:9) == 'EulerWall')) then
+     if ((cg_zone_name(1:6) == 'NSWall').or.(cg_zone_name(1:9) == 'EulerWall'))&
+        then
         n = n + 1
      end if
   end do
@@ -105,7 +108,8 @@ subroutine surfacesizes2(filename, n, z, sizes)
   end if
 
   cg_base = 1
-  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, cg_base_physdim, errorstatus)
+  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, & 
+       cg_base_physdim, errorstatus)
   if (errorstatus .eq. CG_ERROR) call cg_error_exit_f
   if (cg_base_celldim .ne. 2 .or. cg_base_physdim .ne. 3) then
      print *, 'The cell and physical dimensions must be 2 and 3, respectively'
@@ -123,9 +127,11 @@ subroutine surfacesizes2(filename, n, z, sizes)
   sizes(:,:) = 0
   counter = 1
   do cg_zone=1, cg_nzones
-     call cg_zone_read_f(cg, cg_base, cg_zone, cg_zone_name, cg_zone_size, errorstatus)
+     call cg_zone_read_f(cg, cg_base, cg_zone, cg_zone_name, & 
+          cg_zone_size, errorstatus)
      if (errorstatus .eq. CG_ERROR) call cg_error_exit_f
-     if ((cg_zone_name(1:6) == 'NSWall').or.(cg_zone_name(1:9) == 'EulerWall')) then
+     if ((cg_zone_name(1:6) == 'NSWall').or.(cg_zone_name(1:9) == 'EulerWall'))&
+        then
         z(counter) = cg_zone
         sizes(counter,1) = cg_zone_size(1)
         sizes(counter,2) = cg_zone_size(2)
@@ -183,7 +189,8 @@ subroutine getsurface2(filename, z, ni, nj, P)
   end if
 
   cg_base = 1
-  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, cg_base_physdim, errorstatus)
+  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, &
+       cg_base_physdim, errorstatus)
   if (errorstatus .eq. CG_ERROR) call cg_error_exit_f
   if (cg_base_celldim .ne. 2 .or. cg_base_physdim .ne. 3) then
      print *, 'The cell and physical dimensions must be 2 and 3, respectively'
@@ -203,9 +210,12 @@ subroutine getsurface2(filename, z, ni, nj, P)
   allocate(coorY(cg_zone_size(1),cg_zone_size(2),cg_zone_size(3),3))
   allocate(coorZ(cg_zone_size(1),cg_zone_size(2),cg_zone_size(3),3))
   start(:) = 1
-  call cg_coord_read_f(cg, cg_base, z,'CoordinateX',RealDouble,start,cg_zone_size,coorX,errorstatus)
-  call cg_coord_read_f(cg, cg_base, z,'CoordinateY',RealDouble,start,cg_zone_size,coorY,errorstatus)
-  call cg_coord_read_f(cg, cg_base, z,'CoordinateZ',RealDouble,start,cg_zone_size,coorZ,errorstatus)
+  call cg_coord_read_f(cg, cg_base, z,'CoordinateX',RealDouble,start,& 
+       cg_zone_size,coorX,errorstatus)
+  call cg_coord_read_f(cg, cg_base, z,'CoordinateY',RealDouble,start,&
+       cg_zone_size,coorY,errorstatus)
+  call cg_coord_read_f(cg, cg_base, z,'CoordinateZ',RealDouble,start,&
+       cg_zone_size,coorZ,errorstatus)
 
   P(:,:,1) = coorX(:,:,1,1)
   P(:,:,2) = coorY(:,:,1,1)

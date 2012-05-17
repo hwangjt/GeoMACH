@@ -39,7 +39,8 @@ subroutine nsurfaces(filename, n)
   end if
 
   cg_base = 1
-  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, cg_base_physdim, errorstatus)
+  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, & 
+       cg_base_physdim, errorstatus)
   if (errorstatus .eq. CG_ERROR) call cg_error_exit_f
   if (cg_base_celldim .ne. 3 .or. cg_base_physdim .ne. 3) then
      print *, 'The cell and physical dimensions must be 3 and 3, respectively'
@@ -55,11 +56,15 @@ subroutine nsurfaces(filename, n)
 
   n = 0
   do cg_zone=1, cg_nzones
-     call cg_zone_read_f(cg, cg_base, cg_zone, cg_zone_name, cg_zone_size, errorstatus)
+     call cg_zone_read_f(cg, cg_base, cg_zone, cg_zone_name, cg_zone_size, &
+          errorstatus)
      if (errorstatus .eq. CG_ERROR) call cg_error_exit_f
      call cg_nbocos_f(cg, cg_base, cg_zone, cg_nbocos, errorstatus)
      do cg_boco=1, cg_nbocos
-        call cg_boco_info_f(cg, cg_base, cg_zone, cg_boco, cg_boco_name, cg_boco_type, cg_boco_ptset_type, cg_boco_npnts, cg_boco_NormalIndex, cg_boco_NormalListFlag, cg_boco_NormalDataType, cg_boco_ndataset, errorstatus)
+        call cg_boco_info_f(cg, cg_base, cg_zone, cg_boco, cg_boco_name, & 
+             cg_boco_type, cg_boco_ptset_type, cg_boco_npnts, & 
+             cg_boco_NormalIndex, cg_boco_NormalListFlag, &
+             cg_boco_NormalDataType, cg_boco_ndataset, errorstatus)
         if (cg_boco_type .eq. 21 .or. cg_boco_type .eq. 23) then
            n = n + 1
         end if
@@ -124,7 +129,8 @@ subroutine surfacesizes(filename, n, z, sizes, normal, location)
   end if
 
   cg_base = 1
-  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, cg_base_physdim, errorstatus)
+  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, &
+       cg_base_physdim, errorstatus)
   if (errorstatus .eq. CG_ERROR) call cg_error_exit_f
   if (cg_base_celldim .ne. 3 .or. cg_base_physdim .ne. 3) then
      print *, 'The cell and physical dimensions must be 3 and 3, respectively'
@@ -144,11 +150,15 @@ subroutine surfacesizes(filename, n, z, sizes, normal, location)
   location(:) = .True.
   counter = 1
   do cg_zone=1, cg_nzones
-     call cg_zone_read_f(cg, cg_base, cg_zone, cg_zone_name, cg_zone_size, errorstatus)
+     call cg_zone_read_f(cg, cg_base, cg_zone, cg_zone_name, cg_zone_size, &
+          errorstatus)
      if (errorstatus .eq. CG_ERROR) call cg_error_exit_f
      call cg_nbocos_f(cg, cg_base, cg_zone, cg_nbocos, errorstatus)
      do cg_boco=1, cg_nbocos
-        call cg_boco_info_f(cg, cg_base, cg_zone, cg_boco, cg_boco_name, cg_boco_type, cg_boco_ptset_type, cg_boco_npnts, cg_boco_NormalIndex, cg_boco_NormalListFlag, cg_boco_NormalDataType, cg_boco_ndataset, errorstatus)
+        call cg_boco_info_f(cg, cg_base, cg_zone, cg_boco, cg_boco_name, &
+             cg_boco_type, cg_boco_ptset_type, cg_boco_npnts, &
+             cg_boco_NormalIndex, cg_boco_NormalListFlag, &
+             cg_boco_NormalDataType, cg_boco_ndataset, errorstatus)
         if (cg_boco_type .eq. 21 .or. cg_boco_type .eq. 23) then
            if (cg_boco_name(1:1)=='I') then
               sizes(counter,1) = cg_zone_size(2)
@@ -235,7 +245,8 @@ subroutine getsurface(filename, z, normal, location, ni, nj, P)
   end if
 
   cg_base = 1
-  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, cg_base_physdim, errorstatus)
+  call cg_base_read_f(cg, cg_base, cg_base_name, cg_base_celldim, &
+       cg_base_physdim, errorstatus)
   if (errorstatus .eq. CG_ERROR) call cg_error_exit_f
   if (cg_base_celldim .ne. 3 .or. cg_base_physdim .ne. 3) then
      print *, 'The cell and physical dimensions must be 3 and 3, respectively'
@@ -255,9 +266,12 @@ subroutine getsurface(filename, z, normal, location, ni, nj, P)
   allocate(coorY(cg_zone_size(1),cg_zone_size(2),cg_zone_size(3),3))
   allocate(coorZ(cg_zone_size(1),cg_zone_size(2),cg_zone_size(3),3))
   start(:) = 1
-  call cg_coord_read_f(cg, cg_base, z,'CoordinateX',RealDouble,start,cg_zone_size,coorX,errorstatus)
-  call cg_coord_read_f(cg, cg_base, z,'CoordinateY',RealDouble,start,cg_zone_size,coorY,errorstatus)
-  call cg_coord_read_f(cg, cg_base, z,'CoordinateZ',RealDouble,start,cg_zone_size,coorZ,errorstatus)
+  call cg_coord_read_f(cg, cg_base, z,'CoordinateX',RealDouble,start,&
+       cg_zone_size,coorX,errorstatus)
+  call cg_coord_read_f(cg, cg_base, z,'CoordinateY',RealDouble,start,&
+       cg_zone_size,coorY,errorstatus)
+  call cg_coord_read_f(cg, cg_base, z,'CoordinateZ',RealDouble,start,&
+       cg_zone_size,coorZ,errorstatus)
 
   if (location .eqv. .True.) then
      if (normal==1) then
