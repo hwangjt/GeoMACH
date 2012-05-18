@@ -6,6 +6,7 @@ import fullplate, halfbody, fulljunction, fuse_sections
 import configuration
 
 
+
 class wingbody(configuration.configuration):
 
     def __init__(self):
