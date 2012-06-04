@@ -1,7 +1,5 @@
 from __future__ import division
 import numpy, pylab
-import sys
-sys.path.append(sys.path[0]+'/../')
 import PUBS
 import mpl_toolkits.mplot3d.axes3d as p3
 from mayavi import mlab

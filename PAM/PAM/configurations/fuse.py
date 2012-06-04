@@ -1,8 +1,7 @@
 from __future__ import division
 import numpy
 import sys
-sys.path.append(sys.path[0]+'/components/')
-import fullplate, halfbody, fulljunction, fuse_sections
+from PAM.components import halfbody
 import configuration
 
 
@@ -10,7 +9,7 @@ class fuse(configuration.configuration):
 
     def __init__(self):
         #fuse = halfbody.halfbody([12,6,10,6,12],[8,6,6,8],[10])
-        fuse = halfbody.halfbody([40,20,20,20,40],[30,20,20,30],[30])
+        fuse = halfbody([40,20,20,20,40],[30,20,20,30],[30])
 
 
         self.components = []

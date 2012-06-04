@@ -1,3 +1,4 @@
+
 from __future__ import division
 import numpy, pylab, copy
 import PUBS
@@ -87,15 +88,9 @@ def fitAirfoil(wing,filename):
                     counter += 1
 
         B = numpy.zeros((iP.shape[0],jQ.shape[0]))
-        oml0.computePoints()
-        for i in range(iP.shape[0]):
-            B[i,:] = -oml0.P[iP[i],0]
         for j in range(jQ.shape[0]):
-            oml0.Q[jQ[j],0] += 1
-            oml0.computePoints()
             for i in range(iP.shape[0]):
-                B[i,j] += oml0.P[iP[i],0]
-            oml0.Q[jQ[j],0] -= 1
+                B[i,j] = oml0.JM[iP[i],jQ[j]]
 
         R = P1[-1][1:-1]
         dR = B[:,-1]

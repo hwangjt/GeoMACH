@@ -5,10 +5,13 @@ import numpy, scipy, pylab, copy, time
 import math
 import scipy.sparse, scipy.sparse.linalg
 import mpl_toolkits.mplot3d.axes3d as p3
-#from mayavi import mlab
+from mayavi import mlab
 
 
 class PUBS(object):
+    """
+    A surface model represented as a watertight union of B-spline surfaces. 
+    """
 
     def importSurfaces(self, P, ratio=3.0):
         self.symmPlane = 2

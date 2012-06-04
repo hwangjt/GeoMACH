@@ -1,22 +1,19 @@
 from __future__ import division
 import numpy
-import sys
-sys.path.append(sys.path[0]+'/components/')
-import fullplate, halfbody, fulljunction, fuse_sections
-import configuration
+from PAM.components import halfbody, fullplate, fulljunction, fuse_sections
+from PAM.configurations import configuration
 
-
-class wingbody(configuration.configuration):
+class wingbody(configuration):
 
     def __init__(self):
         #fuse = halfbody.halfbody([12,6,10,6,12],[8,6,6,8],[10])
         #fuse.translatePoints(0,0,0)
         #wing = fullplate.fullplate([8,8],[10])
-        fuse = halfbody.halfbody([40,20,20,20,40],[60,20,20,10],[15])
+        fuse = halfbody([40,20,20,20,40],[60,20,20,10],[15])
         fuse.translatePoints(0,0,0)
-        wing = fullplate.fullplate([30,30],[20])
+        wing = fullplate([30,30],[20])
         wing.translatePoints(4,0.5,2)
-        wingfuse = fulljunction.fulljunction(fuse, 2, 0, [1,1], [2,3], wing, 0, 0, 0)
+        wingfuse = fulljunction(fuse, 2, 0, [1,1], [2,3], wing, 0, 0, 0)
 
         self.components = []
         self.components.append(fuse)

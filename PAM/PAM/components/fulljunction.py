@@ -1,10 +1,10 @@
 from __future__ import division
-import component
+from PAM.components import component
 import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
-class fulljunction(component.component):
+class fulljunction(component):
 
     def __init__(self, toComp, toFace, toDir, toCorner1, toCorner2, fromComp, fromFace, fromDir, fromSide):
         self.toComp = toComp

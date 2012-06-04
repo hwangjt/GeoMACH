@@ -1,22 +1,21 @@
 from __future__ import division
 import numpy
 import sys
-sys.path.append(sys.path[0]+'/components/')
-import fullplate, halfbody, fulljunction, fuse_sections
-import configuration
+from PAM.components import fullplate, halfbody, fulljunction, fuse_sections
+from PAM.configurations import configuration
 
 
-class wingbodytail(configuration.configuration):
+class wingbodytail(configuration):
 
     def __init__(self):
-        fuse = halfbody.halfbody([40,20,20,20,20,15,15,15,10],[30,15,15,20,20,10],[15])
+        fuse = halfbody([40,20,40,20,20,15,15,15,10],[30,15,15,20,20,10],[15])
         fuse.translatePoints(0,0,0)
-        wing = fullplate.fullplate([30,30],[20])
+        wing = fullplate([30,30],[40])
         wing.translatePoints(4,0,0)
-        tail = fullplate.fullplate([30],[15])
+        tail = fullplate([30],[15])
         tail.translatePoints(8,0,0)
-        wingfuse = fulljunction.fulljunction(fuse, 2, 0, [3,1], [4,3], wing, 0, 0, 0)
-        tailfuse = fulljunction.fulljunction(fuse, 2, 0, [1,5], [2,7], tail, 0, 0, 0)
+        wingfuse = fulljunction(fuse, 2, 0, [3,1], [4,3], wing, 0, 0, 0)
+        tailfuse = fulljunction(fuse, 2, 0, [1,5], [2,7], tail, 0, 0, 0)
 
         self.components = []
         self.components.append(fuse)
@@ -47,24 +46,22 @@ class wingbodytail(configuration.configuration):
         ry = [0.1, 0.15, 0.7]
         self.components[0].setTail(n,y0,rz,ry)
 
-        self.components[1].offset[0] = 3.75
-        self.components[1].offset[1] += 0.45
-        self.components[1].offset[2] += 0.7
-        self.components[1].chord[:] = numpy.linspace(2,0.3,self.components[1].chord.shape[0])
-        self.components[1].sweep[:] = numpy.linspace(0,3.75,self.components[1].sweep.shape[0])
-        self.components[1].span = 6
-        self.components[1].thickness = 0.3
+        self.components[1].T[0] = 3.75
+        self.components[1].T[1] = 0.45
+        self.components[1].T[2] = 0.7
+        self.components[1].setSpan(6)
+        self.components[1].setTaper(2,0.3)
+        self.components[1].setSweep(3.75)
+        self.components[1].setAirfoil("rae2822.dat")
 
-        self.components[2].offset[0] = 8.8
-        self.components[2].offset[1] += 0.75
-        self.components[2].offset[2] += 0.65
-        self.components[2].chord[:] = numpy.linspace(1,0.15,self.components[2].chord.shape[0])
-        self.components[2].sweep[:] = numpy.linspace(0,1.6,self.components[2].sweep.shape[0])
-        self.components[2].span = 1.7
-        self.components[2].thickness = 0.1
+        self.components[2].T[0] = 8.8
+        self.components[2].T[1] = 0.75
+        self.components[2].T[2] = 0.65
+        self.components[2].setSpan(1.7)
+        self.components[2].setTaper(1,0.15)
+        self.components[2].setSweep(1.6)
 
         self.computePoints()
-
 
 if __name__ == '__main__':
 

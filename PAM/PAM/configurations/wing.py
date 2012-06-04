@@ -1,15 +1,13 @@
 from __future__ import division
 import numpy
-import sys
-sys.path.append(sys.path[0]+'/components/')
-import fullplate, halfbody, fulljunction
-import configuration
+from PAM.components import fullplate
+from PAM.configurations import configuration
 
 
-class wing(configuration.configuration):
+class wing(configuration):
 
     def __init__(self):
-        wing = fullplate.fullplate([8,8],[10])
+        wing = fullplate([8,8],[10])
 
         self.components = []
         self.components.append(wing)

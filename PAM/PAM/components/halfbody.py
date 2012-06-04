@@ -1,10 +1,10 @@
 from __future__ import division
-import component, fuse_sections
+from PAM.components import component, fuse_sections
 import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
-class halfbody(component.component):
+class halfbody(component):
 
     def __init__(self, nx, ny, nz):
         Ps = []
