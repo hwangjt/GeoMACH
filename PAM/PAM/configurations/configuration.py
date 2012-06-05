@@ -51,9 +51,8 @@ class configuration(object):
         self.oml0.computePoints()
 
     def plot(self):
-
-        self.oml0.plot(pylab.figure(),False)
-        pylab.show()
+        #self.oml0.plot(pylab.figure(),False)
+        #pylab.show()
         self.oml0.plotm(mlab.figure(),False)
         mlab.show()
 

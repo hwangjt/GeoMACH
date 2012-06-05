@@ -134,12 +134,12 @@ class PUBS(object):
     def computeJacobian(self):
         self.nJ = PUBSlib.getjnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_k,self.group_n,self.vert_count,self.edge_count)
         Ja, Ji, Jj = PUBSlib.getjacobian(self.nP, self.nJ, self.nT, self.nD, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_n, self.group_d, self.surf_index_P, self.edge_index_P, self.surf_index_C, self.edge_index_C, self.edge_count, self.T)
-        self.J = scipy.sparse.csr_matrix((Ja,(Ji,Jj)))
+        self.J = scipy.sparse.csc_matrix((Ja,(Ji,Jj)))
         print '# Jacobian non-zeros =',self.J.nnz
 
         self.nM = PUBSlib.getmnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C, self.edge_index_Q, self.vert_index_Q, self.edge_count, self.surf_c1, self.edge_c1)
         Ma, Mi, Mj = PUBSlib.getdofmapping(self.nM,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C,self.edge_index_C,self.edge_index_Q,self.vert_index_Q, self.edge_count,self.surf_c1,self.edge_c1)
-        self.M = scipy.sparse.csr_matrix((Ma,(Mi,Mj)))
+        self.M = scipy.sparse.csc_matrix((Ma,(Mi,Mj)))
         self.JM = self.J.dot(self.M)
 
     def computeControlPts(self):  

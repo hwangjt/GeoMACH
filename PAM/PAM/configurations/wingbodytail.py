@@ -46,22 +46,27 @@ class wingbodytail(configuration):
         ry = [0.1, 0.15, 0.7]
         self.components[0].setTail(n,y0,rz,ry)
 
-        self.components[1].T[0] = 3.75
-        self.components[1].T[1] = 0.45
-        self.components[1].T[2] = 0.7
+        self.components[1].offset[:] = [3.75, 0.45, 0.7]
+        self.components[1].SECTbend[:,1] = 0
         self.components[1].setSpan(6)
-        self.components[1].setTaper(2,0.3)
-        self.components[1].setSweep(3.75)
+        self.components[1].setTaper2(2,0.3)
+        self.components[1].setSweep2(3.75)
+        self.components[1].SECTpos[-5:,1] = numpy.linspace(0.1,1.0,5)**2
+        self.components[1].SECTpos[-5:,2] = self.components[1].SECTpos[-4,2] + numpy.linspace(0,0.5,5)**2
+        self.components[1].SECTpos[-5:,0] = self.components[1].SECTpos[-4,0] + numpy.linspace(0,1,5)**2
         self.components[1].setAirfoil("rae2822.dat")
 
-        self.components[2].T[0] = 8.8
-        self.components[2].T[1] = 0.75
-        self.components[2].T[2] = 0.65
+        self.components[2].offset[:] = [8.8, 0.75, 0.55]
+        self.components[2].setBend(0,0)
         self.components[2].setSpan(1.7)
         self.components[2].setTaper(1,0.15)
         self.components[2].setSweep(1.6)
+        self.components[2].SECTrot[:,1] = 15
 
         self.computePoints()
+
+        self.components[1].computeCproj()
+        self.components[2].computeCproj()
 
 if __name__ == '__main__':
 
