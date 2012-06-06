@@ -86,11 +86,22 @@ class fullplate(component):
         Ns = self.Ns
         self.offset = numpy.zeros(3)
         self.SECTshape = numpy.zeros((Ns[0].shape[0],Ns[0].shape[1],len(self.Ks),3))
+        self.SECTrot0 = numpy.zeros((Ns[0].shape[1],3))
+        self.props = {
+            'chord':Property(Ns[0].shape[1]),
+            'posx':Property(Ns[0].shape[1]),
+            'posy':Property(Ns[0].shape[1]),
+            'posz':Property(Ns[0].shape[1]),
+            'rotx':Property(Ns[0].shape[1]),
+            'roty':Property(Ns[0].shape[1]),
+            'rotz':Property(Ns[0].shape[1]),
+            'prpx':Property(Ns[0].shape[1]),
+            'prpy':Property(Ns[0].shape[1])
+}
+        self.SECTchord = numpy.zeros((Ns[0].shape[1],1))
         self.SECTpos = numpy.zeros((Ns[0].shape[1],3))
         self.SECTrot = numpy.zeros((Ns[0].shape[1],3))
-        self.SECTrot0 = numpy.zeros((Ns[0].shape[1],3))
         self.SECTbend = numpy.ones((Ns[0].shape[1],3))
-        self.SECTchord = numpy.zeros(Ns[0].shape[1])
         self.setAirfoil("naca0012.dat")
 
     def setBend(self,a=0,b=1,p=1):
@@ -101,13 +112,13 @@ class fullplate(component):
         self.SECTpos[:-1,2] = numpy.linspace(0,span,self.SECTpos.shape[0]-1)
 
     def setTaper(self, root, tip):
-        self.SECTchord[:-1] = numpy.linspace(root,tip,self.SECTchord.shape[0]-1)
+        self.SECTchord[:-1,0] = numpy.linspace(root,tip,self.SECTchord.shape[0]-1)
 
     def setSweep(self, sweep):
         self.SECTpos[:-1,0] = numpy.linspace(0,sweep,self.SECTpos.shape[0]-1)
 
     def setTaper2(self, root, tip):
-        self.SECTchord[:-1] = root + (tip-root)*numpy.linspace(0,1,self.SECTchord.shape[0]-1)
+        self.SECTchord[:-1,0] = root + (tip-root)*numpy.linspace(0,1,self.SECTchord.shape[0]-1)
 
     def setSweep2(self, sweep):
         w = 0.4
@@ -129,21 +140,32 @@ class fullplate(component):
         for f in range(len(self.Ks)):
             Qs[f][:,:,:] = 0
             for j in range(Ns[f].shape[1]):
-                T = self.computeRtnMtx(self.SECTrot[j,:]+self.SECTrot0[j,:]*self.SECTbend[j,:])
+                pos = [self.props['posx'].data[j], self.props['posy'].data[j], self.props['posz'].data[j]]
+                rot = [self.props['rotx'].data[j], self.props['roty'].data[j], self.props['rotz'].data[j]]
+                prp = [self.props['prpx'].data[j], self.props['prpy'].data[j], 0]
+                pos = numpy.array(pos)
+                rot = numpy.array(rot)
+                prp = numpy.array(prp)
+                T = self.computeRtnMtx(rot+self.SECTrot0[j,:]*prp)
                 for i in range(Ns[f].shape[0]):
-                    Qs[f][i,j,:] = numpy.dot(T,self.SECTshape[i,j,f,:]-[a,b,0]) + [a,b,0]
-                    Qs[f][i,j,:] *= self.SECTchord[j]
-                    Qs[f][i,j,:] += self.offset + self.SECTpos[j]
+                    Qs[f][i,j,:] = numpy.dot(T,self.SECTshape[i,j,f,:]-[a,b,0])*self.props['chord'].data[j]
+                    Qs[f][i,j,:] += self.offset + pos
 
     def computeRotations(self):
         for j in range(self.Ns[0].shape[1]-1):
+            pos0 = [self.props['posx'].data[j-1], self.props['posy'].data[j-1], self.props['posz'].data[j-1]]
+            pos1 = [self.props['posx'].data[j], self.props['posy'].data[j], self.props['posz'].data[j]]
+            pos2 = [self.props['posx'].data[j+1], self.props['posy'].data[j+1], self.props['posz'].data[j+1]]
+            pos0 = numpy.array(pos0)
+            pos1 = numpy.array(pos1)
+            pos2 = numpy.array(pos2)
             if j==0:
-                tangent = self.SECTpos[j+1] - self.SECTpos[j]
+                tangent = pos2 - pos1
             elif j==self.Ns[0].shape[1]-2:
-                tangent = self.SECTpos[j] - self.SECTpos[j-1]
+                tangent = pos1 - pos0
             else:
-                t1 = self.SECTpos[j+1] - self.SECTpos[j]
-                t2 = self.SECTpos[j] - self.SECTpos[j-1]
+                t1 = pos2 - pos1
+                t2 = pos1 - pos0
                 tangent = t1/numpy.linalg.norm(t1) + t2/numpy.linalg.norm(t2)
             x,y,z = tangent
             if y==0 and z==0:
@@ -193,7 +215,45 @@ class fullplate(component):
         T[2,:] = [   0   ,   0   ,   1   ]
         T0 = numpy.dot(T,T0)
         return T0
-        
+
+class Property(object):
+
+    def __init__(self, n0):
+        self.data = numpy.zeros(n0)
+        self.set([0.0,1.0],[0,1])
+
+    def set(self, val, ind, p=None, w=None, d=None):
+        self.G = numpy.zeros((numpy.array(val).shape[0],5))
+        self.G[:,0] = val
+        self.G[:,1] = ind
+        if p==None:
+            self.G[:,2] = 2
+        else:
+            self.G[:,2] = p
+        if w==None:
+            self.G[:,3] = 0
+        else:
+            self.G[:,3] = w
+        if d==None:
+            self.G[:,4] = 0
+        else:
+            self.G[:,4] = d
+        self.evaluate()
+
+    def evaluate(self):
+        indices = numpy.round((self.data.shape[0]-1)*self.G[:,1])
+        for i in range(self.G.shape[0]-1):
+            v1 = self.G[i,0]
+            v2 = self.G[i+1,0]
+            i1 = int(indices[i])
+            i2 = int(indices[i+1])
+            p = self.G[i,2]
+            w = self.G[i,3]
+            x = numpy.linspace(0,1,i2-i1+1)
+            if self.G[i,4]==0:
+                self.data[i1:i2+1] = v1 + (v2-v1)*(1-w)*x + (v2-v1)*w*x**p
+            else:
+                self.data[i1:i2+1] = v2 + (v1-v2)*(1-w)*x[::-1] + (v1-v2)*w*x[::-1]**p
 
 
 if __name__ == '__main__':

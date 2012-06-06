@@ -47,21 +47,22 @@ class wingbodytail(configuration):
         self.components[0].setTail(n,y0,rz,ry)
 
         self.components[1].offset[:] = [3.75, 0.45, 0.7]
-        self.components[1].SECTbend[:,1] = 0
-        self.components[1].setSpan(6)
-        self.components[1].setTaper2(2,0.3)
-        self.components[1].setSweep2(3.75)
-        self.components[1].SECTpos[-5:,1] = numpy.linspace(0.1,1.0,5)**2
-        self.components[1].SECTpos[-5:,2] = self.components[1].SECTpos[-4,2] + numpy.linspace(0,0.5,5)**2
-        self.components[1].SECTpos[-5:,0] = self.components[1].SECTpos[-4,0] + numpy.linspace(0,1,5)**2
         self.components[1].setAirfoil("rae2822.dat")
+        self.components[1].props['posx'].set([0,3.2,4],[0,0.8,1],w=[0.4,1,0])
+        self.components[1].props['posy'].set([0,0.5,1.7],[0,0.8,1],w=[1,1,0])
+        self.components[1].props['posz'].set([0,5.5,6],[0,0.8,1],w=[0,1,0])
+        self.components[1].props['prpx'].set([1,1],[0,1])
+        self.components[1].props['prpy'].set([0,0,0,0],[0,0.4,0.8,1])
+        self.components[1].props['chord'].set([2,0.25],[0,1])
 
-        self.components[2].offset[:] = [8.8, 0.75, 0.55]
-        self.components[2].setBend(0,0)
-        self.components[2].setSpan(1.7)
-        self.components[2].setTaper(1,0.15)
-        self.components[2].setSweep(1.6)
-        self.components[2].SECTrot[:,1] = 15
+        self.components[2].offset[:] = [9.1, 0.75, 0.55]
+        self.components[2].props['posx'].set([0,1.6],[0,1],w=[0.2,0])
+        self.components[2].props['posy'].set([0,0.3],[0,1],w=[0,0])
+        self.components[2].props['posz'].set([0,1.7],[0,1])
+        self.components[2].props['roty'].set([15,0],[0,1])
+        self.components[2].props['prpx'].set([0,0],[0,1])
+        self.components[2].props['prpy'].set([0,0],[0,1])
+        self.components[2].props['chord'].set([1,0.15],[0,1])
 
         self.computePoints()
 
