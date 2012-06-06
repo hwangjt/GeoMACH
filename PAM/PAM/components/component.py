@@ -134,3 +134,64 @@ class component(object):
             else:
                 break
         return u, ii
+
+    def computeRtnMtx(self, rot):
+        p,q,r = rot*numpy.pi/180.0
+        cos = numpy.cos
+        sin = numpy.sin
+        T0 = numpy.eye(3)
+        T = numpy.zeros((3,3))
+        T[0,:] = [   1   ,   0   ,   0   ]
+        T[1,:] = [   0   , cos(p), sin(p)]
+        T[2,:] = [   0   ,-sin(p), cos(p)]
+        T0 = numpy.dot(T,T0)
+        T[0,:] = [ cos(q),   0   , sin(q)]
+        T[1,:] = [   0   ,   1   ,   0   ]
+        T[2,:] = [-sin(q),   0   , cos(q)]
+        T0 = numpy.dot(T,T0)
+        T[0,:] = [ cos(r), sin(r),   0   ]
+        T[1,:] = [-sin(r), cos(r),   0   ]
+        T[2,:] = [   0   ,   0   ,   1   ]
+        T0 = numpy.dot(T,T0)
+        return T0
+
+
+
+class Property(object):
+
+    def __init__(self, n0):
+        self.data = numpy.zeros(n0)
+        self.set([0.0,1.0],[0,1])
+
+    def set(self, val, ind, p=None, w=None, d=None):
+        self.G = numpy.zeros((numpy.array(val).shape[0],5))
+        self.G[:,0] = val
+        self.G[:,1] = ind
+        if p==None:
+            self.G[:,2] = 2
+        else:
+            self.G[:,2] = p
+        if w==None:
+            self.G[:,3] = 0
+        else:
+            self.G[:,3] = w
+        if d==None:
+            self.G[:,4] = 0
+        else:
+            self.G[:,4] = d
+        self.evaluate()
+
+    def evaluate(self):
+        indices = numpy.round((self.data.shape[0]-1)*self.G[:,1])
+        for i in range(self.G.shape[0]-1):
+            v1 = self.G[i,0]
+            v2 = self.G[i+1,0]
+            i1 = int(indices[i])
+            i2 = int(indices[i+1])
+            p = self.G[i,2]
+            w = self.G[i,3]
+            x = numpy.linspace(0,1,i2-i1+1)
+            if self.G[i,4]==0:
+                self.data[i1:i2+1] = v1 + (v2-v1)*(1-w)*x + (v2-v1)*w*x**p
+            else:
+                self.data[i1:i2+1] = v2 + (v1-v2)*(1-w)*x[::-1] + (v1-v2)*w*x[::-1]**p

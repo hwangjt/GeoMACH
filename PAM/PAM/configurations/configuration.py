@@ -53,7 +53,7 @@ class configuration(object):
     def plot(self):
         #self.oml0.plot(pylab.figure(),False)
         #pylab.show()
-        self.oml0.plotm(mlab.figure(),False)
+        self.oml0.plotm(mlab.figure(),True)
         mlab.show()
 
 

@@ -1,5 +1,5 @@
 from __future__ import division
-from PAM.components import component, fuse_sections
+from PAM.components import component, Property, fuse_sections
 import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
 
@@ -92,12 +92,14 @@ class halfbody(component):
     def initializeParameters(self):
         Ns = self.Ns
         self.offset = numpy.zeros(3)
-        self.L = 10
-        self.rz = numpy.ones(Ns[1].shape[1])
-        self.ry = numpy.ones(Ns[1].shape[1])
-        self.y0 = numpy.ones(Ns[1].shape[1])
-        self.x0 = numpy.ones(Ns[1].shape[1])
-        self.Ls = numpy.ones(self.Ks[1].shape[1]+2)
+        self.props = {
+            'posx':Property(Ns[1].shape[1]),
+            'posy':Property(Ns[1].shape[1]),
+            'ry':Property(Ns[1].shape[1]),
+            'rz':Property(Ns[1].shape[1]),
+            'noseL':0.05,
+            'tailL':0.02
+            }
         self.sections = []
         for i in range(Ns[1].shape[1]):
             self.sections.append(fuse_sections.circular)
@@ -109,60 +111,35 @@ class halfbody(component):
                 self.sections[j] = shape
 
     def propagateQs(self):
-        coneL = 0.05
-        coneR = 0.85
+        c = 0.8
         Ns = self.Ns
         Qs = self.Qs
         for f in range(1,4):
             for j in range(Ns[f].shape[1]):
+                posx = self.props['posx'].data[j]
+                posy = self.props['posy'].data[j]
+                rz = self.props['rz'].data[j]
+                ry = self.props['ry'].data[j]
                 for i in range(Ns[f].shape[0]):
-                    Qs[f][i,j,:] = self.offset
-                    Qs[f][i,j,0] += sum(self.Ls[:Ns[f][i,j,3]+1])
-                    Qs[f][i,j,0] += self.Ls[Ns[f][i,j,3]+1]*Ns[f][i,j,4]/(self.getni(f,1)[Ns[f][i,j,3]])
-                    z,y = self.sections[j](self.rz[j],self.ry[j],self.y0[j],f-1,i/(Ns[f].shape[0]-1))
-                    Qs[f][i,j,1] += y
-                    Qs[f][i,j,2] += z
-        for f in [0,4]:
+                    z,y = self.sections[j](rz,ry,f-1,i/(Ns[f].shape[0]-1))
+                    Qs[f][i,j,:] = self.offset + [posx,posy,0] + [0,y,z]
+        for f in [0,-1]:
+            posx = self.props['posx'].data[f]
+            posy = self.props['posy'].data[1+3*f]
+            rz = self.props['rz'].data[f]
+            ry = self.props['ry'].data[f]
+            if f==0:
+                self.props['noseL'] = 0.5*(rz+ry)*(2**0.5-1)
+                L = self.props['noseL']
+            else:
+                self.props['tailL'] = 0.5*(rz+ry)*(2**0.5-1)
+                L = -self.props['tailL']
             for j in range(Ns[f].shape[1]):
                 for i in range(Ns[f].shape[0]):
-                    Qs[f][i,j,:] = self.offset
-                    if f==0:
-                        x,y,z = fuse_sections.cone(self.Ls[0],coneR*self.rz[0],coneR*self.ry[0],2,2,i/(Ns[f].shape[0]-1),j/(Ns[f].shape[1]-1))
-                        Qs[f][i,j,1] += self.y0[0]
-                    else:
-                        x,y,z = fuse_sections.cone(-self.Ls[-1],coneR*self.rz[-1],coneR*self.ry[-1],2,2,i/(Ns[f].shape[0]-1),j/(Ns[f].shape[1]-1))
-                        Qs[f][i,j,0] += sum(self.Ls[:-1])
-                        Qs[f][i,j,1] += self.y0[-1]
-                    Qs[f][i,j,:] += [x,y,z]
-
-    def setMain(self, y0, rz, ry):
-        self.y0[:] = y0
-        self.rz[:] = rz
-        self.ry[:] = ry
-                    
-    def setNose(self, n, y0, rz, ry):
-        Qs = self.Qs
-        for j in range(1,n):
-            r = Qs[2][1,n-1,0] - Qs[2][1,j,0]
-            r /= Qs[2][1,n-1,0] - Qs[2][1,1,0]
-            self.y0[j] = y0[2] - (y0[2]-y0[1])*r**2
-            self.rz[j] = rz[2] - (rz[2]-rz[1])*r**2
-            self.ry[j] = ry[2] - (ry[2]-ry[1])*r**2
-        self.y0[0] = y0[0]
-        self.rz[0] = rz[0]
-        self.ry[0] = ry[0]
-                    
-    def setTail(self, n, y0, rz, ry):
-        Qs = self.Qs
-        for j in range(-n,-1):
-            r = Qs[2][1,j,0] - Qs[2][1,-n,0]
-            r /= Qs[2][1,-2,0] - Qs[2][1,-n,0]
-            self.y0[j] = y0[2] - (y0[2]-y0[1])*r
-            self.rz[j] = rz[2] - (rz[2]-rz[1])*r
-            self.ry[j] = ry[2] - (ry[2]-ry[1])*r
-        self.y0[-1] = y0[0]
-        self.rz[-1] = rz[0]
-        self.ry[-1] = ry[0]
+                    x,y,z = fuse_sections.cone(L,c*rz,c*ry,1,1,i/(Ns[f].shape[0]-1),j/(Ns[f].shape[1]-1))
+                    Qs[f][i,j,:] = self.offset + [posx,posy,0] + [x,y,z] 
+                    if f==-1:
+                        Qs[f][i,j,0] += self.props['noseL'] + self.props['tailL']
         
 
 

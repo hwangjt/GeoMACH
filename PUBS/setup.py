@@ -1,5 +1,5 @@
 #import os.path
-#import setuptools
+import setuptools
 import sys, os
 #
 from numpy.distutils.core import setup

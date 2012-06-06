@@ -3,7 +3,7 @@ import numpy, pylab
 
 
 
-def circular(rz, ry, y0, part, i):
+def circular(rz, ry, part, i):
     cos = numpy.cos
     sin = numpy.sin
     pi = numpy.pi
@@ -14,29 +14,29 @@ def circular(rz, ry, y0, part, i):
     elif part==2:
         t = -pi/4.0 - pi/4.0*i
     z = rz*cos(t)
-    y = y0 + ry*sin(t)
+    y = ry*sin(t)
     return z, y
 
-def rounded2(rz, ry, y0, part, i):
+def rounded2(rz, ry, part, i):
     if part==0:
-        z,y = circular(rz, ry, y0, part, i)
+        z,y = circular(rz, ry, part, i)
     elif part==1 and i < 0.5:
-        z,y = circular(rz, ry, y0, part, i)
+        z,y = circular(rz, ry, part, i)
     else:
-        z,y = rounded(rz, ry, y0, part, i)
+        z,y = rounded(rz, ry, part, i)
     return z,y
 
-def rounded2(rz, ry, y0, part, i):
+def rounded2(rz, ry, part, i):
     if part==0:
-        z,y = circular(rz, ry, y0, part, i)
+        z,y = circular(rz, ry, part, i)
     elif part==1 and i < 0.5:
-        z,y = circular(rz, ry, y0, part, i)
+        z,y = circular(rz, ry, part, i)
     else:
-        z,y = rounded(rz, ry, y0, part, i)
+        z,y = rounded(rz, ry, part, i)
     return z,y
         
 
-def rounded(rz, ry, y0, part, i):
+def rounded(rz, ry, part, i):
     fz = 0.5
     fy = 0.5
     cos = numpy.cos
@@ -70,7 +70,7 @@ def rounded(rz, ry, y0, part, i):
         else:
             z = rz*(1-i)
             y = -ry
-    return z, y+y0
+    return z, y
 
 def cone(Lc, rz, ry, s, t, i, j):
     q = s**2/ry**2 + t**2/rz**2

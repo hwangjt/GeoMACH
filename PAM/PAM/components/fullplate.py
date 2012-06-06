@@ -1,5 +1,5 @@
 from __future__ import division
-from PAM.components import component, airfoils
+from PAM.components import component, Property, airfoils
 import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
 
@@ -97,32 +97,8 @@ class fullplate(component):
             'rotz':Property(Ns[0].shape[1]),
             'prpx':Property(Ns[0].shape[1]),
             'prpy':Property(Ns[0].shape[1])
-}
-        self.SECTchord = numpy.zeros((Ns[0].shape[1],1))
-        self.SECTpos = numpy.zeros((Ns[0].shape[1],3))
-        self.SECTrot = numpy.zeros((Ns[0].shape[1],3))
-        self.SECTbend = numpy.ones((Ns[0].shape[1],3))
+            }
         self.setAirfoil("naca0012.dat")
-
-    def setBend(self,a=0,b=1,p=1):
-        for k in range(3):
-            self.SECTbend[:-1,k] = numpy.linspace(a,b,self.SECTpos.shape[0]-1)**p
-
-    def setSpan(self, span):
-        self.SECTpos[:-1,2] = numpy.linspace(0,span,self.SECTpos.shape[0]-1)
-
-    def setTaper(self, root, tip):
-        self.SECTchord[:-1,0] = numpy.linspace(root,tip,self.SECTchord.shape[0]-1)
-
-    def setSweep(self, sweep):
-        self.SECTpos[:-1,0] = numpy.linspace(0,sweep,self.SECTpos.shape[0]-1)
-
-    def setTaper2(self, root, tip):
-        self.SECTchord[:-1,0] = root + (tip-root)*numpy.linspace(0,1,self.SECTchord.shape[0]-1)
-
-    def setSweep2(self, sweep):
-        w = 0.4
-        self.SECTpos[:-1,0] = w*sweep*numpy.linspace(0,1,self.SECTpos.shape[0]-1)**2 + (1-w)*sweep*numpy.linspace(0,1,self.SECTpos.shape[0]-1)
 
     def setAirfoil(self,filename):
         Ps = airfoils.fitAirfoil(self,filename)
@@ -215,45 +191,6 @@ class fullplate(component):
         T[2,:] = [   0   ,   0   ,   1   ]
         T0 = numpy.dot(T,T0)
         return T0
-
-class Property(object):
-
-    def __init__(self, n0):
-        self.data = numpy.zeros(n0)
-        self.set([0.0,1.0],[0,1])
-
-    def set(self, val, ind, p=None, w=None, d=None):
-        self.G = numpy.zeros((numpy.array(val).shape[0],5))
-        self.G[:,0] = val
-        self.G[:,1] = ind
-        if p==None:
-            self.G[:,2] = 2
-        else:
-            self.G[:,2] = p
-        if w==None:
-            self.G[:,3] = 0
-        else:
-            self.G[:,3] = w
-        if d==None:
-            self.G[:,4] = 0
-        else:
-            self.G[:,4] = d
-        self.evaluate()
-
-    def evaluate(self):
-        indices = numpy.round((self.data.shape[0]-1)*self.G[:,1])
-        for i in range(self.G.shape[0]-1):
-            v1 = self.G[i,0]
-            v2 = self.G[i+1,0]
-            i1 = int(indices[i])
-            i2 = int(indices[i+1])
-            p = self.G[i,2]
-            w = self.G[i,3]
-            x = numpy.linspace(0,1,i2-i1+1)
-            if self.G[i,4]==0:
-                self.data[i1:i2+1] = v1 + (v2-v1)*(1-w)*x + (v2-v1)*w*x**p
-            else:
-                self.data[i1:i2+1] = v2 + (v1-v2)*(1-w)*x[::-1] + (v1-v2)*w*x[::-1]**p
 
 
 if __name__ == '__main__':
