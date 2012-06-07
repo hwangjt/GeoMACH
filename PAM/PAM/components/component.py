@@ -135,26 +135,6 @@ class component(object):
                 break
         return u, ii
 
-    def computeRtnMtx(self, rot):
-        p,q,r = rot*numpy.pi/180.0
-        cos = numpy.cos
-        sin = numpy.sin
-        T0 = numpy.eye(3)
-        T = numpy.zeros((3,3))
-        T[0,:] = [   1   ,   0   ,   0   ]
-        T[1,:] = [   0   , cos(p), sin(p)]
-        T[2,:] = [   0   ,-sin(p), cos(p)]
-        T0 = numpy.dot(T,T0)
-        T[0,:] = [ cos(q),   0   , sin(q)]
-        T[1,:] = [   0   ,   1   ,   0   ]
-        T[2,:] = [-sin(q),   0   , cos(q)]
-        T0 = numpy.dot(T,T0)
-        T[0,:] = [ cos(r), sin(r),   0   ]
-        T[1,:] = [-sin(r), cos(r),   0   ]
-        T[2,:] = [   0   ,   0   ,   1   ]
-        T0 = numpy.dot(T,T0)
-        return T0
-
 
 
 class Property(object):

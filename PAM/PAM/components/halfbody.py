@@ -97,8 +97,8 @@ class halfbody(component):
             'posy':Property(Ns[1].shape[1]),
             'ry':Property(Ns[1].shape[1]),
             'rz':Property(Ns[1].shape[1]),
-            'noseL':0.05,
-            'tailL':0.02
+            'noseL':0.1,
+            'tailL':0.05
             }
         self.sections = []
         for i in range(Ns[1].shape[1]):
@@ -111,7 +111,9 @@ class halfbody(component):
                 self.sections[j] = shape
 
     def propagateQs(self):
-        c = 0.8
+        wR = 0.8
+        wL = 0.9
+        wD = 1.1
         Ns = self.Ns
         Qs = self.Qs
         for f in range(1,4):
@@ -123,23 +125,33 @@ class halfbody(component):
                 for i in range(Ns[f].shape[0]):
                     z,y = self.sections[j](rz,ry,f-1,i/(Ns[f].shape[0]-1))
                     Qs[f][i,j,:] = self.offset + [posx,posy,0] + [0,y,z]
+                    Qs[f][i,j,0] += self.props['noseL'] - self.props['posx'].data[1]
         for f in [0,-1]:
-            posx = self.props['posx'].data[f]
+            posx = self.props['posx'].data[1+3*f]#f]
             posy = self.props['posy'].data[1+3*f]
-            rz = self.props['rz'].data[f]
-            ry = self.props['ry'].data[f]
+            rz = wR*self.props['rz'].data[1+3*f]
+            ry = wR*self.props['ry'].data[1+3*f]
             if f==0:
-                self.props['noseL'] = 0.5*(rz+ry)*(2**0.5-1)
-                L = self.props['noseL']
+                i1 = 1
+                i2 = 2
+                L = wL*self.props['noseL']
             else:
-                self.props['tailL'] = 0.5*(rz+ry)*(2**0.5-1)
-                L = -self.props['tailL']
+                i1 = -3
+                i2 = -2
+                L = -wL*self.props['tailL']
+            dx = self.props['posx'].data[i2] - self.props['posx'].data[i1]
+            dy = self.props['ry'].data[i2] - self.props['ry'].data[i1]
+            dz = self.props['rz'].data[i2] - self.props['rz'].data[i1]
+            d = wD*abs(dy/dx)
+            e = wD*abs(dz/dx)
             for j in range(Ns[f].shape[1]):
                 for i in range(Ns[f].shape[0]):
-                    x,y,z = fuse_sections.cone(L,c*rz,c*ry,1,1,i/(Ns[f].shape[0]-1),j/(Ns[f].shape[1]-1))
+                    x,y,z = fuse_sections.cone(L,rz,ry,d,e,i/(Ns[f].shape[0]-1),j/(Ns[f].shape[1]-1))
                     Qs[f][i,j,:] = self.offset + [posx,posy,0] + [x,y,z] 
+                    Qs[f][i,j,0] -= self.props['posx'].data[1]
                     if f==-1:
-                        Qs[f][i,j,0] += self.props['noseL'] + self.props['tailL']
+                        Qs[f][i,j,0] += self.props['noseL']
+                        Qs[f][i,j,0] += (1-wL)*self.props['tailL']
         
 
 

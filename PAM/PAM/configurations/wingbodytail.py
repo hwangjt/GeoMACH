@@ -31,8 +31,8 @@ class wingbodytail(configuration):
         self.components[0].setSections(3,fuse_sections.rounded2)
         self.components[0].props['posx'].set([0,10],[0,1])
         self.components[0].props['posy'].set([0.3,0.5,0.5],[0,0.15,1],w=[1.0,0,0],d=[1,0,0])
-        self.components[0].props['ry'].set([0.15,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
-        self.components[0].props['rz'].set([0.15,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
+        self.components[0].props['ry'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
+        self.components[0].props['rz'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
 
         self.components[1].offset[:] = [3.75, 0.3, 0.5]
         self.components[1].setAirfoil("rae2822.dat")
