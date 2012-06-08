@@ -42,7 +42,7 @@ class wingbodytail(configuration):
         self.components[1].props['posy'].set([0,0.5,1.7],[0,0.8,1],w=[1,1,0])
         self.components[1].props['posz'].set([0,4.5,5],[0,0.8,1],w=[0,1,0])
         self.components[1].props['prpx'].set([1,1],[0,1])
-        self.components[1].props['prpy'].set([0,0,0,0],[0,0.4,0.8,1])
+        self.components[1].props['prpy'].set([0,0],[0,1])
         self.components[1].props['chord'].set([2,0.25],[0,1])
 
         self.components[2].offset[:] = [8.5, 0.5, 0.35]

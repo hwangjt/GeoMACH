@@ -6,7 +6,7 @@ import mpl_toolkits.mplot3d.axes3d as p3
 
 class fullplate(component):
 
-    def __init__(self, nb, nc, half=False):
+    def __init__(self, nb, nc, half=False, opentip=False):
         Ps = []
         Ks = []
 
@@ -14,7 +14,7 @@ class fullplate(component):
         for k in range(len(P)):
             for v in range(P[k].shape[1]):
                 for u in range(P[k].shape[0]):
-                    if P[k][u,v,2]!=1 and P[k][u,v,0]!=0 and P[k][u,v,0]!=1:
+                    if (opentip or P[k][u,v,2]!=1) and P[k][u,v,0]!=0 and P[k][u,v,0]!=1:
                         P[k][u,v,1] = 1
         Ps.extend(P)
         Ks.append(K)
@@ -24,7 +24,7 @@ class fullplate(component):
             for k in range(len(P)):
                 for v in range(P[k].shape[1]):
                     for u in range(P[k].shape[0]):
-                        if P[k][u,v,2]!=1 and P[k][u,v,0]!=0 and P[k][u,v,0]!=1:
+                        if (opentip or P[k][u,v,2]!=1) and P[k][u,v,0]!=0 and P[k][u,v,0]!=1:
                             P[k][u,v,1] = -1
             Ps.extend(P)
             Ks.append(K)
@@ -33,10 +33,12 @@ class fullplate(component):
         self.nc = nc
         self.Ps = Ps
         self.Ks = Ks
+        self.opentip = opentip
 
         self.oml0 = []
 
     def setDOFs(self):
+        opentip = self.opentip
         oml0 = self.oml0
         nf = len(self.Ks)
         for f in range(nf):
@@ -45,6 +47,9 @@ class fullplate(component):
                     oml0.surf_c1[self.Ks[f][i,j],:,:] = True
             for i in range(self.Ks[f].shape[0]):
                 oml0.surf_c1[self.Ks[f][i,0],:,0] = False
+            if opentip:
+                for i in range(self.Ks[f].shape[0]):
+                    oml0.surf_c1[self.Ks[f][i,-1],:,-1] = False
             for j in range(self.Ks[f].shape[1]):
                 oml0.surf_c1[self.Ks[f][-f,j],-f,:] = False
         for f in range(nf):
@@ -52,11 +57,21 @@ class fullplate(component):
                 edge = oml0.surf_edge[self.Ks[f][i,0],0,0]
                 edge = abs(edge) - 1
                 oml0.edge_c1[edge,:] = True
+                if opentip:
+                    edge = oml0.surf_edge[self.Ks[f][i,-1],0,1]
+                    edge = abs(edge) - 1
+                    oml0.edge_c1[edge,:] = True                    
             edge = oml0.surf_edge[self.Ks[f][-f,0],0,0]
             if edge > 0:
                 oml0.edge_c1[abs(edge)-1,-f] = False
             else:
-                oml0.edge_c1[abs(edge)-1,f-1] = False                
+                oml0.edge_c1[abs(edge)-1,f-1] = False  
+            if opentip:            
+                edge = oml0.surf_edge[self.Ks[f][-f,-1],0,1]
+                if edge > 0:
+                    oml0.edge_c1[abs(edge)-1,-f] = False
+                else:
+                    oml0.edge_c1[abs(edge)-1,f-1] = False   
         for f in range(nf):
             for j in range(self.Ks[f].shape[1]):
                 edge = oml0.surf_edge[self.Ks[f][-f,j],1,-f]
@@ -67,18 +82,29 @@ class fullplate(component):
                 oml0.edge_c1[abs(edge)-1,0] = False
             else:
                 oml0.edge_c1[abs(edge)-1,-1] = False
+            if opentip:
+                edge = oml0.surf_edge[self.Ks[f][-f,-1],1,-f]
+                if edge > 0:
+                    oml0.edge_c1[abs(edge)-1,-1] = False
+                else:
+                    oml0.edge_c1[abs(edge)-1,0] = False
 
     def isExteriorDOF(self, f, uType, vType):
+        opentip = self.opentip
         value = False
         if f==0:
             if uType==2 and vType==0:
                 value = True
             elif uType==0 and (vType==2 or vType==0):
                 value = True
+            elif (uType==2 or uType==0) and vType==-1 and opentip:
+                value = True
         elif f==1:
             if uType==2 and vType==0:
                 value = True
             elif uType==-1 and (vType==2 or vType==0):
+                value = True
+            elif (uType==2 or uType==-1) and vType==-1 and opentip:
                 value = True
         return value
 
@@ -123,35 +149,49 @@ class fullplate(component):
                 rot = numpy.array(rot)
                 prp = numpy.array(prp)
                 T = self.computeRtnMtx(rot+self.SECTrot0[j,:]*prp)
+                print pos,self.SECTrot0[j,:]
+                print T
                 for i in range(Ns[f].shape[0]):
                     Qs[f][i,j,:] = numpy.dot(T,self.SECTshape[i,j,f,:]-[a,b,0])*self.props['chord'].data[j]
                     Qs[f][i,j,:] += self.offset + pos
 
     def computeRotations(self):
-        for j in range(self.Ns[0].shape[1]-1):
-            pos0 = [self.props['posx'].data[j-1], self.props['posy'].data[j-1], self.props['posz'].data[j-1]]
-            pos1 = [self.props['posx'].data[j], self.props['posy'].data[j], self.props['posz'].data[j]]
-            pos2 = [self.props['posx'].data[j+1], self.props['posy'].data[j+1], self.props['posz'].data[j+1]]
-            pos0 = numpy.array(pos0)
-            pos1 = numpy.array(pos1)
-            pos2 = numpy.array(pos2)
-            if j==0:
-                tangent = pos2 - pos1
-            elif j==self.Ns[0].shape[1]-2:
-                tangent = pos1 - pos0
+        def arctan(x,y):
+            if x==0:
+                if y > 0:
+                    t = numpy.pi/2.0
+                elif y < 0:
+                    t = 3*numpy.pi/2.0
+            elif y==0:
+                if x > 0:
+                    t = 0
+                elif x < 0:
+                    t = numpy.pi
+            elif x<0:
+                t = numpy.arctan(y/x) + numpy.pi
+            elif y<0:
+                t = numpy.arctan(y/x) + 2*numpy.pi
+            elif y>0:
+                t = numpy.arctan(y/x)
             else:
-                t1 = pos2 - pos1
-                t2 = pos1 - pos0
+                t = 0
+            return t
+
+        pos = numpy.zeros((self.Ns[0].shape[1],3))
+        for j in range(self.Ns[0].shape[1]):
+            pos[j,:] = [self.props['posx'].data[j], self.props['posy'].data[j], self.props['posz'].data[j]]
+        for j in range(self.Ns[0].shape[1]):
+            if j==0:
+                tangent = pos[j+1] - pos[j]
+            elif j==self.Ns[0].shape[1]-1:
+                tangent = pos[j] - pos[j-1]
+            else:
+                t1 = pos[j+1] - pos[j]
+                t2 = pos[j] - pos[j-1]
                 tangent = t1/numpy.linalg.norm(t1) + t2/numpy.linalg.norm(t2)
             x,y,z = tangent
-            if y==0 and z==0:
-                q = numpy.pi/2.0
-            else:
-                q = numpy.arctan(x/(y**2+z**2)**0.5)
-            if z==0:
-                p = numpy.pi/2.0
-            else:
-                p = numpy.arctan(y/z)
+            p = arctan(z,y)
+            q = arctan((y**2+z**2)**0.5,x) 
             self.SECTrot0[j,:2] = [p,q]
             self.SECTrot0[j,:2] *= 180.0/numpy.pi
 

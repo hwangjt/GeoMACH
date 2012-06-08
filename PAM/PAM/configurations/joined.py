@@ -10,7 +10,7 @@ class joined(configuration):
     def __init__(self):
         fuse = halfbody([50,15,40,15,40,10,40,10,10],[30,15,15,20,20,10],[15])
         fuse.translatePoints(0,0,0)
-        wing = fullplate([30,30],[40])
+        wing = fullplate([100],[40],opentip=True)
         wing.translatePoints(4,0,0)
         wingfuse = fulljunction(wing, 0, fuse, 2, [3,1], [4,3])
         tailfuse = fulljunction(wing, 1, fuse, 2, [2,7], [1,5])
@@ -34,9 +34,8 @@ class joined(configuration):
         self.components[0].props['rz'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
 
         self.components[1].offset[:] = [3.75, 0.3, 0.5]
-#        self.components[1].setAirfoil("rae2822.dat")
         self.components[1].props['posx'].set([0,4.2],[0,1])
-        self.components[1].props['posy'].set([0,0,0.5,0.5],[0,0.45,0.55,1])
+        self.components[1].props['posy'].set([0,0,0.2,0.2],[0,0.45,0.55,1])
         self.components[1].props['posz'].set([0,5.5,5.5,0],[0,0.45,0.55,1])
         self.components[1].props['prpx'].set([1,1],[0,1])
         self.components[1].props['prpy'].set([0,0],[0,1])
