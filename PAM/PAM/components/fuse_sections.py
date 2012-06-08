@@ -26,19 +26,16 @@ def rounded2(rz, ry, part, i):
         z,y = rounded(rz, ry, part, i)
     return z,y
 
-def rounded2(rz, ry, part, i):
-    if part==0:
+def rounded3(rz, ry, part, i):
+    if part==2:
         z,y = circular(rz, ry, part, i)
-    elif part==1 and i < 0.5:
+    elif part==1 and i > 0.5:
         z,y = circular(rz, ry, part, i)
     else:
-        z,y = rounded(rz, ry, part, i)
-    return z,y
-        
+        z,y = rounded(rz, ry, part, i, fz=0.5, fy=0.2)
+    return z,y        
 
-def rounded(rz, ry, part, i):
-    fz = 0.5
-    fy = 0.5
+def rounded(rz, ry, part, i, fz=0.5, fy=0.5):
     cos = numpy.cos
     sin = numpy.sin
     pi = numpy.pi

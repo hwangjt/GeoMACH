@@ -149,8 +149,6 @@ class fullplate(component):
                 rot = numpy.array(rot)
                 prp = numpy.array(prp)
                 T = self.computeRtnMtx(rot+self.SECTrot0[j,:]*prp)
-                print pos,self.SECTrot0[j,:]
-                print T
                 for i in range(Ns[f].shape[0]):
                     Qs[f][i,j,:] = numpy.dot(T,self.SECTshape[i,j,f,:]-[a,b,0])*self.props['chord'].data[j]
                     Qs[f][i,j,:] += self.offset + pos

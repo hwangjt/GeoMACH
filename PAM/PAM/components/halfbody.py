@@ -107,7 +107,11 @@ class halfbody(component):
     def setSections(self, section, shape):
         Ns = self.Ns
         for j in range(Ns[2].shape[1]):
-            if Ns[2][1,j,3]==section:
+            for i in range(Ns[2].shape[0]):
+                val = Ns[2][i,j,3]
+                if not val == -1:
+                    break
+            if val==section:
                 self.sections[j] = shape
 
     def propagateQs(self):

@@ -116,7 +116,16 @@ class component(object):
         Ks = self.Ks
         ni = numpy.zeros(Ks[f].shape[a],int)
         for i in range(Ks[f].shape[a]):
-            surf = Ks[f][i*(1-a),i*a]
+            if a==0:
+                for j in range(Ks[f].shape[1]):
+                    surf = Ks[f][i,j]
+                    if not surf==-1:
+                        break
+            else:
+                for j in range(Ks[f].shape[1]):
+                    surf = Ks[f][j,i]
+                    if not surf==-1:
+                        break
             edge = oml0.surf_edge[surf,a,0]
             group = oml0.edge_group[abs(edge)-1] - 1
             m = oml0.group_m[group] - 1

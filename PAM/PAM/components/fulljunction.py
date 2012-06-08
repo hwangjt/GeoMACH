@@ -262,4 +262,14 @@ class fulljunction(component):
             i,j = j,-i
             i += 0
             j += 1
-        return fQs[sum(fi[:NW[0]+i])+u,sum(fj[:NW[1]+j])+v]
+        uu = sum(fi[:NW[0]+i])+u
+        vv = sum(fj[:NW[1]+j])+v
+        if uu == -1:
+            uu = 0
+        elif uu == fQs.shape[0]:
+            uu = -1
+        if vv == -1:
+            vv = 0
+        elif vv == fQs.shape[1]:
+            vv = -1
+        return fQs[uu,vv]
