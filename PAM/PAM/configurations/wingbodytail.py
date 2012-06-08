@@ -14,8 +14,10 @@ class wingbodytail(configuration):
         wing.translatePoints(4,0,0)
         tail = fullplate([30],[25])
         tail.translatePoints(8,0,0)
-        wingfuse = fulljunction(fuse, 2, 0, [3,1], [4,3], wing, 0, 0, 0)
-        tailfuse = fulljunction(fuse, 2, 0, [1,5], [2,7], tail, 0, 0, 0)
+        wingfuse = fulljunction(wing, 0, fuse, 2, [3,1], [4,3])
+        tailfuse = fulljunction(tail, 0, fuse, 2, [1,5], [2,7])
+        #wingfuse = fulljunction(fuse, 2, 0, [3,1], [4,3], wing, 0, 0, 0)
+        #tailfuse = fulljunction(fuse, 2, 0, [1,5], [2,7], tail, 0, 0, 0)
 
         self.components = []
         self.components.append(fuse)
