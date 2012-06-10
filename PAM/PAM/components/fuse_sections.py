@@ -3,92 +3,95 @@ import numpy, pylab
 
 
 
-def circular(rz, ry, part, i):
-    cos = numpy.cos
-    sin = numpy.sin
-    pi = numpy.pi
-    if part==0:
-        t = pi/2.0 - pi/4.0*i
-    elif part==1:
-        t = pi/4.0 - pi/2.0*i
-    elif part==2:
-        t = -pi/4.0 - pi/4.0*i
-    z = rz*cos(t)
-    y = ry*sin(t)
+def isContained(t, t1, t2):
+    return t1 <= t and t <= t2
+
+def nMap(t, t1, t2):
+    return (t-t1)/(t2-t1)
+
+def circular(rz, ry, t):
+    z = rz*numpy.cos(t*numpy.pi)
+    y = ry*numpy.sin(t*numpy.pi)
     return z, y
 
-def rounded2(rz, ry, part, i):
-    if part==0:
-        z,y = circular(rz, ry, part, i)
-    elif part==1 and i < 0.5:
-        z,y = circular(rz, ry, part, i)
+def rounded2(rz, ry, t):
+    if isContained(t,0,1):
+        z,y = circular(rz, ry, t)
     else:
-        z,y = rounded(rz, ry, part, i)
+        z,y = rounded(rz, ry, t)
     return z,y
 
-def rounded3(rz, ry, part, i):
-    if part==2:
-        z,y = circular(rz, ry, part, i)
-    elif part==1 and i > 0.5:
-        z,y = circular(rz, ry, part, i)
+def rounded3(rz, ry, t):
+    if isContained(t,1,2):
+        z,y = circular(rz, ry, t)
     else:
-        z,y = rounded(rz, ry, part, i, fz=0.5, fy=0.2)
-    return z,y    
+        z,y = rounded(rz, ry, t)
+    return z,y
 
-def rounded4(rz, ry, part, i):
-    if part==0 or (part==1 and i < 0.5):
-        z,y = rounded(rz, ry, part, i, fz=0.5, fy=0.2)
-    else:#if part==2 or (part==1 and i > 0.5):
-        z,y = rounded(rz, ry, part, i)
-    return z,y      
+def rounded4(rz, ry, t):
+    if isContained(t,0,1):
+        z,y = rounded(rz, ry, t, t1=0.4, t2=0.7)
+    else:
+        z,y = rounded(rz, ry, t)
+    return z,y 
 
-def rounded(rz, ry, part, i, fz=0.5, fy=0.5):
+def rounded(rz, ry, t, t1=0.3, t2=0.7):
+    t1 /= 2.0
+    t2 /= 2.0
     cos = numpy.cos
     sin = numpy.sin
+    tan = numpy.tan
     pi = numpy.pi
-    if part==0:
-        if i > 1-fz:
-            t = pi/2.0 - pi/4.0*(i - (1-fz))/fz
-            z = rz*(1-fz) + rz*fz*cos(t)
-            y = ry*(1-fy) + ry*fy*sin(t)
-        else:
-            z = rz*i
-            y = ry
-    elif part==1:
-        if i < fy/2.0:
-            t = pi/4.0 - pi/4.0*i/(fy/2.0)
-            z = rz*(1-fz) + rz*fz*cos(t)
-            y = ry*(1-fy) + ry*fy*sin(t)
-        elif i > 1-fy/2.0:
-            t = -pi/4.0*(i - (1-fy/2.0))/(fy/2.0)
-            z = rz*(1-fz) + rz*fz*cos(t)
-            y = -ry*(1-fy) + ry*fy*sin(t)
-        else:
-            z = rz
-            y = ry - 2*ry*i
-    elif part==2:
-        if i < fz:
-            t = -pi/4.0 - pi/4.0*i/fz
-            z = rz*(1-fz) + rz*fz*cos(t)
-            y = -ry*(1-fy) + ry*fy*sin(t)
-        else:
-            z = rz*(1-i)
-            y = -ry
-    return z, y
+    z0 = rz*tan(t1*pi)
+    y0 = ry/tan(t2*pi)
+    sz = rz - z0
+    sy = ry - y0
+    if isContained(t,0,t1):
+        z = rz
+        y = rz*tan(t*pi)
+    elif isContained(t,t1,t2):
+        t = nMap(t,t1,t2)/2.0
+        z = z0 + sz*cos(t*pi)
+        y = y0 + sy*sin(t*pi)
+    elif isContained(t,t2,1-t2):
+        z = ry*tan((0.5-t)*pi)
+        y = ry
+    elif isContained(t,1-t2,1-t1):
+        t = nMap(t,1-t2,1-t1)/2.0 + 0.5
+        z = -z0 + sz*cos(t*pi)
+        y = y0 + sy*sin(t*pi)
+    elif isContained(t,1-t1,1+t1):
+        z = -rz
+        y = rz*tan((1-t)*pi)
+    elif isContained(t,1+t1,1+t2):
+        t = nMap(t,1+t1,1+t2)/2.0 + 1
+        z = -z0 + sz*cos(t*pi)
+        y = -y0 + sy*sin(t*pi)
+    elif isContained(t,1+t2,2-t2):
+        z = -ry*tan((1.5-t)*pi)
+        y = -ry
+    elif isContained(t,2-t2,2-t1):
+        t = nMap(t,2-t2,2-t1)/2.0 + 1.5
+        z = z0 + sz*cos(t*pi)
+        y = -y0 + sy*sin(t*pi)
+    elif isContained(t,2-t1,2):
+        z = rz
+        y = rz*tan(t*pi)  
+    return z,y
+        
 
-def cone(Lc, rz, ry, d, e, i, j):
+def cone(Lc, rz, ry, d, e, yy, zz):
+    if d==0 and e==0:
+        d = 1
+        e = 1
     Q = (1 + 1/d**2 + 1/e**2)**0.5
     a = abs(Lc)/(1-1/Q)
     b = ry*(d**2+1)
     c = rz*(e**2+1)
-    s = b/a/d
-    t = c/a/e
-    if Lc>0:
-        s = s*(2*i-1)
-        t = -t*j
-    else:
-        s = s*(1-2*i)
-        t = t*(1-j)
+    if Lc<0:
+        yy *= -1
+    s = -yy*b/a/d
+    t = -zz*c/a/e
     den = (1/a**2+s**2/b**2+t**2/c**2)**0.5
     if Lc>0:
         x = a - 1/den

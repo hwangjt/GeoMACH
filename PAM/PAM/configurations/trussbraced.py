@@ -8,18 +8,18 @@ from PAM.configurations import configuration
 class trussbraced(configuration):
 
     def __init__(self):
-        fuse = halfbody([60,15,15,15,20,15,15,15,30,10,25,10,10],[25,25,25,25,25,25],[15])
+        fuse = halfbody([70,10,10,20,10,10,10,50,10,25,10,10],[25,25,25,25,25,25],[15])
         fuse.translatePoints(0,0,0)
-        wing = fullplate([30,10,10,50],[15,15,20,15,15])
+        wing = fullplate([30,10,10,50],[10,20,10,10])
         wing.translatePoints(4,0,0)
         tail = fullplate([30],[25])
         tail.translatePoints(8,0,0)
         strut = fullplate([30],[20],opentip=True)
         strut.translatePoints(12,0,0)
-        wingfuse = fulljunction(wing, 0, fuse, 2, [0,1], [1,7])
-        strutfuse = fulljunction(strut, 0, fuse, 2, [4,3], [5,5])
-        strutwing = fulljunction(strut, 1, wing, 1, [3,1], [1,2])
-        tailfuse = fulljunction(tail, 0, fuse, 2, [2,9], [3,11])
+        wingfuse = fulljunction(wing, 0, fuse, 2, [0,1], [1,6])
+        strutfuse = fulljunction(strut, 0, fuse, 2, [4,2], [5,4])
+        strutwing = fulljunction(strut, 1, wing, 1, [2,1], [0,2])
+        tailfuse = fulljunction(tail, 0, fuse, 2, [2,8], [3,10])
 
         self.components = []
         self.components.append(fuse)
