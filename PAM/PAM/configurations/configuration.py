@@ -38,6 +38,7 @@ class configuration(object):
 
         for k in range(len(self.components)):
             self.components[k].oml0 = self.oml0
+            self.components[k].computeDims()
             self.components[k].setDOFs()
         self.oml0.updateBsplines()
 

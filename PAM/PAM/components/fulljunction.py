@@ -7,6 +7,9 @@ import mpl_toolkits.mplot3d.axes3d as p3
 class fulljunction(component):
 
     def __init__(self, mComp, mSide, fComp, fFace, NW, SE):
+        self.faces = numpy.zeros((1,2),int)
+        self.faces[0,:] = [1,2]
+
         NW = numpy.array(NW)
         SE = numpy.array(SE)
         uInc = SE[0] > NW[0]
@@ -74,6 +77,11 @@ class fulljunction(component):
         edge2 = self.fSpliceP(SE, None, -1)
         edge1 = Ps[2*mComp.Ks[0].shape[0]-1][:,-1,:]
         Ps.append(self.createInterface(n, edge1, edge2, True))
+
+        Ps[-4][0,:,:] = self.fSpliceP(NW, 0, None)
+        Ps[-3][-1,:,:] = self.fSpliceP(SW, -1, None)
+        Ps[-2][0,:,:] = self.fSpliceP(NE, 0, None)
+        Ps[-1][-1,:,:] = self.fSpliceP(SE, -1, None)
 
         K = numpy.zeros((2,2+mComp.Ks[0].shape[0]),int)
         counter = 0

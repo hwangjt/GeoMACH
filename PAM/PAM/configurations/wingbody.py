@@ -1,17 +1,20 @@
 from __future__ import division
 import numpy
-from PAM.components import halfbody, fullplate, fulljunction, fuse_sections
+import sys
+from PAM.components import fullplate, halfbody, fulljunction, fuse_sections
 from PAM.configurations import configuration
+
 
 class wingbody(configuration):
 
     def __init__(self):
-        fuse = halfbody([50,15,50,15,40,10,25,10,10],[30,15,15,20,20,10],[15])
+#        fuse = halfbody([50,15,20,30,15,40,10,25,10,10],[30,15,15,20,20,10],[15])
+        fuse = halfbody([50,15,20,30,15,40,10,25,10,10],[10,40,10],[15])
         fuse.translatePoints(0,0,0)
-        wing = fullplate([30,30],[50])
-        wing.translatePoints(0,0,10)
-        #wingfuse = fulljunction(fuse, 2, 0, [3,1], [4,3], wing, 0, 0, 0)
-        wingfuse = fulljunction(wing, 0, fuse, 2, [3,1], [4,3])
+#        wing = fullplate([30,30],[20,30])
+        wing = fullplate([30,30],[40])
+        wing.translatePoints(4,0,0)
+        wingfuse = fulljunction(wing, 0, fuse, 2, [2,2], [0,3])
 
         self.components = []
         self.components.append(fuse)
@@ -34,11 +37,11 @@ class wingbody(configuration):
         self.components[1].props['posy'].set([0,0.5,1.7],[0,0.8,1],w=[1,1,0])
         self.components[1].props['posz'].set([0,4.5,5],[0,0.8,1],w=[0,1,0])
         self.components[1].props['prpx'].set([1,1],[0,1])
-        self.components[1].props['prpy'].set([0,0,0,0],[0,0.4,0.8,1])
+        self.components[1].props['prpy'].set([0,0],[0,1])
+        self.components[1].props['rotz'].set([-90,-90],[0,1])
         self.components[1].props['chord'].set([2,0.25],[0,1])
 
         self.computePoints()
-
 
 if __name__ == '__main__':
 

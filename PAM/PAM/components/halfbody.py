@@ -7,6 +7,13 @@ import mpl_toolkits.mplot3d.axes3d as p3
 class halfbody(component):
 
     def __init__(self, nx, ny, nz):
+        self.faces = numpy.zeros((5,2),int)
+        self.faces[0,:] = [-2,3]
+        self.faces[1,:] = [3,1]
+        self.faces[2,:] = [-2,1]
+        self.faces[3,:] = [-3,1]
+        self.faces[4,:] = [-2,-3]
+
         Ps = []
         Ks = []
 

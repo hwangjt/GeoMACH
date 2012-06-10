@@ -111,26 +111,43 @@ class component(object):
         else:
             return 2
 
-    def getni(self, f, a):  
+    def computeDims(self):
+        ndims = int(numpy.max(abs(self.faces)))
         oml0 = self.oml0
         Ks = self.Ks
-        ni = numpy.zeros(Ks[f].shape[a],int)
-        for i in range(Ks[f].shape[a]):
-            if a==0:
+        dims = []
+        for d in range(ndims):
+            dims.append([])
+        for f in range(self.faces.shape[0]):
+            for k in range(2):
+                d = abs(self.faces[f,k]) - 1
+                dims[d] = numpy.zeros(Ks[f].shape[k],int)
+        for f in range(self.faces.shape[0]):
+            for i in range(Ks[f].shape[0]):
                 for j in range(Ks[f].shape[1]):
                     surf = Ks[f][i,j]
                     if not surf==-1:
-                        break
-            else:
-                for j in range(Ks[f].shape[1]):
-                    surf = Ks[f][j,i]
-                    if not surf==-1:
-                        break
-            edge = oml0.surf_edge[surf,a,0]
-            group = oml0.edge_group[abs(edge)-1] - 1
-            m = oml0.group_m[group] - 1
-            ni[i] = int(m)
-        return ni
+                        for k in range(2):
+                            edge = oml0.surf_edge[surf,k,0]
+                            group = oml0.edge_group[abs(edge)-1] - 1
+                            m = oml0.group_m[group] - 1
+                            d = abs(self.faces[f,k]) - 1
+                            if k==0:
+                                index = i
+                            else:
+                                index = j
+                            if self.faces[f,k] > 0:
+                                dims[d][index] = int(m)
+                            else:
+                                dims[d][-index-1] = int(m)
+        self.dims = dims
+    
+    def getni(self, f, a):
+        d = abs(self.faces[f,a]) - 1
+        if self.faces[f,a] > 0:
+            return self.dims[d]
+        else:
+            return self.dims[d][::-1]
 
     def divide(self, i, ni):
         u = i

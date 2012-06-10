@@ -33,7 +33,14 @@ def rounded3(rz, ry, part, i):
         z,y = circular(rz, ry, part, i)
     else:
         z,y = rounded(rz, ry, part, i, fz=0.5, fy=0.2)
-    return z,y        
+    return z,y    
+
+def rounded4(rz, ry, part, i):
+    if part==0 or (part==1 and i < 0.5):
+        z,y = rounded(rz, ry, part, i, fz=0.5, fy=0.2)
+    else:#if part==2 or (part==1 and i > 0.5):
+        z,y = rounded(rz, ry, part, i)
+    return z,y      
 
 def rounded(rz, ry, part, i, fz=0.5, fy=0.5):
     cos = numpy.cos

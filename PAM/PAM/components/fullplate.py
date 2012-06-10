@@ -7,6 +7,10 @@ import mpl_toolkits.mplot3d.axes3d as p3
 class fullplate(component):
 
     def __init__(self, nb, nc, half=False, opentip=False):
+        self.faces = numpy.zeros((2,2),int)
+        self.faces[0,:] = [1,2]
+        self.faces[1,:] = [-1,2]
+
         Ps = []
         Ks = []
 
@@ -111,7 +115,7 @@ class fullplate(component):
     def initializeParameters(self):
         Ns = self.Ns
         self.offset = numpy.zeros(3)
-        self.SECTshape = numpy.zeros((Ns[0].shape[0],Ns[0].shape[1],len(self.Ks),3))
+        self.SECTshape = numpy.zeros((len(self.Ks),Ns[0].shape[0],Ns[0].shape[1],3))
         self.SECTrot0 = numpy.zeros((Ns[0].shape[1],3))
         self.props = {
             'chord':Property(Ns[0].shape[1]),
@@ -130,8 +134,8 @@ class fullplate(component):
         Ps = airfoils.fitAirfoil(self,filename)
         for f in range(len(self.Ks)):
             for j in range(self.Ns[f].shape[1]):
-                self.SECTshape[1:-1,j,f,:2] = Ps[f][:,:]
-            self.SECTshape[-f,:,f,0] = 1
+                self.SECTshape[f,:,j,:2] = Ps[f][:,:]
+            self.SECTshape[f,-f,:,0] = 1
         
     def propagateQs(self):
         a = 0.25
@@ -150,7 +154,7 @@ class fullplate(component):
                 prp = numpy.array(prp)
                 T = self.computeRtnMtx(rot+self.SECTrot0[j,:]*prp)
                 for i in range(Ns[f].shape[0]):
-                    Qs[f][i,j,:] = numpy.dot(T,self.SECTshape[i,j,f,:]-[a,b,0])*self.props['chord'].data[j]
+                    Qs[f][i,j,:] = numpy.dot(T,self.SECTshape[f,i,j,:]-[a,b,0])*self.props['chord'].data[j]
                     Qs[f][i,j,:] += self.offset + pos
 
     def computeRotations(self):

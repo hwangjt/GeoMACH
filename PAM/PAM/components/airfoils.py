@@ -98,6 +98,9 @@ def fitAirfoil(wing,filename):
         BTB = numpy.dot(B.T,B)
         BTR = numpy.dot(B.T,R)
         sol = numpy.linalg.solve(BTB,BTR)
+        sol = numpy.insert(sol, 0, 0, axis=0)
+        for i in range(wing.Ks[f].shape[0]):
+            sol = numpy.insert(sol, sum(ms[:i+1])-(i+1), 0, axis=0)
         P2.append(sol)
 #        Ps = numpy.dot(B,sol)
 #        Ps[:,0] += dR
