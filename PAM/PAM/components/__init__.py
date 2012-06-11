@@ -1,4 +1,4 @@
-from component import component, Property
-from fulljunction import fulljunction, halfjunction
-from fullplate import fullplate
-from halfbody import halfbody
+from component import Component, Property
+from interface import FullInterface, HalfInterface
+from wing import Wing
+from body import Body

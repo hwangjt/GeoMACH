@@ -1,10 +1,10 @@
 from __future__ import division
-from PAM.components import component, Property, airfoils
+from PAM.components import Component, Property, airfoils
 import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
-class fullplate(component):
+class Wing(Component):
 
     def __init__(self, nb, nc, half=False, opentip=False):
         if half:
@@ -199,14 +199,3 @@ class fullplate(component):
         T[2,:] = [   0   ,   0   ,   1   ]
         T0 = numpy.dot(T,T0)
         return T0
-
-
-if __name__ == '__main__':
-
-    f = fullplate([7,8],[9,10])
-    P = f.Ps
-    
-    ax = p3.Axes3D(pylab.figure())
-    for k in range(len(P)):
-        ax.plot_wireframe(P[k][:,:,0],P[k][:,:,1],P[k][:,:,2])
-    pylab.show()

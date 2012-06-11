@@ -3,7 +3,7 @@ import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
-class component(object):
+class Component(object):
         
     def createSurfaces(self, Ks, nu, nv, du, dv, d):
         r = [0,0,0]

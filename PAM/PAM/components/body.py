@@ -1,10 +1,10 @@
 from __future__ import division
-from PAM.components import component, Property, fuse_sections
+from PAM.components import Component, Property, body_sections
 import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
-class halfbody(component):
+class Body(Component):
 
     def __init__(self, nx, ny, nz, full=False):
         if full:
@@ -98,7 +98,7 @@ class halfbody(component):
             }
         self.sections = []
         for i in range(Ns[1].shape[1]):
-            self.sections.append(fuse_sections.circular)
+            self.sections.append(body_sections.circular)
 
     def setSections(self, section, shape):
         Ns = self.Ns
@@ -146,7 +146,7 @@ class halfbody(component):
                             zz = j/(Ns[f].shape[1]-1)
                         elif f==4:
                             zz = -1 + j/(Ns[f].shape[1]-1)
-                        x,y,z = fuse_sections.cone(L,rz,ry,d,e,yy,zz)
+                        x,y,z = body_sections.cone(L,rz,ry,d,e,yy,zz)
                         Qs[f][i,j,:] = self.offset + [posx,posy,0] + [x,y,z] 
                         Qs[f][i,j,0] -= self.props['posx'].data[1]
                         if f==4:
@@ -178,16 +178,3 @@ class halfbody(component):
                         z,y = self.sections[j](rz,ry,t)
                         Qs[f][i,j,:] = self.offset + [posx,posy,0] + [0,y,z]
                         Qs[f][i,j,0] += self.props['noseL'] - self.props['posx'].data[1]
-        
-
-
-if __name__ == '__main__':  
-
-    h = halfbody([2,3],[3,4],[3,3],full=True)
-    P = h.Ps
-    print h.Ks
-    
-    ax = p3.Axes3D(pylab.figure())
-    for k in range(len(P)):
-        ax.plot_wireframe(P[k][:,:,0],P[k][:,:,1],P[k][:,:,2])
-    pylab.show()

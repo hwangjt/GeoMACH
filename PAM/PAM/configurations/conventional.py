@@ -1,72 +1,60 @@
 from __future__ import division
 import numpy
 import sys
-from PAM.components import fullplate, halfbody, fulljunction, halfjunction, fuse_sections
-from PAM.configurations import configuration
+from PAM.components import Wing, Body, FullInterface, HalfInterface, body_sections
+from PAM.configurations import Configuration
 
 
-class conventional(configuration):
+class Conventional(Configuration):
 
     def __init__(self):
-        fuse = halfbody([70,10,10,20,10,10,10,50,10,25,10,10],[25,25,25,25],[15])
-        fuse.translatePoints(0,0,0)
-        wing = fullplate([10,10,10,50],[10,20,10,10])
-        wing.translatePoints(4,0,0)
-        tail = fullplate([30],[25])
-        tail.translatePoints(8,0,0)
-        nacelle = halfbody([50,10,20,30],[30],[20,10,10,20],full=True)
-        nacelle.translatePoints(12,0,0)
-        pylon = fullplate([30],[20],opentip=True)
-        pylon.translatePoints(16,0,0)
-        fin = fullplate([30],[25],half=True)
-        fin.translatePoints(20,0,0)
-        wingfuse = fulljunction(wing, 0, fuse, 2, [2,1], [3,6])
-        tailfuse = fulljunction(tail, 0, fuse, 2, [1,8], [2,10])
-        pylonnacelle = fulljunction(pylon, 0, nacelle, 1, [1,1], [2,3])
-        pylonwing = fulljunction(pylon, 1, wing, 1, [2,1], [0,2])
-        finfuse = halfjunction(fin, 0, fuse, 1, [0,8], [0,10])
+        self.comps = {}
+        self.keys = []
 
-        self.components = []
-        self.components.append(fuse)
-        self.components.append(wing)
-        self.components.append(tail)
-        self.components.append(nacelle)
-        self.components.append(pylon)
-        self.components.append(fin)
-        self.components.append(wingfuse)
-        self.components.append(tailfuse)
-        self.components.append(pylonnacelle)
-        self.components.append(pylonwing)
-        self.components.append(finfuse)
+        self.addComp('fuse', Body([70,10,10,20,10,10,10,50,10,25,10,10],[25,25,25,25],[15]))
+        self.addComp('wing', Wing([10,10,10,50],[10,20,10,10]))
+        self.addComp('tail', Wing([30],[25]))
+        self.addComp('nacelle', Body([50,10,20,30],[30],[20,10,10,20],full=True))
+        self.addComp('pylon', Wing([30],[20],opentip=True))
+        self.addComp('fin', Wing([30],[25],half=True))
+
+        self.separateComps()
+
+        self.addComp('wingfuse', FullInterface(self.comps, 'wing', 0, 'fuse', 2, [2,1], [3,6]))
+        self.addComp('tailfuse', FullInterface(self.comps, 'tail', 0, 'fuse', 2, [1,8], [2,10]))
+        self.addComp('pylonnacelle', FullInterface(self.comps, 'pylon', 0, 'nacelle', 1, [1,1], [2,3]))
+        self.addComp('pylonwing', FullInterface(self.comps, 'pylon', 1, 'wing', 1, [2,1], [0,2]))
+        self.addComp('finfuse', HalfInterface(self.comps, 'fin', 0, 'fuse', 1, [0,8], [0,10]))
 
         self.assembleComponents()
 
-        self.components[0].setSections(2,fuse_sections.rounded2)
-        self.components[0].setSections(3,fuse_sections.rounded2)
-        self.components[0].setSections(4,fuse_sections.rounded2)
-        self.components[0].setSections(5,fuse_sections.rounded2)
-        self.components[0].props['posx'].set([0,10],[0,1])
-        self.components[0].props['posy'].set([0.3,0.5,0.5],[0,0.15,1],w=[1.0,0,0],d=[1,0,0])
-        self.components[0].props['ry'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
-        self.components[0].props['rz'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
+        c = self.comps
+        c['fuse'].setSections(2,body_sections.rounded2)
+        c['fuse'].setSections(3,body_sections.rounded2)
+        c['fuse'].setSections(4,body_sections.rounded2)
+        c['fuse'].setSections(5,body_sections.rounded2)
+        c['fuse'].props['posx'].set([0,10],[0,1])
+        c['fuse'].props['posy'].set([0.3,0.5,0.5],[0,0.15,1],w=[1.0,0,0],d=[1,0,0])
+        c['fuse'].props['ry'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
+        c['fuse'].props['rz'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
 
-        self.components[1].offset[:] = [3.75, 0.3, 0.5]
-        self.components[1].setAirfoil("rae2822.dat")
-        self.components[1].props['posx'].set([0,3.2,4],[0,0.8,1],w=[0.4,1,0])
-        self.components[1].props['posy'].set([0,0.9,2.1],[0,0.8,1],w=[0.5,1,0])
-        self.components[1].props['posz'].set([0,4.5,5],[0,0.8,1],w=[0,1,0])
-        self.components[1].props['prpx'].set([1,1],[0,1])
-        self.components[1].props['prpy'].set([0,0],[0,1])
-        self.components[1].props['chord'].set([2,0.25],[0,1])
+        c['wing'].offset[:] = [3.75, 0.3, 0.5]
+        c['wing'].setAirfoil("rae2822.dat")
+        c['wing'].props['posx'].set([0,3.2,4],[0,0.8,1],w=[0.4,1,0])
+        c['wing'].props['posy'].set([0,0.9,2.1],[0,0.8,1],w=[0.5,1,0])
+        c['wing'].props['posz'].set([0,4.5,5],[0,0.8,1],w=[0,1,0])
+        c['wing'].props['prpx'].set([1,1],[0,1])
+        c['wing'].props['prpy'].set([0,0],[0,1])
+        c['wing'].props['chord'].set([2,0.25],[0,1])
 
-        self.components[2].offset[:] = [8.5, 0.5, 0.35]
-        self.components[2].props['posx'].set([0,1.6],[0,1],w=[0.2,0])
-        self.components[2].props['posy'].set([0,0.3],[0,1],w=[0,0])
-        self.components[2].props['posz'].set([0,1.7],[0,1])
-        self.components[2].props['roty'].set([10,0],[0,1])
-        self.components[2].props['prpx'].set([0,0],[0,1])
-        self.components[2].props['prpy'].set([0,0],[0,1])
-        self.components[2].props['chord'].set([0.85,0.15],[0,1])
+        c['tail'].offset[:] = [8.5, 0.5, 0.35]
+        c['tail'].props['posx'].set([0,1.6],[0,1],w=[0.2,0])
+        c['tail'].props['posy'].set([0,0.3],[0,1],w=[0,0])
+        c['tail'].props['posz'].set([0,1.7],[0,1])
+        c['tail'].props['roty'].set([10,0],[0,1])
+        c['tail'].props['prpx'].set([0,0],[0,1])
+        c['tail'].props['prpy'].set([0,0],[0,1])
+        c['tail'].props['chord'].set([0.85,0.15],[0,1])
 
         e = numpy.zeros((11,4))
         e[0,:] = [0.20, 0.03, 1, 1]
@@ -82,35 +70,35 @@ class conventional(configuration):
         e[10,:] = [1.2, 0.05, 0, 0]
         e[:,:2] *= 0.8
         l = numpy.linspace(0,1,e.shape[0])
-        self.components[3].offset[:] = [3.3, -0.05, 1.5]
-        self.components[3].props['posx'].set(e[:,0],l)
-        self.components[3].props['posy'].set([0,0],[0,1])
-        self.components[3].props['ry'].set(e[:,1],l,e[:,2],e[:,3])
-        self.components[3].props['rz'].set(e[:,1],l,e[:,2],e[:,3])
+        c['nacelle'].offset[:] = [3.3, -0.05, 1.5]
+        c['nacelle'].props['posx'].set(e[:,0],l)
+        c['nacelle'].props['posy'].set([0,0],[0,1])
+        c['nacelle'].props['ry'].set(e[:,1],l,e[:,2],e[:,3])
+        c['nacelle'].props['rz'].set(e[:,1],l,e[:,2],e[:,3])
 
-        self.components[4].offset[:] = [3.8, 0.2, 1.5]
-        self.components[4].setAirfoil("naca0015")
-        self.components[4].props['posx'].set([0,0.2],[0,1])
-        self.components[4].props['posy'].set([0,0.08],[0,1])
-        self.components[4].props['posz'].set([0,0],[0,1])
-        self.components[4].props['prpx'].set([1,1],[0,1])
-        self.components[4].props['prpy'].set([0,0],[0,1])
-        self.components[4].props['chord'].set([0.75,0.75],[0,1])
+        c['pylon'].offset[:] = [3.8, 0.2, 1.5]
+        c['pylon'].setAirfoil("naca0015")
+        c['pylon'].props['posx'].set([0,0.2],[0,1])
+        c['pylon'].props['posy'].set([0,0.08],[0,1])
+        c['pylon'].props['posz'].set([0,0],[0,1])
+        c['pylon'].props['prpx'].set([1,1],[0,1])
+        c['pylon'].props['prpy'].set([0,0],[0,1])
+        c['pylon'].props['chord'].set([0.75,0.75],[0,1])
 
-        self.components[5].offset[:] = [8.5, 0.85, 0]
-        self.components[5].props['posx'].set([0,1.5],[0,1])
-        self.components[5].props['posy'].set([0,1.4],[0,1])
-        self.components[5].props['posz'].set([0,0],[0,1])
-        self.components[5].props['rotz'].set([10,0],[0,1])
-        self.components[5].props['prpx'].set([1,1],[0,1])
-        self.components[5].props['prpy'].set([0,0],[0,1])
-        self.components[5].props['chord'].set([1,0.2],[0,1])
+        c['fin'].offset[:] = [8.5, 0.85, 0]
+        c['fin'].props['posx'].set([0,1.5],[0,1])
+        c['fin'].props['posy'].set([0,1.4],[0,1])
+        c['fin'].props['posz'].set([0,0],[0,1])
+        c['fin'].props['rotz'].set([10,0],[0,1])
+        c['fin'].props['prpx'].set([1,1],[0,1])
+        c['fin'].props['prpy'].set([0,0],[0,1])
+        c['fin'].props['chord'].set([1,0.2],[0,1])
 
         self.computePoints()
 
 if __name__ == '__main__':
 
-    aircraft = conventional()
+    aircraft = Conventional()
     aircraft.oml0.write2Tec('conventional')
     aircraft.oml0.write2TecC('conventionalC')
     aircraft.plot()

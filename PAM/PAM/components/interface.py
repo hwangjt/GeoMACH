@@ -1,11 +1,11 @@
 from __future__ import division
-from PAM.components import component
+from PAM.components import Component
 import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
 
-class junction(component):
+class Interface(Component):
 
     def tup(self, v):
         return v[0], v[1]
@@ -121,9 +121,11 @@ class junction(component):
 
 
 
-class fulljunction(junction):
+class FullInterface(Interface):
 
-    def __init__(self, mComp, mSide, fComp, fFace, NW, SE):
+    def __init__(self, comps, mComp, mSide, fComp, fFace, NW, SE):
+        mComp = comps[mComp]
+        fComp = comps[fComp]
         self.faces = numpy.zeros((1,2),int)
         self.faces[0,:] = [1,2]
 
@@ -288,9 +290,11 @@ class fulljunction(junction):
 
 
 
-class halfjunction(junction):
+class HalfInterface(Interface):
 
-    def __init__(self, mComp, mSide, fComp, fFace, SW, SE):
+    def __init__(self, comps, mComp, mSide, fComp, fFace, SW, SE):
+        mComp = comps[mComp]
+        fComp = comps[fComp]
         self.faces = numpy.zeros((1,2),int)
         self.faces[0,:] = [1,2]
         
