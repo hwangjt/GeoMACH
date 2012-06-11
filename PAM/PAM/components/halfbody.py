@@ -59,55 +59,30 @@ class halfbody(component):
     def setDOFs(self):
         oml0 = self.oml0
         for f in range(len(self.Ks)):
-            for j in range(self.Ks[f].shape[1]):
-                for i in range(self.Ks[f].shape[0]):
-                    oml0.surf_c1[self.Ks[f][i,j],:,:] = True
+            self.setSurfC1(f, val=True)
         if not self.full:
-            for f in [0]:
-                for j in [0]:
-                    for i in range(self.Ks[f].shape[0]):
-                        oml0.surf_c1[self.Ks[f][i,j],:,0] = False
-                        edge = oml0.surf_edge[self.Ks[f][i,j],0,0]
-                        edge = abs(edge) - 1
-                        oml0.edge_c1[edge,:] = True
-            for f in [1]:
-                for j in range(self.Ks[f].shape[1]):
-                    for i in [0]:
-                        oml0.surf_c1[self.Ks[f][i,j],0,:] = False
-                        edge = oml0.surf_edge[self.Ks[f][i,j],1,0]
-                        edge = abs(edge) - 1
-                        oml0.edge_c1[edge,:] = True
-            for f in [3]:
-                for j in range(self.Ks[f].shape[1]):
-                    for i in [-1]:
-                        oml0.surf_c1[self.Ks[f][i,j],-1,:] = False
-                        edge = oml0.surf_edge[self.Ks[f][i,j],1,1]
-                        edge = abs(edge) - 1
-                        oml0.edge_c1[edge,:] = True
-            for f in [4]:
-                for j in [-1]:
-                    for i in range(self.Ks[f].shape[0]):
-                        oml0.surf_c1[self.Ks[f][i,j],:,-1] = False
-                        edge = oml0.surf_edge[self.Ks[f][i,j],0,1]
-                        edge = abs(edge) - 1
-                        oml0.edge_c1[edge,:] = True
+            self.setSurfC1(0, j=0)
+            self.setEdgeC1(0, j=0)
+            self.setSurfC1(1, i=0)
+            self.setEdgeC1(1, i=0)
+            self.setSurfC1(3, i=-1)
+            self.setEdgeC1(3, i=-1)
+            self.setSurfC1(4, j=-1)
+            self.setEdgeC1(4, j=-1)
 
     def isExteriorDOF(self, f, uType, vType):
+        check = self.check
         value = False
         if self.full:
             value = False
         elif f==0:
-            if uType==2 and vType==0:
-                value = True
+            value = check(uType,vType,v=0)
         elif f==1:
-            if uType==0 and vType==2:
-                value = True
+            value = check(uType,vType,u=0)
         elif f==3:
-            if uType==-1 and vType==2:
-                value = True
+            value = check(uType,vType,u=-1)
         elif f==4:
-            if uType==2 and vType==-1:
-                value = True
+            value = check(uType,vType,v=-1)
         return value
 
     def initializeParameters(self):

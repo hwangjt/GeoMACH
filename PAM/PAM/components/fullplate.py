@@ -37,79 +37,48 @@ class fullplate(component):
         self.nc = nc
         self.Ps = Ps
         self.Ks = Ks
+        self.half = half
         self.opentip = opentip
 
         self.oml0 = []
 
-    def setDOFs(self):
+    def setDOFs(self):        
+        half = self.half
         opentip = self.opentip
         oml0 = self.oml0
         nf = len(self.Ks)
         for f in range(nf):
-            for j in range(self.Ks[f].shape[1]):
-                for i in range(self.Ks[f].shape[0]):
-                    oml0.surf_c1[self.Ks[f][i,j],:,:] = True
-            for i in range(self.Ks[f].shape[0]):
-                oml0.surf_c1[self.Ks[f][i,0],:,0] = False
-            if opentip:
-                for i in range(self.Ks[f].shape[0]):
-                    oml0.surf_c1[self.Ks[f][i,-1],:,-1] = False
-            for j in range(self.Ks[f].shape[1]):
-                oml0.surf_c1[self.Ks[f][-f,j],-f,:] = False
+            self.setSurfC1(f, val=True)
+            self.setSurfC1(f, j=0)
+            self.setSurfC1(f, i=-f)
+            if opentip or half:
+                self.setSurfC1(f, j=-1)
+            if half:
+                self.setSurfC1(f, i=f-1)
         for f in range(nf):
-            for i in range(self.Ks[f].shape[0]):
-                edge = oml0.surf_edge[self.Ks[f][i,0],0,0]
-                edge = abs(edge) - 1
-                oml0.edge_c1[edge,:] = True
-                if opentip:
-                    edge = oml0.surf_edge[self.Ks[f][i,-1],0,1]
-                    edge = abs(edge) - 1
-                    oml0.edge_c1[edge,:] = True                    
-            edge = oml0.surf_edge[self.Ks[f][-f,0],0,0]
-            if edge > 0:
-                oml0.edge_c1[abs(edge)-1,-f] = False
-            else:
-                oml0.edge_c1[abs(edge)-1,f-1] = False  
-            if opentip:            
-                edge = oml0.surf_edge[self.Ks[f][-f,-1],0,1]
-                if edge > 0:
-                    oml0.edge_c1[abs(edge)-1,-f] = False
-                else:
-                    oml0.edge_c1[abs(edge)-1,f-1] = False   
+            self.setEdgeC1(f, j=0)
+            self.setEdgeC1(f, i=-f)
+            if opentip or half:
+                self.setEdgeC1(f, j=-1)
+            if half:
+                self.setEdgeC1(f, i=f-1)
         for f in range(nf):
-            for j in range(self.Ks[f].shape[1]):
-                edge = oml0.surf_edge[self.Ks[f][-f,j],1,-f]
-                edge = abs(edge) - 1
-                oml0.edge_c1[edge,:] = True
-            edge = oml0.surf_edge[self.Ks[f][-f,0],1,-f]
-            if edge > 0:
-                oml0.edge_c1[abs(edge)-1,0] = False
-            else:
-                oml0.edge_c1[abs(edge)-1,-1] = False
-            if opentip:
-                edge = oml0.surf_edge[self.Ks[f][-f,-1],1,-f]
-                if edge > 0:
-                    oml0.edge_c1[abs(edge)-1,-1] = False
-                else:
-                    oml0.edge_c1[abs(edge)-1,0] = False
+            self.setCornerC1(f, -f, 0)
+            if opentip or half:
+                self.setCornerC1(f, -f, -1)
+            if half:
+                self.setCornerC1(f, f-1, 0)
+                self.setCornerC1(f, f-1, -1)
 
     def isExteriorDOF(self, f, uType, vType):
+        check = self.check
+        half = self.half
         opentip = self.opentip
-        value = False
-        if f==0:
-            if uType==2 and vType==0:
-                value = True
-            elif uType==0 and (vType==2 or vType==0):
-                value = True
-            elif (uType==2 or uType==0) and vType==-1 and opentip:
-                value = True
-        elif f==1:
-            if uType==2 and vType==0:
-                value = True
-            elif uType==-1 and (vType==2 or vType==0):
-                value = True
-            elif (uType==2 or uType==-1) and vType==-1 and opentip:
-                value = True
+        value = check(uType,vType,v=0) or check(uType,vType,u=-f) or check(uType,vType,u=-f,v=0)
+        if opentip or half:
+            value = value or check(uType,vType,v=-1) or check(uType,vType,u=-f,v=-1)
+        if half:
+            value = value or check(uType,vType,u=f-1) or check(uType,vType,u=f-1,v=0) or check(uType,vType,u=f-1,v=-1)
         return value
 
     def initializeParameters(self):
@@ -135,6 +104,8 @@ class fullplate(component):
         for f in range(len(self.Ks)):
             for j in range(self.Ns[f].shape[1]):
                 self.SECTshape[f,:,j,:2] = Ps[f][:,:]
+            if self.half:
+                self.SECTshape[f,:,:,1] *= -1
             self.SECTshape[f,-f,:,0] = 1
         
     def propagateQs(self):
@@ -196,23 +167,6 @@ class fullplate(component):
             q = arctan((y**2+z**2)**0.5,x) 
             self.SECTrot0[j,:2] = [p,q]
             self.SECTrot0[j,:2] *= 180.0/numpy.pi
-
-    def computeCproj(self):
-        ax = p3.Axes3D(pylab.figure())
-        Ns = self.Ns
-        iLE = numpy.zeros((Ns[0].shape[1],3))
-        iTE = numpy.zeros((Ns[0].shape[1],3))
-        for j in range(Ns[0].shape[1]):
-            v = Ns[0][0,j,4]
-            jj = Ns[0][0,j,3]
-            surf = self.Ks[0][-1,jj]
-            col = self.oml0.J.getcol(self.oml0.computeIndex(surf,-1,v,1)).tocsc()
-            index = col.indices[numpy.argmax(col.data)]
-            iLE[j] = self.oml0.computeProjection(self.oml0.P[index],surf)[1:]
-            surf = self.Ks[0][0,jj]
-            col = self.oml0.J.getcol(self.oml0.computeIndex(surf,0,v,1)).tocsc()
-            index = col.indices[numpy.argmax(col.data)]
-            iTE[j] = self.oml0.computeProjection(self.oml0.P[index],surf)[1:]
 
     def computeRtnMtx(self, rot):
         p,q,r = rot*numpy.pi/180.0

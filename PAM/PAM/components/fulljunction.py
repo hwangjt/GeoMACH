@@ -4,7 +4,122 @@ import numpy, pylab
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
-class fulljunction(component):
+
+class junction(component):
+
+    def tup(self, v):
+        return v[0], v[1]
+
+    def mSpliceP(self, face, ind):
+        mPs = self.mComp.Ps
+        mKs = self.mComp.Ks[face]
+        mSide = self.mSide
+        if mSide==face:
+            return mPs[mKs[-1-ind,-mSide]][::-1,-mSide,:]
+        else:
+            return mPs[mKs[ind,-mSide]][:,-mSide,:]
+
+    def fSpliceP(self, ind, u, v):
+        E = self.E
+        N = self.N
+        fPs = self.fComp.Ps
+        fKs = self.fComp.Ks[self.fFace]
+        P = fPs[fKs[self.tup(ind)]]
+        nu = P.shape[0]
+        nv = P.shape[1]
+        if N[0]==-1:
+            u,v = u,v
+            du = 1
+            dv = 1
+        elif N[0]==1:
+            u,v = u,v
+            du = -1
+            dv = -1
+        elif E[0]==-1: 
+            u,v = v,u
+            du = -1
+            dv = 1
+        elif E[0]==1: 
+            u,v = v,u
+            du = 1
+            dv = -1
+            
+        if v==None and dv==1:
+            P = P
+        elif v==None and dv==-1:
+            P = P[:,::-1]
+        elif dv==1:
+            P = P[:,v]
+        elif dv==-1:
+            if v<0:
+                v += nv
+            P = P[:,nv-1 - v]
+
+        if u==None and du==1:
+            P = P
+        elif u==None and du==-1:
+            P = P[::-1]
+        elif du==1:
+            P = P[u]
+        elif du==-1:
+            if u<0:
+                u += nu
+            P = P[nu-1 - u]
+
+        return P
+
+    def mSpliceQ(self, face, ind):
+        mQs = self.mComp.Qs[face]
+        mSide = self.mSide
+        if mSide==face:
+            return mQs[-1-ind,-mSide,:]
+        else:
+            return mQs[ind,-mSide,:]        
+
+    def fSpliceQ(self, i, j, u, v):
+        fi = self.fComp.getni(self.fFace,0)
+        fj = self.fComp.getni(self.fFace,1)    
+        fQs = self.fComp.Qs[self.fFace]
+        N = self.N
+        E = self.E
+        NW = self.NW
+        if N[0]==-1:
+            u,v = u,v
+            i,j = i,j
+            i += 0
+            j += 0
+        elif N[0]==1:
+            u,v = -u,-v
+            i,j = -i,-j
+            i += 1
+            j += 1
+        elif E[0]==-1: 
+            u,v = -v,u
+            i,j = -j,i
+            i += 1
+            j += 0
+        elif E[0]==1: 
+            u,v = v,-u
+            i,j = j,-i
+            i += 0
+            j += 1
+        uu = sum(fi[:NW[0]+i])+u
+        vv = sum(fj[:NW[1]+j])+v
+        if uu == -1:
+            uu = 0
+        elif uu == fQs.shape[0]:
+            uu = -1
+        if vv == -1:
+            vv = 0
+        elif vv == fQs.shape[1]:
+            vv = -1
+        return fQs[uu,vv]
+
+    def initializeParameters(self):
+        Ns = self.Ns
+
+
+class fulljunction(junction):
 
     def __init__(self, mComp, mSide, fComp, fFace, NW, SE):
         self.faces = numpy.zeros((1,2),int)
@@ -114,73 +229,10 @@ class fulljunction(component):
 
         self.oml0 = []
 
-    def tup(self, v):
-        return v[0], v[1]
-
-    def mSpliceP(self, face, ind):
-        mPs = self.mComp.Ps
-        mKs = self.mComp.Ks[face]
-        mSide = self.mSide
-        if mSide==face:
-            return mPs[mKs[-1-ind,-mSide]][::-1,-mSide,:]
-        else:
-            return mPs[mKs[ind,-mSide]][:,-mSide,:]
-
-    def fSpliceP(self, ind, u, v):
-        E = self.E
-        N = self.N
-        fPs = self.fComp.Ps
-        fKs = self.fComp.Ks[self.fFace]
-        P = fPs[fKs[self.tup(ind)]]
-        nu = P.shape[0]
-        nv = P.shape[1]
-        if N[0]==-1:
-            u,v = u,v
-            du = 1
-            dv = 1
-        elif N[0]==1:
-            u,v = u,v
-            du = -1
-            dv = -1
-        elif E[0]==-1: 
-            u,v = v,u
-            du = -1
-            dv = 1
-        elif E[0]==1: 
-            u,v = v,u
-            du = 1
-            dv = -1
-            
-        if v==None and dv==1:
-            P = P
-        elif v==None and dv==-1:
-            P = P[:,::-1]
-        elif dv==1:
-            P = P[:,v]
-        elif dv==-1:
-            if v<0:
-                v += nv
-            P = P[:,nv-1 - v]
-
-        if u==None and du==1:
-            P = P
-        elif u==None and du==-1:
-            P = P[::-1]
-        elif du==1:
-            P = P[u]
-        elif du==-1:
-            if u<0:
-                u += nu
-            P = P[nu-1 - u]
-
-        return P
-
     def setDOFs(self):
         oml0 = self.oml0
         Ks = self.Ks
-        for j in range(Ks[0].shape[1]):
-            for i in range(2):
-                oml0.surf_c1[Ks[0][i,j],:,:] = True
+        self.setSurfC1(0, val=True)
         for j in range(1,Ks[0].shape[1]-1):
             for i in range(2):
                 oml0.surf_c1[Ks[0][i,j],i-1,:] = False
@@ -191,9 +243,6 @@ class fulljunction(component):
 
     def isExteriorDOF(self, f, uType, vType):
         return False
-
-    def initializeParameters(self):
-        Ns = self.Ns
 
     def propagateQs(self):
         si = self.getni(0,0)
@@ -234,50 +283,3 @@ class fulljunction(component):
             Q1 = Qs[0][i,sum(sj[:-1])-1]
             Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(1,0,sj[-1]+3)[1:-1],Q1)
             Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(0,1,sj[-1]+3)[1:-1],Q2)
-
-    def mSpliceQ(self, face, ind):
-        mQs = self.mComp.Qs[face]
-        mSide = self.mSide
-        if mSide==face:
-            return mQs[-1-ind,-mSide,:]
-        else:
-            return mQs[ind,-mSide,:]        
-
-    def fSpliceQ(self, i, j, u, v):
-        fi = self.fComp.getni(self.fFace,0)
-        fj = self.fComp.getni(self.fFace,1)    
-        fQs = self.fComp.Qs[self.fFace]
-        N = self.N
-        E = self.E
-        NW = self.NW
-        if N[0]==-1:
-            u,v = u,v
-            i,j = i,j
-            i += 0
-            j += 0
-        elif N[0]==1:
-            u,v = -u,-v
-            i,j = -i,-j
-            i += 1
-            j += 1
-        elif E[0]==-1: 
-            u,v = -v,u
-            i,j = -j,i
-            i += 1
-            j += 0
-        elif E[0]==1: 
-            u,v = v,-u
-            i,j = j,-i
-            i += 0
-            j += 1
-        uu = sum(fi[:NW[0]+i])+u
-        vv = sum(fj[:NW[1]+j])+v
-        if uu == -1:
-            uu = 0
-        elif uu == fQs.shape[0]:
-            uu = -1
-        if vv == -1:
-            vv = 0
-        elif vv == fQs.shape[1]:
-            vv = -1
-        return fQs[uu,vv]
