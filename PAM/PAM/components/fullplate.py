@@ -7,31 +7,35 @@ import mpl_toolkits.mplot3d.axes3d as p3
 class fullplate(component):
 
     def __init__(self, nb, nc, half=False, opentip=False):
-        self.faces = numpy.zeros((2,2),int)
-        self.faces[0,:] = [1,2]
-        self.faces[1,:] = [-1,2]
+        if half:
+            self.faces = numpy.zeros((1,2),int)
+            self.faces[0,:] = [1,2]
+        else:
+            self.faces = numpy.zeros((2,2),int)
+            self.faces[0,:] = [1,2]
+            self.faces[1,:] = [-1,2]
 
         Ps = []
         Ks = []
 
-        P, K = self.createSurfaces(Ks, nc[::-1], nb, -1, 3, 0)
-        for k in range(len(P)):
-            for v in range(P[k].shape[1]):
-                for u in range(P[k].shape[0]):
-                    if (opentip or P[k][u,v,2]!=1) and P[k][u,v,0]!=0 and P[k][u,v,0]!=1:
-                        P[k][u,v,1] = 1
-        Ps.extend(P)
-        Ks.append(K)
-
         if not half:
-            P, K = self.createSurfaces(Ks, nc, nb, 1, 3, 0)
+            P, K = self.createSurfaces(Ks, nc[::-1], nb, -1, 3, 0)
             for k in range(len(P)):
                 for v in range(P[k].shape[1]):
                     for u in range(P[k].shape[0]):
                         if (opentip or P[k][u,v,2]!=1) and P[k][u,v,0]!=0 and P[k][u,v,0]!=1:
-                            P[k][u,v,1] = -1
+                            P[k][u,v,1] = 1
             Ps.extend(P)
             Ks.append(K)
+
+        P, K = self.createSurfaces(Ks, nc, nb, 1, 3, 0)
+        for k in range(len(P)):
+            for v in range(P[k].shape[1]):
+                for u in range(P[k].shape[0]):
+                    if (opentip or P[k][u,v,2]!=1) and P[k][u,v,0]!=0 and P[k][u,v,0]!=1:
+                        P[k][u,v,1] = -1
+        Ps.extend(P)
+        Ks.append(K)
 
         self.nb = nb
         self.nc = nc
@@ -70,7 +74,7 @@ class fullplate(component):
                 self.setCornerC1(f, f-1, 0)
                 self.setCornerC1(f, f-1, -1)
 
-    def isExteriorDOF(self, f, uType, vType):
+    def isExteriorDOF(self, f, uType, vType, i, j):
         check = self.check
         half = self.half
         opentip = self.opentip
@@ -100,13 +104,21 @@ class fullplate(component):
         self.setAirfoil("naca0012.dat")
 
     def setAirfoil(self,filename):
-        Ps = airfoils.fitAirfoil(self,filename)
+        airfoil = airfoils.getAirfoil(filename)
+        if self.half:
+            airfoil[0][:,:] = airfoil[1][::-1,:]
+        Ps = airfoils.fitAirfoil(self,airfoil)
         for f in range(len(self.Ks)):
             for j in range(self.Ns[f].shape[1]):
-                self.SECTshape[f,:,j,:2] = Ps[f][:,:]
-            if self.half:
-                self.SECTshape[f,:,:,1] *= -1
-            self.SECTshape[f,-f,:,0] = 1
+                if self.half:
+                    self.SECTshape[f,:,j,:2] = Ps[f][::-1,:]
+                else:
+                    self.SECTshape[f,:,j,:2] = Ps[f][:,:]
+#                self.SECTshape[f,:,j,0] = numpy.linspace(0,1,self.SECTshape[f,:,j,0].shape[0])
+#                self.SECTshape[f,:,j,1] = 0
+        if self.half:
+            self.SECTshape[0,:,-1,1] = 0
+        
         
     def propagateQs(self):
         a = 0.25

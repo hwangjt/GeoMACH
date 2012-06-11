@@ -70,7 +70,7 @@ class halfbody(component):
             self.setSurfC1(4, j=-1)
             self.setEdgeC1(4, j=-1)
 
-    def isExteriorDOF(self, f, uType, vType):
+    def isExteriorDOF(self, f, uType, vType, i, j):
         check = self.check
         value = False
         if self.full:

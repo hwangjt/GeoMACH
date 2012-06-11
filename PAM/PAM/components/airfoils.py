@@ -4,7 +4,7 @@ import PUBS
 
 
 
-def readDat(filename):
+def getAirfoil(filename):
     if filename[:4]=='naca' or filename[:4]=='NACA':
         n = 50
         m = int(filename[4])/100.0
@@ -27,9 +27,6 @@ def readDat(filename):
         lower[:,0] = x
         upper[:,1] = ys[::-1] + yc[::-1]
         lower[:,1] = -ys + yc
-#        pylab.plot(upper[:,0],upper[:,1])
-#        pylab.plot(lower[:,0],lower[:,1])
-#        pylab.show()
     else:
         data = numpy.genfromtxt('../components/airfoils/'+filename)    
         if data[0,0] > data[1,0]:
@@ -42,11 +39,10 @@ def readDat(filename):
                     mark = i
             upper = data[mark::-1,:]
             lower = data[mark+1:,:]
-    return upper, lower
+    return [upper, lower]
 
-def fitAirfoil(wing,filename):
+def fitAirfoil(wing,airfoil):
     oml0 = wing.oml0
-    airfoil = readDat(filename)
     P1 = []
     P2 = []
     for f in range(len(wing.Ks)):
@@ -101,6 +97,7 @@ def fitAirfoil(wing,filename):
         sol = numpy.insert(sol, 0, 0, axis=0)
         for i in range(wing.Ks[f].shape[0]):
             sol = numpy.insert(sol, sum(ms[:i+1])-(i+1), 0, axis=0)
+        sol[-f,0] = 1
         P2.append(sol)
 #        Ps = numpy.dot(B,sol)
 #        Ps[:,0] += dR

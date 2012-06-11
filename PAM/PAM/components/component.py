@@ -91,7 +91,7 @@ class component(object):
                     uType = self.classifyC(u,i,Ns[f].shape[0])
                     vType = self.classifyC(v,j,Ns[f].shape[1])
                     isInteriorDOF = (uType==2 and vType==2)
-                    if surf != -1 and (isInteriorDOF or self.isExteriorDOF(f,uType,vType)):
+                    if surf != -1 and (isInteriorDOF or self.isExteriorDOF(f,uType,vType,ii,jj)):
                         Ns[f][i,j,0] = oml0.computeIndex(surf,u,v,2)
                         Ns[f][i,j,1] = ii
                         Ns[f][i,j,2] = u

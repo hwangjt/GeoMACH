@@ -8,7 +8,7 @@ from PAM.configurations import configuration
 class wingbodytailengine(configuration):
 
     def __init__(self):
-        fuse = halfbody([70,10,10,20,10,10,10,50,10,25,10,10],[25,25,25,25,25,25],[15])
+        fuse = halfbody([70,10,10,20,10,10,10,50,10,25,10,10],[25,25,25,25],[15])
         fuse.translatePoints(0,0,0)
         wing = fullplate([10,10,10,50],[10,20,10,10])
         wing.translatePoints(4,0,0)
@@ -18,8 +18,8 @@ class wingbodytailengine(configuration):
         nacelle.translatePoints(12,0,0)
         pylon = fullplate([30],[20],opentip=True)
         pylon.translatePoints(16,0,0)
-        wingfuse = fulljunction(wing, 0, fuse, 2, [4,1], [5,6])
-        tailfuse = fulljunction(tail, 0, fuse, 2, [2,8], [3,10])
+        wingfuse = fulljunction(wing, 0, fuse, 2, [2,1], [3,6])
+        tailfuse = fulljunction(tail, 0, fuse, 2, [1,8], [2,10])
         pylonnacelle = fulljunction(pylon, 0, nacelle, 1, [1,1], [2,3])
         pylonwing = fulljunction(pylon, 1, wing, 1, [2,1], [0,2])
 
