@@ -41,7 +41,7 @@ def getAirfoil(filename):
             lower = data[mark+1:,:]
     return [upper, lower]
 
-def fitAirfoil(wing,airfoil):
+def fitAirfoil(wing,airfoil,rev=False):
     oml0 = wing.oml0
     P1 = []
     P2 = []
@@ -67,14 +67,17 @@ def fitAirfoil(wing,airfoil):
         for i in range(n):
             P1[-1][i,:] = oml1.P[oml1.computeIndex(0,i,0,0),:2]
 
-        jQ = numpy.zeros(sum(ms)-2*len(ms)+1)
+        jQ = numpy.zeros(sum(ms)-2*len(ms)+1,int)
         counter = 0
         for i in range(wing.Ks[f].shape[0]):
             for u in range(ms[i]-2):
                 jQ[counter] = oml0.computeIndex(wing.Ks[f][i,0],u+1,0,2)
                 counter += 1
-        jQ[counter] = oml0.computeIndex(wing.Ks[f][-f,0],-f,0,2)
-        iP = numpy.zeros(sum(ns)-len(ns)-1)
+        if rev:
+            jQ[counter] = oml0.computeIndex(wing.Ks[f][-1,0],-1,0,2)
+        else:
+            jQ[counter] = oml0.computeIndex(wing.Ks[f][-f,0],-f,0,2)
+        iP = numpy.zeros(sum(ns)-len(ns)-1,int)
         counter = 0
         for i in range(wing.Ks[f].shape[0]):
             for u in range(ns[i]-1):
@@ -97,7 +100,10 @@ def fitAirfoil(wing,airfoil):
         sol = numpy.insert(sol, 0, 0, axis=0)
         for i in range(wing.Ks[f].shape[0]):
             sol = numpy.insert(sol, sum(ms[:i+1])-(i+1), 0, axis=0)
-        sol[-f,0] = 1
+        if rev:
+            sol[-1,0] = 1
+        else:
+            sol[-f,0] = 1
         P2.append(sol)
 #        Ps = numpy.dot(B,sol)
 #        Ps[:,0] += dR

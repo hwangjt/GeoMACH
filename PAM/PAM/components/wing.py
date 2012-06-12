@@ -106,19 +106,13 @@ class Wing(Component):
     def setAirfoil(self,filename):
         airfoil = airfoils.getAirfoil(filename)
         if self.half:
-            airfoil[0][:,:] = airfoil[1][::-1,:]
-        Ps = airfoils.fitAirfoil(self,airfoil)
+            airfoil[0][:,:] = airfoil[1][:,:]
+        Ps = airfoils.fitAirfoil(self,airfoil,rev=self.half)
         for f in range(len(self.Ks)):
             for j in range(self.Ns[f].shape[1]):
-                if self.half:
-                    self.SECTshape[f,:,j,:2] = Ps[f][::-1,:]
-                else:
-                    self.SECTshape[f,:,j,:2] = Ps[f][:,:]
-#                self.SECTshape[f,:,j,0] = numpy.linspace(0,1,self.SECTshape[f,:,j,0].shape[0])
-#                self.SECTshape[f,:,j,1] = 0
+                self.SECTshape[f,:,j,:2] = Ps[f][:,:]
         if self.half:
             self.SECTshape[0,:,-1,1] = 0
-        
         
     def propagateQs(self):
         a = 0.25
@@ -139,6 +133,10 @@ class Wing(Component):
                 for i in range(Ns[f].shape[0]):
                     Qs[f][i,j,:] = numpy.dot(T,self.SECTshape[f,i,j,:]-[a,b,0])*self.props['chord'].data[j]
                     Qs[f][i,j,:] += self.offset + pos
+        if self.half:
+            Qs[0][:,-1,2] = 0
+            Qs[0][0,:,2] = 0
+            Qs[0][-1,:,2] = 0
 
     def computeRotations(self):
         def arctan(x,y):

@@ -77,7 +77,7 @@ class Conventional(Configuration):
         c['nacelle'].props['rz'].set(e[:,1],l,e[:,2],e[:,3])
 
         c['pylon'].offset[:] = [3.8, 0.2, 1.5]
-        c['pylon'].setAirfoil("naca0015")
+        c['pylon'].setAirfoil("naca0010")
         c['pylon'].props['posx'].set([0,0.2],[0,1])
         c['pylon'].props['posy'].set([0,0.08],[0,1])
         c['pylon'].props['posz'].set([0,0],[0,1])

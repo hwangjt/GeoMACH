@@ -56,6 +56,13 @@ class Configuration(object):
             comp.updateQs()
         self.oml0.computePoints()
 
+    def updateComponents(self):
+        self.oml0.updateBsplines()
+        for k in range(len(self.comps)):
+            comp = self.comps[self.keys[k]]
+            comp.initializeDOFs()
+        self.computePoints()
+
     def computePoints(self):
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
