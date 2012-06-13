@@ -44,7 +44,7 @@ class Configuration(object):
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
             comp.oml0 = self.oml0
-            comp.computeDims()
+            comp.computeDims(self)
             comp.setDOFs()
         self.oml0.updateBsplines()
 
@@ -60,6 +60,7 @@ class Configuration(object):
         self.oml0.updateBsplines()
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
+            comp.computeDims(self)
             comp.initializeDOFs()
         self.computePoints()
 

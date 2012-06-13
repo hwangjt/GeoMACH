@@ -9,11 +9,6 @@ def isContained(t, t1, t2):
 def nMap(t, t1, t2):
     return (t-t1)/(t2-t1)
 
-def circular(rz, ry, t):
-    z = rz*numpy.cos(t*numpy.pi)
-    y = ry*numpy.sin(t*numpy.pi)
-    return z, y
-
 def rounded2(rz, ry, t):
     if isContained(t,0,1):
         z,y = circular(rz, ry, t)
@@ -30,10 +25,15 @@ def rounded3(rz, ry, t):
 
 def rounded4(rz, ry, t):
     if isContained(t,0,1):
-        z,y = rounded(rz, ry, t, t1=0.4, t2=0.7)
+        z,y = rounded(rz, ry, t, t1=0.5, t2=0.5)
     else:
         z,y = rounded(rz, ry, t)
     return z,y 
+
+def circular(rz, ry, t):
+    z = rz*numpy.cos(t*numpy.pi)
+    y = ry*numpy.sin(t*numpy.pi)
+    return z, y
 
 def rounded(rz, ry, t, t1=0.3, t2=0.7):
     t1 /= 2.0

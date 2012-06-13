@@ -114,7 +114,7 @@ class Component(object):
         else:
             return 2
 
-    def computeDims(self):
+    def computeDims(self, aircraft):
         ndims = int(numpy.max(abs(self.faces)))
         oml0 = self.oml0
         Ks = self.Ks
