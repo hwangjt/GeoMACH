@@ -92,22 +92,30 @@ class Body(Component):
             'posy':Property(Ns[1].shape[1]),
             'ry':Property(Ns[1].shape[1]),
             'rz':Property(Ns[1].shape[1]),
+            't1U':Property(Ns[1].shape[1]),
+            't2U':Property(Ns[1].shape[1]),
+            't1L':Property(Ns[1].shape[1]),
+            't2L':Property(Ns[1].shape[1]),
             'noseL':0.1,
             'tailL':0.05
             }
-        self.sections = []
-        for i in range(Ns[1].shape[1]):
-            self.sections.append(body_sections.circular)
+        self.setSections()
 
-    def setSections(self, section, shape):
+    def setSections(self, sections=[], t1U=0, t2U=1, t1L=0, t2L=1):
         Ns = self.Ns
         for j in range(Ns[2].shape[1]):
             for i in range(Ns[2].shape[0]):
                 val = Ns[2][i,j,3]
                 if not val == -1:
                     break
-            if val==section:
-                self.sections[j] = shape
+            found = False
+            for k in range(len(sections)):
+                found = found or (val==sections[k])
+            if found or sections==[]:
+                self.props['t1U'].data[j] = t1U
+                self.props['t2U'].data[j] = t2U
+                self.props['t1L'].data[j] = t1L
+                self.props['t2L'].data[j] = t2L
 
     def propagateQs(self):
         wR = 0.8
@@ -158,6 +166,10 @@ class Body(Component):
                     posy = self.props['posy'].data[j]
                     rz = self.props['rz'].data[j]
                     ry = self.props['ry'].data[j]
+                    t1U = self.props['t1U'].data[j]
+                    t2U = self.props['t2U'].data[j]
+                    t1L = self.props['t1L'].data[j]
+                    t2L = self.props['t2L'].data[j]
                     for i in range(Ns[f].shape[0]):
                         ii = i/(Ns[f].shape[0]-1)
                         if f==1 and self.full:
@@ -174,6 +186,9 @@ class Body(Component):
                             t = 5/4.0 - ii/2.0
                         if t < 0:
                             t += 2
-                        z,y = self.sections[j](rz,ry,t)
+                        if t <= 1:
+                            z,y = body_sections.rounded(rz, ry, t, t1U, t2U)
+                        else:
+                            z,y = body_sections.rounded(rz, ry, t, t1L, t2L)
                         Qs[f][i,j,:] = self.offset + [posx,posy,0] + [0,y,z]
                         Qs[f][i,j,0] += self.props['noseL'] - self.props['posx'].data[1]

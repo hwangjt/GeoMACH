@@ -29,10 +29,7 @@ class Conventional(Configuration):
         self.assembleComponents()
 
         c = self.comps
-        c['fuse'].setSections(2,body_sections.rounded2)
-        c['fuse'].setSections(3,body_sections.rounded2)
-        c['fuse'].setSections(4,body_sections.rounded2)
-        c['fuse'].setSections(5,body_sections.rounded2)
+        c['fuse'].setSections(sections=[2,3,4,5], t1L=0.35, t2L=0.65)
         c['fuse'].props['posx'].set([0,10],[0,1])
         c['fuse'].props['posy'].set([0.3,0.5,0.5],[0,0.15,1],w=[1.0,0,0],d=[1,0,0])
         c['fuse'].props['ry'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])

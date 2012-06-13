@@ -43,7 +43,7 @@ def circular(rz, ry, t):
     y = ry*numpy.sin(t*numpy.pi)
     return z, y
 
-def rounded(rz, ry, t, t1=0.3, t2=0.7):
+def rounded(rz, ry, t, t1, t2):
     t1 /= 2.0
     t2 /= 2.0
     cos = numpy.cos

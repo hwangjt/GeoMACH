@@ -33,9 +33,7 @@ class Trussbraced(Configuration):
         self.updateComponents()
 
         c = self.comps
-        c['fuse'].setSections(2,body_sections.rounded6)
-        c['fuse'].setSections(3,body_sections.rounded6)
-        c['fuse'].setSections(4,body_sections.rounded6)
+        c['fuse'].setSections(sections=[2,3,4], t1U=0, t2U=0.6)
         c['fuse'].props['posx'].set([0,10],[0,1])
         c['fuse'].props['posy'].set([0.3,0.5,0.5,0.9],[0,0.15,0.75,1.0],w=[1.0,0,0,0],d=[1,0,0,0])
         c['fuse'].props['ry'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
@@ -50,7 +48,7 @@ class Trussbraced(Configuration):
         c['wing'].props['prpy'].set([0,0],[0,1])
         c['wing'].props['chord'].set([1,0.3],[0,1],w=[1,0])
 
-        c['strut'].offset[:] = [3.75, 0.15, 0.5]
+        c['strut'].offset[:] = [3.75, 0.25, 0.5]
         c['strut'].props['posx'].set([0,0],[0,1])
         c['strut'].props['posy'].set([0,0.65],[0,1])
         c['strut'].props['posz'].set([0,3.2],[0,1])

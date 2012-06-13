@@ -30,15 +30,7 @@ class DoubleBubble(Configuration):
         self.updateComponents()
 
         c = self.comps
-        c['fuse'].setSections(1,body_sections.rounded5)
-        c['fuse'].setSections(2,body_sections.rounded5)
-        c['fuse'].setSections(3,body_sections.rounded5)
-        c['fuse'].setSections(4,body_sections.rounded5)
-        c['fuse'].setSections(5,body_sections.rounded5)
-        c['fuse'].setSections(6,body_sections.rounded5)
-        c['fuse'].setSections(7,body_sections.rounded5)
-        c['fuse'].setSections(8,body_sections.rounded5)
-        c['fuse'].setSections(9,body_sections.rounded5)
+        c['fuse'].setSections(sections=range(1,10), t1U=0, t2U=0.6, t1L=0, t2L=0.6)
         c['fuse'].props['posx'].set([0,10],[0,1])
         c['fuse'].props['posy'].set([0.7,0.4,0.4],[0,0.15,1])
         c['fuse'].props['ry'].set([0.1,0.4,0.4,0.1],[0,0.15,0.75,1.0],w=[0,0,0,0],d=[1,0,0,0])
@@ -54,13 +46,13 @@ class DoubleBubble(Configuration):
         c['wing'].props['chord'].set([0.7,0.2],[0,1],w=[1,0])
 
         c['vtail'].offset[:] = [9.3, 0.53, 0.65]
-        c['vtail'].props['posx'].set([0,0.6],[0,1])
+        c['vtail'].props['posx'].set([0,0.45],[0,1])
         c['vtail'].props['posy'].set([0,1.2],[0,1])
         c['vtail'].props['posz'].set([0,0],[0,1])
         c['vtail'].props['rotz'].set([5,0],[0,1])
         c['vtail'].props['prpx'].set([1,1],[0,1])
         c['vtail'].props['prpy'].set([0,0],[0,1])
-        c['vtail'].props['chord'].set([0.5,0.15],[0,1])
+        c['vtail'].props['chord'].set([0.5,0.25],[0,1])
 
         c['htail'].offset[:] = [9.55, 1.8, 0]
         c['htail'].props['posx'].set([0,0.5],[0,1])
