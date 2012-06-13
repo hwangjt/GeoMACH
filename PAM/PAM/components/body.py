@@ -34,11 +34,11 @@ class Body(Component):
         Ps.extend(P)  
         Ks.append(K)  
       
-        P, K = self.createSurfaces(Ks, nz, nx, -3, 1, 0)
+        P, K = self.createSurfaces(Ks, nz[::-1], nx, -3, 1, 0)
         Ps.extend(P)   
         Ks.append(K)
 
-        P, K = self.createSurfaces(Ks, ny, nz, -2, -3, 1)
+        P, K = self.createSurfaces(Ks, ny, nz[::-1], -2, -3, 1)
         Ps.extend(P) 
         Ks.append(K) 
 

@@ -30,6 +30,14 @@ def rounded4(rz, ry, t):
         z,y = rounded(rz, ry, t)
     return z,y 
 
+def rounded5(rz, ry, t):
+    z,y = rounded(rz, ry, t, t1=0, t2=0.6)
+    return z,y 
+
+def rounded6(rz, ry, t):
+    z,y = rounded(rz, ry, t, t1=0, t2=0.55)
+    return z,y 
+
 def circular(rz, ry, t):
     z = rz*numpy.cos(t*numpy.pi)
     y = ry*numpy.sin(t*numpy.pi)
@@ -42,8 +50,8 @@ def rounded(rz, ry, t, t1=0.3, t2=0.7):
     sin = numpy.sin
     tan = numpy.tan
     pi = numpy.pi
-    z0 = rz*tan(t1*pi)
-    y0 = ry/tan(t2*pi)
+    z0 = ry*tan((0.5-t2)*pi)
+    y0 = rz*tan(t1*pi)
     sz = rz - z0
     sy = ry - y0
     if isContained(t,0,t1):
@@ -81,8 +89,9 @@ def rounded(rz, ry, t, t1=0.3, t2=0.7):
         
 
 def cone(Lc, rz, ry, d, e, yy, zz):
-    if d==0 and e==0:
+    if d==0:
         d = 1
+    if e==0:
         e = 1
     Q = (1 + 1/d**2 + 1/e**2)**0.5
     a = abs(Lc)/(1-1/Q)

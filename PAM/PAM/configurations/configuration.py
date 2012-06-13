@@ -36,6 +36,7 @@ class Configuration(object):
 
         self.oml0 = PUBS.PUBS()
         self.oml0.importSurfaces(Ps)
+
         #self.oml0.plotm(mlab.figure())
         #self.oml0.write2Tec('test')
         #mlab.show()

@@ -11,7 +11,7 @@ class Trussbraced(Configuration):
         self.comps = {}
         self.keys = []
 
-        self.addComp('fuse', Body([70,10,10,20,10,10,10,30,10,10,10,40,10,10],[25,25,25,25,25],[15]))
+        self.addComp('fuse', Body([70,10,10,20,10,10,10,30,10,10,10,40,10,10],[10,25,25,25,25],[15]))
         self.addComp('wing', Wing([30,10,10,50],[10,20,10,10]))
         self.addComp('strut', Wing([30],[20],opentip=True))
         self.addComp('vtail', Wing([40,10,10,10],[10,10,40,10],half=True))
@@ -33,15 +33,15 @@ class Trussbraced(Configuration):
         self.updateComponents()
 
         c = self.comps
-        c['fuse'].setSections(2,body_sections.rounded4)
-        c['fuse'].setSections(3,body_sections.rounded4)
-        c['fuse'].setSections(4,body_sections.rounded4)
+        c['fuse'].setSections(2,body_sections.rounded6)
+        c['fuse'].setSections(3,body_sections.rounded6)
+        c['fuse'].setSections(4,body_sections.rounded6)
         c['fuse'].props['posx'].set([0,10],[0,1])
         c['fuse'].props['posy'].set([0.3,0.5,0.5,0.9],[0,0.15,0.75,1.0],w=[1.0,0,0,0],d=[1,0,0,0])
         c['fuse'].props['ry'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
         c['fuse'].props['rz'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
 
-        c['wing'].offset[:] = [3.75, 0.9, 0.7]
+        c['wing'].offset[:] = [3.75, 0.94, 0.5]
         c['wing'].setAirfoil("rae2822.dat")
         c['wing'].props['posx'].set([0,0],[0,1])
         c['wing'].props['posy'].set([0,0],[0,1])

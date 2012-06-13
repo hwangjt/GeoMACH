@@ -281,7 +281,7 @@ class PUBS(object):
         export2EGADS.export(Ps, filename)
 
     def plotm(self,fig,mirror=True):
-        mlab.figure(fig)
+        mlab.figure(fig,bgcolor=(1,1,1))
         m = PUBSlib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
         n = PUBSlib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
         for i in range(self.nsurf):
