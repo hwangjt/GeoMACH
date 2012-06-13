@@ -99,7 +99,10 @@ def fitAirfoil(wing,airfoil,rev=False):
         sol = numpy.linalg.solve(BTB,BTR)
         sol = numpy.insert(sol, 0, 0, axis=0)
         for i in range(wing.Ks[f].shape[0]):
-            sol = numpy.insert(sol, sum(ms[:i+1])-(i+1), 0, axis=0)
+            ii = sum(ms[:i+1])-(i+1)
+            sol = numpy.insert(sol, ii, 0, axis=0)
+            if not i==wing.Ks[f].shape[0]-1:
+                sol[ii] = 0.5*sol[ii-1] + 0.5*sol[ii+1]
         if rev:
             sol[-1,0] = 1
         else:

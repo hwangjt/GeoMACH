@@ -57,18 +57,17 @@ class Body(Component):
         self.oml0 = [] 
 
     def setDOFs(self):
-        oml0 = self.oml0
         for f in range(len(self.Ks)):
-            self.setSurfC1(f, val=True)
+            self.setC1('surf', f)
         if not self.full:
-            self.setSurfC1(0, j=0)
-            self.setEdgeC1(0, j=0)
-            self.setSurfC1(1, i=0)
-            self.setEdgeC1(1, i=0)
-            self.setSurfC1(3, i=-1)
-            self.setEdgeC1(3, i=-1)
-            self.setSurfC1(4, j=-1)
-            self.setEdgeC1(4, j=-1)
+            self.setC1('surf', 0, j=0, v=0, val=False)
+            self.setC1('surf', 1, i=0, u=0, val=False)
+            self.setC1('surf', 3, i=-1, u=-1, val=False)
+            self.setC1('surf', 4, j=-1, v=-1, val=False)
+            self.setC1('edge', 0, j=0, v=0)
+            self.setC1('edge', 1, i=0, u=0)
+            self.setC1('edge', 3, i=-1, u=-1)
+            self.setC1('edge', 4, j=-1, v=-1)
 
     def isExteriorDOF(self, f, uType, vType, i, j):
         check = self.check

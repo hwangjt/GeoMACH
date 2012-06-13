@@ -49,30 +49,29 @@ class Wing(Component):
     def setDOFs(self):        
         half = self.half
         opentip = self.opentip
-        oml0 = self.oml0
         nf = len(self.Ks)
         for f in range(nf):
-            self.setSurfC1(f, val=True)
-            self.setSurfC1(f, j=0)
-            self.setSurfC1(f, i=-f)
+            self.setC1('surf', f)
+            self.setC1('surf', f, j=0, v=0, val=False)
+            self.setC1('surf', f, i=-f, u=-f, val=False)
             if opentip or half:
-                self.setSurfC1(f, j=-1)
+                self.setC1('surf', f, j=-1, v=-1, val=False)
             if half:
-                self.setSurfC1(f, i=f-1)
+                self.setC1('surf', f, i=f-1, u=f-1, val=False)
         for f in range(nf):
-            self.setEdgeC1(f, j=0)
-            self.setEdgeC1(f, i=-f)
+            self.setC1('edge', f, j=0, v=0)
+            self.setC1('edge', f, i=-f, u=-f)
             if opentip or half:
-                self.setEdgeC1(f, j=-1)
+                self.setC1('edge', f, j=-1, v=-1)
             if half:
-                self.setEdgeC1(f, i=f-1)
+                self.setC1('edge', f, i=f-1, u=f-1)
         for f in range(nf):
-            self.setCornerC1(f, -f, 0)
+            self.setCornerC1(f, i=-f, j=0, val=False)
             if opentip or half:
-                self.setCornerC1(f, -f, -1)
+                self.setCornerC1(f, i=-f, j=-1, val=False)
             if half:
-                self.setCornerC1(f, f-1, 0)
-                self.setCornerC1(f, f-1, -1)
+                self.setCornerC1(f, i=f-1, j=0, val=False)
+                self.setCornerC1(f, i=f-1, j=-1, val=False)
 
     def isExteriorDOF(self, f, uType, vType, i, j):
         check = self.check

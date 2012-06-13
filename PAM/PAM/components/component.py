@@ -101,6 +101,9 @@ class Component(object):
         self.Qs = Qs
         self.Ns = Ns
 
+    def isDOF(self, f, uType, vType, i, j):
+        return False
+
     def classifyC(self, u, i, leni):
         if i==0:
             return 0
@@ -161,56 +164,56 @@ class Component(object):
                 break
         return u, ii
 
-    def setSurfC1(self, f, i=None, j=None, val=False):
-        oml0 = self.oml0
-        if not i==None:
+    def setC1(self, t, f, i=None, j=None, u=None, v=None, d=None, val=True):
+        if t=='surf':
+            func = self.setSurfC1
+        elif t=='edge':
+            func = self.setEdgeC1
+        if (not i==None) and (not j==None):
+            func(f, i, j, u, v, d, val)
+        elif not i==None:
             for j in range(self.Ks[f].shape[1]):
-                surf = self.Ks[f][i,j]
-                if not surf==-1:
-                    oml0.surf_c1[surf,i,:] = val
+                func(f, i, j, u, v, d, val)
         elif not j==None:
             for i in range(self.Ks[f].shape[0]):
-                surf = self.Ks[f][i,j]
-                if not surf==-1:
-                    oml0.surf_c1[surf,:,j] = val
+                func(f, i, j, u, v, d, val)
         else:
             for j in range(self.Ks[f].shape[1]):
                 for i in range(self.Ks[f].shape[0]):
-                    surf = self.Ks[f][i,j]
-                    if not surf==-1:
-                        oml0.surf_c1[surf,:,:] = val 
+                    func(f, i, j, u, v, d, val)
 
-    def setEdgeC1(self, f, i=None, j=None, val=True):
+    def setSurfC1(self, f, i, j, u, v, d, val):
         oml0 = self.oml0
-        if not i==None:
-            for j in range(self.Ks[f].shape[1]):
-                surf = self.Ks[f][i,j]
-                if not surf==-1:
-                    edge = oml0.surf_edge[surf,1,i]
-                    edge = abs(edge) - 1
-                    oml0.edge_c1[edge,:] = val
-        elif not j==None:
-            for i in range(self.Ks[f].shape[0]):
-                surf = self.Ks[f][i,j]
-                if not surf==-1:
-                    edge = oml0.surf_edge[surf,0,j]
-                    edge = abs(edge) - 1
-                    oml0.edge_c1[edge,:] = val
-
-    def setCornerC1(self, f, i, j, val=False):
         surf = self.Ks[f][i,j]
         if not surf==-1:
-            oml0 = self.oml0
-            edge = oml0.surf_edge[surf,0,j]
-            if edge > 0:
-                oml0.edge_c1[abs(edge)-1,i] = val
+            if u==None and v==None:
+                oml0.surf_c1[surf,:,:] = val                    
+            elif u==None:
+                oml0.surf_c1[surf,:,v] = val
+            elif v==None:
+                oml0.surf_c1[surf,u,:] = val
             else:
-                oml0.edge_c1[abs(edge)-1,i+1] = val 
-            edge = oml0.surf_edge[surf,1,i]
-            if edge > 0:
-                oml0.edge_c1[abs(edge)-1,j] = val
+                oml0.surf_c1[surf,u,v] = val
+
+
+    def setEdgeC1(self, f, i, j, u, v, d, val):
+        oml0 = self.oml0
+        surf = self.Ks[f][i,j]
+        if not surf==-1:
+            if u==None:
+                edge = oml0.surf_edge[surf,0,v]
             else:
-                oml0.edge_c1[abs(edge)-1,j+1] = val 
+                edge = oml0.surf_edge[surf,1,u]
+            if d==None:
+                oml0.edge_c1[abs(edge)-1,:] = val
+            elif edge>0:
+                oml0.edge_c1[abs(edge)-1,d] = val
+            else:
+                oml0.edge_c1[abs(edge)-1,1-abs(d)] = val
+
+    def setCornerC1(self, f, i=0, j=0, val=True):
+        self.setC1('edge', f, i=i, j=j, u=i, d=j, val=val)
+        self.setC1('edge', f, i=i, j=j, v=j, d=i, val=val)
 
     def check(self, uType, vType, u=None, v=None):
         if u==None:

@@ -232,21 +232,25 @@ class FullInterface(Interface):
         self.Ks = Ks
 
         self.oml0 = []
+        self.extraDOFs = []
 
     def setDOFs(self):
-        oml0 = self.oml0
-        Ks = self.Ks
-        self.setSurfC1(0, val=True)        
-        for j in range(1,Ks[0].shape[1]-1):
+        self.setC1('surf', 0)     
+        for j in range(1,self.Ks[0].shape[1]-1):
             for i in range(2):
-                oml0.surf_c1[Ks[0][i,j],i-1,:] = False
-        oml0.surf_c1[Ks[0][0,0],-1,-1] = False
-        oml0.surf_c1[Ks[0][1,0],0,-1] = False
-        oml0.surf_c1[Ks[0][0,-1],-1,0] = False
-        oml0.surf_c1[Ks[0][1,-1],0,0] = False
+                self.setC1('surf', 0, i=i, j=j, u=i-1, val=False)
+        self.setC1('surf', 0, i=0, j=0, u=-1, v=-1, val=False)
+        self.setC1('surf', 0, i=1, j=0, u=0, v=-1, val=False)
+        self.setC1('surf', 0, i=0, j=-1, u=-1, v=0, val=False)
+        self.setC1('surf', 0, i=1, j=-1, u=0, v=0, val=False)
 
     def isExteriorDOF(self, f, uType, vType, i, j):
-        return False
+        value = False
+        for k in range(len(self.extraDOFs)):
+            uu = self.extraDOFs[k][0]
+            vv = self.extraDOFs[k][1]
+            value = value or self.check(uType, vType, u=uu, v=vv)
+        return value
 
     def propagateQs(self):
         si = self.getni(0,0)
@@ -256,37 +260,69 @@ class FullInterface(Interface):
         Qs = self.Qs
         Ks = self.Ks
         fQs = self.fComp.Qs[self.fFace]    
+
         Qs[0][:,:,:] = 0
         for j in range(int(Ns[0].shape[1]-sj[0]-sj[-1])):
-            Q1 = self.fSpliceQ(self.NW, 0, 1, -1, j)
+            Q1 = self.fSpliceQ(self.NW, 0, 1, 0, j)
             Q2 = self.mSpliceQ(0, j)
-            Qs[0][:si[0]+1,j+sj[0],:] += numpy.outer(numpy.linspace(1,0,si[0]+2)[1:],Q1)
-            Qs[0][:si[0]+1,j+sj[0],:] += numpy.outer(numpy.linspace(0,1,si[0]+2)[1:],Q2)
+            Qs[0][:si[0]+1,j+sj[0],:] += numpy.outer(numpy.linspace(1,0,si[0]+1),Q1)
+            Qs[0][:si[0]+1,j+sj[0],:] += numpy.outer(numpy.linspace(0,1,si[0]+1),Q2)
 
-            Q2 = self.fSpliceQ(self.NW, 2, 1, 1, j)
+            Q2 = self.fSpliceQ(self.NW, 2, 1, 0, j)
             Q1 = self.mSpliceQ(1, j)
-            Qs[0][si[0]:,j+sj[0],:] += numpy.outer(numpy.linspace(1,0,si[1]+2)[:-1],Q1)
-            Qs[0][si[0]:,j+sj[0],:] += numpy.outer(numpy.linspace(0,1,si[1]+2)[:-1],Q2) 
+            Qs[0][si[0]:,j+sj[0],:] += numpy.outer(numpy.linspace(1,0,si[1]+1),Q1)
+            Qs[0][si[0]:,j+sj[0],:] += numpy.outer(numpy.linspace(0,1,si[1]+1),Q2) 
         for i in range(si[0]):
-            Q1 = self.fSpliceQ(self.NW, 0, 0, i, -1)
-            Q2 = Qs[0][i,sj[0]+1]
-            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(1,0,sj[0]+3)[1:-1],Q1)
-            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(0,1,sj[0]+3)[1:-1],Q2)
+            Q1 = self.fSpliceQ(self.NW, 0, 0, i, 0)
+            Q2 = Qs[0][i,sj[0]]
+            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(1,0,sj[0]+1),Q1)
+            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(0,1,sj[0]+1),Q2)
 
-            Q2 = self.fSpliceQ(self.NW, 0, Ks[0].shape[1], i, 1)
-            Q1 = Qs[0][i,sum(sj[:-1])-1]
-            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(1,0,sj[-1]+3)[1:-1],Q1)
-            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(0,1,sj[-1]+3)[1:-1],Q2)
+            Q2 = self.fSpliceQ(self.NW, 0, Ks[0].shape[1], i, 0)
+            Q1 = Qs[0][i,sum(sj[:-1])]
+            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(1,0,sj[-1]+1),Q1)
+            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(0,1,sj[-1]+1),Q2)
         for i in range(si[0],sum(si)):
-            Q1 = self.fSpliceQ(self.NW, 1, 0, i-si[0], -1)
-            Q2 = Qs[0][i,sj[0]+1]
-            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(1,0,sj[0]+3)[1:-1],Q1)
-            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(0,1,sj[0]+3)[1:-1],Q2)
+            Q1 = self.fSpliceQ(self.NW, 1, 0, i-si[0], 0)
+            Q2 = Qs[0][i,sj[0]]
+            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(1,0,sj[0]+1),Q1)
+            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(0,1,sj[0]+1),Q2)
 
-            Q2 = self.fSpliceQ(self.NW, 1, Ks[0].shape[1], i-si[0], -1)
-            Q1 = Qs[0][i,sum(sj[:-1])-1]
-            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(1,0,sj[-1]+3)[1:-1],Q1)
-            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(0,1,sj[-1]+3)[1:-1],Q2)
+            Q2 = self.fSpliceQ(self.NW, 1, Ks[0].shape[1], i-si[0], 0)
+            Q1 = Qs[0][i,sum(sj[:-1])]
+            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(1,0,sj[-1]+1),Q1)
+            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(0,1,sj[-1]+1),Q2)
+
+#        for j in range(int(Ns[0].shape[1]-sj[0]-sj[-1])):
+#            Q1 = self.fSpliceQ(self.NW, 0, 1, -1, j)
+#            Q2 = self.mSpliceQ(0, j)
+#            Qs[0][:si[0]+1,j+sj[0],:] += numpy.outer(numpy.linspace(1,0,si[0]+2)[1:],Q1)
+#            Qs[0][:si[0]+1,j+sj[0],:] += numpy.outer(numpy.linspace(0,1,si[0]+2)[1:],Q2)
+#
+#            Q2 = self.fSpliceQ(self.NW, 2, 1, 1, j)
+#            Q1 = self.mSpliceQ(1, j)
+#            Qs[0][si[0]:,j+sj[0],:] += numpy.outer(numpy.linspace(1,0,si[1]+2)[:-1],Q1)
+#            Qs[0][si[0]:,j+sj[0],:] += numpy.outer(numpy.linspace(0,1,si[1]+2)[:-1],Q2) 
+#        for i in range(si[0]):
+#            Q1 = self.fSpliceQ(self.NW, 0, 0, i, -1)
+#            Q2 = Qs[0][i,sj[0]+1]
+#            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(1,0,sj[0]+3)[1:-1],Q1)
+#            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(0,1,sj[0]+3)[1:-1],Q2)
+#
+#            Q2 = self.fSpliceQ(self.NW, 0, Ks[0].shape[1], i, 1)
+#            Q1 = Qs[0][i,sum(sj[:-1])-1]
+#            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(1,0,sj[-1]+3)[1:-1],Q1)
+#            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(0,1,sj[-1]+3)[1:-1],Q2)
+#        for i in range(si[0],sum(si)):
+#            Q1 = self.fSpliceQ(self.NW, 1, 0, i-si[0], -1)
+#            Q2 = Qs[0][i,sj[0]+1]
+#            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(1,0,sj[0]+3)[1:-1],Q1)
+#            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(0,1,sj[0]+3)[1:-1],Q2)
+#
+#            Q2 = self.fSpliceQ(self.NW, 1, Ks[0].shape[1], i-si[0], -1)
+#            Q1 = Qs[0][i,sum(sj[:-1])-1]
+#            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(1,0,sj[-1]+3)[1:-1],Q1)
+#            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(0,1,sj[-1]+3)[1:-1],Q2)
 
 
 
@@ -368,20 +404,10 @@ class HalfInterface(Interface):
         self.oml0 = []
 
     def setDOFs(self):
-        oml0 = self.oml0
-        Ks = self.Ks
-        self.setSurfC1(0, val=True)
-        self.setSurfC1(0, i=0)
-        edge = oml0.surf_edge[self.Ks[0][0,0],1,0]
-        if edge > 0:
-            oml0.edge_c1[abs(edge)-1,0] = True
-        else:
-            oml0.edge_c1[abs(edge)-1,1] = True
-        edge = oml0.surf_edge[self.Ks[0][0,-1],1,0]
-        if edge > 0:
-            oml0.edge_c1[abs(edge)-1,1] = True
-        else:
-            oml0.edge_c1[abs(edge)-1,0] = True
+        self.setC1('surf', 0)
+        self.setC1('surf', 0, i=0, u=0, val=False)
+        self.setC1('edge', 0, i=0, j=0, u=0, d=0)
+        self.setC1('edge', 0, i=0, j=-1, u=0, d=1)
 
     def isExteriorDOF(self, f, uType, vType, i, j):
         if j==0 or j==self.Ks[0].shape[1]-1:
@@ -397,19 +423,37 @@ class HalfInterface(Interface):
         Qs = self.Qs
         Ks = self.Ks
         fQs = self.fComp.Qs[self.fFace]    
+
         Qs[0][:,:,:] = 0
         for j in range(int(Ns[0].shape[1]-sj[0]-sj[-1])):
-            Q2 = self.fSpliceQ(self.SW, 1, 1, 1, j)
+            Q2 = self.fSpliceQ(self.SW, 1, 1, 0, j)
             Q1 = self.mSpliceQ(0, j, True)
-            Qs[0][:,j+sj[0],:] += numpy.outer(numpy.linspace(1,0,si[0]+2)[:-1],Q1)
-            Qs[0][:,j+sj[0],:] += numpy.outer(numpy.linspace(0,1,si[0]+2)[:-1],Q2)
+            Qs[0][:,j+sj[0],:] += numpy.outer(numpy.linspace(1,0,si[0]+1),Q1)
+            Qs[0][:,j+sj[0],:] += numpy.outer(numpy.linspace(0,1,si[0]+1),Q2)
         for i in range(si[0]):
-            Q1 = self.fSpliceQ(self.SW, 0, 0, i, -1)
+            Q1 = self.fSpliceQ(self.SW, 0, 0, i, 0)
             Q2 = Qs[0][i,sj[0]]
-            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(1,0,sj[0]+2)[1:],Q1)
-            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(0,1,sj[0]+2)[1:],Q2)
+            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(1,0,sj[0]+1),Q1)
+            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(0,1,sj[0]+1),Q2)
 
-            Q2 = self.fSpliceQ(self.SW, 0, Ks[0].shape[1], i, -1)
+            Q2 = self.fSpliceQ(self.SW, 0, Ks[0].shape[1], i, 0)
             Q1 = Qs[0][i,sum(sj[:-1])]
-            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(1,0,sj[-1]+2)[:-1],Q1)
-            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(0,1,sj[-1]+2)[:-1],Q2)
+            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(1,0,sj[-1]+1),Q1)
+            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(0,1,sj[-1]+1),Q2)
+
+#        Qs[0][:,:,:] = 0
+#        for j in range(int(Ns[0].shape[1]-sj[0]-sj[-1])):
+#            Q2 = self.fSpliceQ(self.SW, 1, 1, 1, j)
+#            Q1 = self.mSpliceQ(0, j, True)
+#            Qs[0][:,j+sj[0],:] += numpy.outer(numpy.linspace(1,0,si[0]+2)[:-1],Q1)
+#            Qs[0][:,j+sj[0],:] += numpy.outer(numpy.linspace(0,1,si[0]+2)[:-1],Q2)
+#        for i in range(si[0]):
+#            Q1 = self.fSpliceQ(self.SW, 0, 0, i, -1)
+#            Q2 = Qs[0][i,sj[0]]
+#            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(1,0,sj[0]+2)[1:],Q1)
+#            Qs[0][i,:sj[0]+1,:] += numpy.outer(numpy.linspace(0,1,sj[0]+2)[1:],Q2)
+#
+#            Q2 = self.fSpliceQ(self.SW, 0, Ks[0].shape[1], i, -1)
+#            Q1 = Qs[0][i,sum(sj[:-1])]
+#            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(1,0,sj[-1]+2)[:-1],Q1)
+#            Qs[0][i,sum(sj[:-1]):,:] += numpy.outer(numpy.linspace(0,1,sj[-1]+2)[:-1],Q2)
