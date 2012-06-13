@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy
 import sys
-from PAM.components import Wing, Body, FullInterface, HalfInterface, body_sections
+from PAM.components import Wing, Body, FullInterface, HalfInterface
 from PAM.configurations import Configuration
 
 
