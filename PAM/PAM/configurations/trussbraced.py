@@ -77,7 +77,9 @@ class Trussbraced(Configuration):
 
 if __name__ == '__main__':
 
+    name = 'trussbraced'
     aircraft = Trussbraced()
-    aircraft.oml0.write2Tec('trussbraced')
-    aircraft.oml0.write2TecC('trussbracedC')
+    aircraft.oml0.write2Tec(name)
+    aircraft.oml0.write2TecC(name+'_C')
+    aircraft.oml0.write2IGES(name)
     aircraft.plot()

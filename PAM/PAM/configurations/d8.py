@@ -66,7 +66,9 @@ class DoubleBubble(Configuration):
 
 if __name__ == '__main__':
 
+    name = 'd8'
     aircraft = DoubleBubble()
-    aircraft.oml0.write2Tec('d8')
-    aircraft.oml0.write2TecC('d8C')
+    aircraft.oml0.write2Tec(name)
+    aircraft.oml0.write2TecC(name+'_C')
+    aircraft.oml0.write2IGES(name)
     aircraft.plot()

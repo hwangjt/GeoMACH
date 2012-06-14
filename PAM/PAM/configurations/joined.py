@@ -5,7 +5,7 @@ from PAM.components import Wing, Body, FullInterface, HalfInterface
 from PAM.configurations import Configuration
 
 
-class joined(Configuration):
+class Joined(Configuration):
 
     def __init__(self):
         self.comps = {}
@@ -90,7 +90,9 @@ class joined(Configuration):
 
 if __name__ == '__main__':
 
-    aircraft = joined()
-    aircraft.oml0.write2Tec('joined')
-    aircraft.oml0.write2TecC('joinedC')
+    name = 'joined'
+    aircraft = Joined()
+    aircraft.oml0.write2Tec(name)
+    aircraft.oml0.write2TecC(name+'_C')
+    aircraft.oml0.write2IGES(name)
     aircraft.plot()

@@ -95,7 +95,9 @@ class Conventional(Configuration):
 
 if __name__ == '__main__':
 
+    name = 'conventional'
     aircraft = Conventional()
-    aircraft.oml0.write2Tec('conventional')
-    aircraft.oml0.write2TecC('conventionalC')
+    aircraft.oml0.write2Tec(name)
+    aircraft.oml0.write2TecC(name+'_C')
+    aircraft.oml0.write2IGES(name)
     aircraft.plot()

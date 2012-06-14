@@ -7,3 +7,5 @@
 *.egg-info
 *.phy
 *#
+*.igs
+*.tin
