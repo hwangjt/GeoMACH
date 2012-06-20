@@ -82,4 +82,5 @@ if __name__ == '__main__':
     aircraft.oml0.write2Tec(name)
     aircraft.oml0.write2TecC(name+'_C')
     aircraft.oml0.write2IGES(name)
+    aircraft.oml0.write2EGADS(name+'_EGADS')
     aircraft.plot()
