@@ -4,6 +4,10 @@ import numpy, pylab
 
 class Layout(object):
 
+    def __init__(self):
+        self.Lx = 1
+        self.Ly = 1
+
     def structured(self, nu, nv, u1=0, u2=1, v1=0, v2=1, edges=[]):
         u = numpy.linspace(u1,u2,nu)
         v = numpy.linspace(v1,v2,nv)
@@ -30,11 +34,11 @@ class Layout(object):
                 if len(self.poly_edge[p]) > 4:
                     done = False
 
-        self.computePolygons()
         self.computeGroups()
         self.splitTriangles()
         self.propagateSplits()
         self.cleanup()
+        self.computeSurfaces()
 
     def cleanup(self):
         self.computeIntersections()
@@ -138,6 +142,8 @@ class Layout(object):
 
     def arctan(self, P):
         x,y = P
+        x *= self.Lx
+        y *= self.Ly
         if x==0:
             if y > 0:
                 t = numpy.pi/2.0
@@ -326,39 +332,6 @@ class Layout(object):
                     group_split[edge_group[poly_edge[p][k]]] = True
                     self.addEdge(ctd,mid[k])
 
-    def splitBadQuads(self):
-        group_split = self.group_split
-        verts = self.verts
-        edge_group = self.edge_group
-        edge_vert = self.edge_vert
-        poly_vert = self.poly_vert
-        poly_edge = self.poly_edge
-        for p in range(len(poly_edge)):
-            if len(poly_edge[p])==4:
-                C = []
-                for k in range(4):
-                    C.append(verts[poly_vert[p][k]])
-                D = []
-                for k in range(4):
-                    D.append((C[k]-C[k-1])/numpy.linalg.norm(C[k]-C[k-1]))
-                D.append((C[0]-C[-1])/numpy.linalg.norm(C[0]-C[-1]))
-                ctd = 0
-                for k in range(4):
-                    ctd += 0.25*C[k]
-                for k in range(4):
-                    if numpy.dot(D[k],D[k+1]) > 1 - 1e-14:
-                        print '1'
-                        mid = []
-                        mid.append(1/2.0*C[-1] + 1/2.0*C[-2])
-                        mid.append(1/2.0*C[-3] + 1/2.0*C[-2])
-                        group_split[edge_group[poly_edge[p][k-2]]] = True
-                        group_split[edge_group[poly_edge[p][k-3]]] = True
-                        self.addEdge(ctd,C[k])
-                        self.addEdge(ctd,mid[0])
-                        self.addEdge(ctd,mid[1])
-                        
-                        
-
     def propagateSplits(self):
         group_split = self.group_split
         verts = self.verts
@@ -375,13 +348,23 @@ class Layout(object):
                     self.addEdge(0.5*C[0]+0.5*C[1],0.5*C[2]+0.5*C[3])
                 if group_split[edge_group[poly_edge[p][1]]]:
                     self.addEdge(0.5*C[0]+0.5*C[3],0.5*C[2]+0.5*C[1])
+
+    def computeSurfaces(self):
+        def getSurface(verts):
+            v0 = 1
+
+        poly_vert = self.poly_vert
+        surfs = []
+        for p in range(len(poly_vert)):
+            surfs.append(getSurface(poly_vert[p]))
+        self.surfs = surfs
                     
 
 
 if __name__ == '__main__':
 
     edges = []
-    if 0:
+    if 1:
         edges.append([[0.1,0.1],[0.9,0.9]])
         edges.append([[0.9,0.1],[0.1,0.9]])
     if 0:
@@ -389,7 +372,7 @@ if __name__ == '__main__':
         edges.append([[0.6,0.3],[0.2,0.4]])
         edges.append([[0.3,0.5],[0.3,0.2]])
         edges.append([[0.8,0.8],[0.1,0.4]])
-    if 1:
+    if 0:
         edges.append([[0,0],[0.3,0.3]])
         edges.append([[0,1],[0.3,0.7]])
         edges.append([[0,0.1],[0.1,0.1]])

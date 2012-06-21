@@ -152,55 +152,46 @@ class PUBS(object):
             self.Q[:,i] = scipy.sparse.linalg.gmres(ATA,ATB[:,i])[0]
         self.C = self.M.dot(self.Q)
 
+        #self.Q = numpy.zeros((self.JM.shape[1],3),order='F')
+        #solve = scipy.sparse.linalg.dsolve.factorized(ATA)
+        #for i in range(3):
+        #    self.Q[:,i] = solve(ATB[:,i])
+        #self.C = self.M.dot(self.Q)
+
     def computePoints(self):
         for i in range(3):
             self.P[:,i] = self.JM.dot(self.Q[:,i])
         self.C = self.M.dot(self.Q)
 
-    def computeIndex(self,surf,u,v,quantity):
+    def computeIndex(self, surf, u, v, quantity):
         ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
         vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
         if quantity==0:
             surf_index = self.surf_index_P
             edge_index = self.edge_index_P
             nvert = self.nvert
-            mu = self.group_n[ugroup-1]
-            mv = self.group_n[vgroup-1]
+            group_m = self.group_n
         elif quantity==1:
             surf_index = self.surf_index_C
             edge_index = self.edge_index_C
             nvert = self.nvert
-            mu = self.group_m[ugroup-1]
-            mv = self.group_m[vgroup-1]   
+            group_m = self.group_m
         elif quantity==2:
             surf_index = self.surf_index_Q
             edge_index = self.edge_index_Q
             nvert = max(self.vert_index_Q)
-            mu = self.group_m[ugroup-1]
-            mv = self.group_m[vgroup-1]
+            group_m = self.group_m            
+        mu = group_m[ugroup-1]
+        mv = group_m[vgroup-1]
         if u < 0:
             u += mu
         if v < 0:
             v += mv
-        if (u==0 or u==mu-1) and (v==0 or v==mv-1):
+        if (u==0 or u==mu-1) and (v==0 or v==mv-1) and quantity==2:
             vert = self.surf_vert[surf,int(u/(mu-1)),int(v/(mv-1))] - 1
-            if quantity==2:
-                vert = self.vert_index_Q[vert] - 1
-            return vert
-        elif (v==0 or v==mv-1):
-            edge = self.surf_edge[surf,0,int(v/(mv-1))]
-            if edge < 0:
-                u = mu-1 - u
-            edge = abs(edge) - 1
-            return nvert + edge_index[edge,0] + u - 1
-        elif (u==0 or u==mu-1):
-            edge = self.surf_edge[surf,1,int(u/(mu-1))]
-            if edge < 0:
-                v = mv-1 - v
-            edge = abs(edge) - 1
-            return nvert + edge_index[edge,0] + v - 1
+            return self.vert_index_Q[vert] - 1
         else:
-            return nvert + max(edge_index[:,1]) + surf_index[surf,0] + (v-1)*(mu-2) + (u-1)
+            return PUBSlib.computeindex(surf+1,u+1,v+1,mu,mv,self.nsurf,self.nedge,nvert,self.surf_vert,self.surf_edge,surf_index,edge_index) - 1
 
     def computePt(self,surf,u,v,uder=0,vder=0):
         P = PUBSlib.computept(surf+1,uder,vder,self.nD,self.nC,self.nsurf,self.nedge,self.ngroup,self.nvert,u,v,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.C)
