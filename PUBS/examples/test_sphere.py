@@ -66,7 +66,10 @@ oml1.importSurfaces(P0)
 
 oml1.computePoints()
 
-P,s,u,v = oml1.computeProjection(numpy.array([0.5,-1,0.1],order='F'))
+t0 = time.time()
+for k in range(100):
+    P,s,u,v = oml1.computeProjection(numpy.array([0.5,-1,0.1],order='F'))
+print time.time()-t0
 print 'Projection test:'
 print P[0,0],s[0,0],u[0,0],v[0,0]
 

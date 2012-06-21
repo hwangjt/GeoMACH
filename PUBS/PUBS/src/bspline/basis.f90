@@ -54,6 +54,7 @@ subroutine basisold(k, kpm, t, d, B, i0)
      do i=2,k
         l = i-1
         j1 = k-l
+        j2 = k
         n = i0 + j1
         if (d(n+l+1) .ne. d(n+1)) then
            B(j1) = (d(n+l+1)-t)/(d(n+l+1)-d(n+1))*B(j1+1)
@@ -71,7 +72,6 @@ subroutine basisold(k, kpm, t, d, B, i0)
               B(j) = B(j) + (d(n+l+1)-t)/(d(n+l+1)-d(n+1))*B(j+1)
            end if
         end do
-        j2 = k
         n = i0 + j2
         if (d(n+l) .ne. d(n)) then
            B(j2) = (t-d(n))/(d(n+l)-d(n))*B(j2) 
@@ -103,7 +103,6 @@ subroutine basis(k, kpm, t, d, B, i0)
   integer, intent(out) ::  i0
 
   !Working
-  double precision b1, b2, f1, f2, s1, s2, den, F(k), S(k)
   integer i, j, j1, j2, l, m, n
 
   m = kpm - k
@@ -125,6 +124,7 @@ subroutine basis(k, kpm, t, d, B, i0)
   do i=2,k
      l = i-1
      j1 = k-l
+     j2 = k
      n = i0 + j1
      if (d(n+l+1) .ne. d(n+1)) then
         B(j1) = (d(n+l+1)-t)/(d(n+l+1)-d(n+1))*B(j1+1)
@@ -142,7 +142,6 @@ subroutine basis(k, kpm, t, d, B, i0)
            B(j) = B(j) + (d(n+l+1)-t)/(d(n+l+1)-d(n+1))*B(j+1)
         end if
      end do
-     j2 = k
      n = i0 + j2
      if (d(n+l) .ne. d(n)) then
         B(j2) = (t-d(n))/(d(n+l)-d(n))*B(j2) 

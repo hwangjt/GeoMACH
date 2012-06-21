@@ -52,11 +52,11 @@ def export(Ps, filename):
         m = oml0.group_m[group]
         file.write(str(k)+' ')
         file.write(str(m)+'\n')
-        d = PUBSlib.extractd(group+1,oml0.ngroup,oml0.nD,k+m,oml0.group_k,oml0.group_m,oml0.group_d)
+        d = oml0.group_d[oml0.knot_index[group,0]:oml0.knot_index[group,1]]
         for j in range(d.shape[0]):
             file.write(str(d[j])+' ')
         file.write('\n')
-        C = PUBSlib.getsurfacep(surf+1, oml0.nC, ms[surf,0], ms[surf,1], oml0.nsurf, oml0.nedge, oml0.ngroup, oml0.nvert, oml0.surf_vert, oml0.surf_edge, oml0.edge_group, oml0.group_m, oml0.surf_index_C, oml0.edge_index_C, oml0.C)
+        C = PUBSlib.getsurfacep(surf+1, oml0.nC, ms[surf,0], ms[surf,1], oml0.nsurf, oml0.nedge, oml0.nvert, oml0.surf_vert, oml0.surf_edge, oml0.surf_index_C, oml0.edge_index_C, oml0.C)
         if edge0==0:
             if edge1==0:
                 edgeCs = copy.copy(C[:,0,:])
@@ -90,15 +90,15 @@ def export(Ps, filename):
         file.write(str(kv)+' ')
         file.write(str(mv)+' ')
         file.write('\n')    
-        d = PUBSlib.extractd(ugroup+1,oml0.ngroup,oml0.nD,ku+mu,oml0.group_k,oml0.group_m,oml0.group_d)
+        d = oml0.group_d[oml0.knot_index[ugroup,0]:oml0.knot_index[ugroup,1]]
         for j in range(d.shape[0]):
             file.write(str(d[j])+' ')
         file.write('\n') 
-        d = PUBSlib.extractd(vgroup+1,oml0.ngroup,oml0.nD,kv+mv,oml0.group_k,oml0.group_m,oml0.group_d)
+        d = oml0.group_d[oml0.knot_index[vgroup,0]:oml0.knot_index[vgroup,1]]
         for j in range(d.shape[0]):
             file.write(str(d[j])+' ')
         file.write('\n')
-        C = PUBSlib.getsurfacep(i+1, oml0.nC, ms[i,0], ms[i,1], oml0.nsurf, oml0.nedge, oml0.ngroup, oml0.nvert, oml0.surf_vert, oml0.surf_edge, oml0.edge_group, oml0.group_m, oml0.surf_index_C, oml0.edge_index_C, oml0.C)
+        C = PUBSlib.getsurfacep(i+1, oml0.nC, ms[i,0], ms[i,1], oml0.nsurf, oml0.nedge, oml0.nvert, oml0.surf_vert, oml0.surf_edge, oml0.surf_index_C, oml0.edge_index_C, oml0.C)
         for v in range(C.shape[1]):
             for u in range(C.shape[0]):
                 file.write(str(C[u,v,0])+' ')

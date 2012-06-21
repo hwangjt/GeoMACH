@@ -1,18 +1,16 @@
 subroutine populateP(nP, n1, n2, surf, nsurf, nedge, ngroup, nvert, surf_vert, &
-           surf_edge, edge_group, group_n, vert_count, edge_count, & 
+           surf_edge, edge_group, group_n, & 
            surf_index_P, edge_index_P, P0, P)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nP, n1, n2, surf, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_n, vert_count, edge_count, surf_index_P, edge_index_P, P0
+  !f2py intent(in) nP, n1, n2, surf, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_n, surf_index_P, edge_index_P, P0
   !f2py intent(inout) P
   !f2py depend(nsurf) surf_vert
   !f2py depend(nsurf) surf_edge
   !f2py depend(nedge) edge_group
   !f2py depend(ngroup) group_n
-  !f2py depend(nvert) vert_count
-  !f2py depend(nedge) edge_count
   !f2py depend(nsurf) surf_index_P
   !f2py depend(nedge) edge_index_P
   !f2py depend(n1,n2) P0
@@ -22,7 +20,7 @@ subroutine populateP(nP, n1, n2, surf, nsurf, nedge, ngroup, nvert, surf_vert, &
   integer, intent(in) ::  nP, n1, n2, surf, nsurf, nedge, ngroup, nvert
   integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), & 
                           edge_group(nedge)
-  integer, intent(in) ::  group_n(ngroup), vert_count(nvert), edge_count(nedge)
+  integer, intent(in) ::  group_n(ngroup)
   integer, intent(in) ::  surf_index_P(nsurf,2), edge_index_P(nedge,2)
   double precision, intent(in) ::  P0(n1,n2,3)
 
@@ -114,7 +112,7 @@ subroutine avgBoundaries(nP, nedge, ngroup, nvert, edge_group, group_n, &
   !Working
   integer k,u
   integer vert, edge
-  integer n,iP,iP1,iP2
+  integer n,iP,iP1
 
   do k=1,3
      do vert=1,nvert

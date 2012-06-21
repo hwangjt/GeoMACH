@@ -31,27 +31,24 @@ end subroutine getSurfaceSizes
 
 
 
-subroutine getSurfaceP(surf, nP, nu, nv, nsurf, nedge, ngroup, nvert, &
-           surf_vert, surf_edge, edge_group, group_n, surf_index_P, &
+subroutine getSurfaceP(surf, nP, nu, nv, nsurf, nedge, nvert, &
+           surf_vert, surf_edge, surf_index_P, &
            edge_index_P, P, surfP)
 
   implicit none
   
   !Fortran-python interface directives
-  !f2py intent(in) surf, nP, nu, nv, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_n, surf_index_P, edge_index_P, P
+  !f2py intent(in) surf, nP, nu, nv, nsurf, nedge, nvert, surf_vert, surf_edge, surf_index_P, edge_index_P, P
   !f2py intent(out) surfP
   !f2py depend(nsurf) surf_vert, surf_edge
-  !f2py depend(nedge) edge_group
-  !f2py depend(ngroup) group_n
   !f2py depend(nsurf) surf_index_P
   !f2py depend(nedge) edge_index_P
   !f2py depend(nP) P
   !f2py depend(nu,nv) surfP
 
   !Input
-  integer, intent(in) ::  surf, nP, nu, nv, nsurf, nedge, ngroup, nvert
+  integer, intent(in) ::  surf, nP, nu, nv, nsurf, nedge, nvert
   integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), &
-                          edge_group(nedge), group_n(ngroup), &
                           surf_index_P(nsurf,2), edge_index_P(nedge,2)
   double precision, intent(in) ::  P(nP,3)
 

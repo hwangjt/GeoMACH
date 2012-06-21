@@ -197,6 +197,37 @@ end subroutine getVertIndicesQ
 
 
 
+subroutine getKnotIndices(ngroup, group_k, group_m, knot_index)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) ngroup, group_k, group_m
+  !f2py intent(out) knot_index
+  !f2py depend(ngroup) group_k, group_m
+  !f2py depend(ngroup) knot_index
+
+  !Input
+  integer, intent(in) ::  ngroup
+  integer, intent(in) ::  group_k(ngroup), group_m(ngroup)
+
+  !Output
+  double precision, intent(out) ::  knot_index(ngroup,2)
+
+  !Working
+  integer group, i
+
+  i = 0
+  do group=1,ngroup
+     knot_index(group,1) = i
+     i = i + group_k(group) + group_m(group)
+     knot_index(group,2) = i
+  end do
+
+end subroutine getKnotIndices
+
+
+
 subroutine computeIndex(surf, u, v, mu, mv, nsurf, nedge, nvert, surf_vert, &
            surf_edge, surf_index, edge_index, index)
 

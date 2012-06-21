@@ -1,12 +1,12 @@
-subroutine getJacobian(nP, nJ, nT, nD, nsurf, nedge, ngroup, nvert, surf_vert, & 
+subroutine getJacobian(nJ, nT, nD, nsurf, nedge, ngroup, nvert, surf_vert, & 
            surf_edge, edge_group, group_k, group_m, group_n, group_d, & 
            surf_index_P, edge_index_P, surf_index_C, edge_index_C, & 
-           edge_count, T, Ja, Ji, Jj)
+           knot_index, edge_count, T, Ja, Ji, Jj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nP, nJ, nT, nD, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_k, group_m, group_n, group_d, surf_index_P, edge_index_P, surf_index_C, edge_index_C, edge_count, T
+  !f2py intent(in) nJ, nT, nD, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge, edge_group, group_k, group_m, group_n, group_d, surf_index_P, edge_index_P, surf_index_C, edge_index_C, knot_index, edge_count, T
   !f2py intent(out) Ja, Ji, Jj
   !f2py depend(nsurf) surf_vert
   !f2py depend(nsurf) surf_edge
@@ -19,6 +19,7 @@ subroutine getJacobian(nP, nJ, nT, nD, nsurf, nedge, ngroup, nvert, surf_vert, &
   !f2py depend(nedge) edge_index_P
   !f2py depend(nsurf) surf_index_C
   !f2py depend(nedge) edge_index_C
+  !f2py depend(ngroup) knot_index
   !f2py depend(nedge) edge_count
   !f2py depend(nT) T
   !f2py depend(nJ) Ja
@@ -26,12 +27,13 @@ subroutine getJacobian(nP, nJ, nT, nD, nsurf, nedge, ngroup, nvert, surf_vert, &
   !f2py depend(nJ) Jj
 
   !Input
-  integer, intent(in) ::  nP, nJ, nT, nD, nsurf, nedge, ngroup, nvert
+  integer, intent(in) ::  nJ, nT, nD, nsurf, nedge, ngroup, nvert
   integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), & 
            edge_group(nedge), group_k(ngroup), group_m(ngroup), group_n(ngroup)
   double precision, intent(in) ::  group_d(nD)
   integer, intent(in) ::  surf_index_P(nsurf,2), edge_index_P(nedge,2), & 
-           surf_index_C(nsurf,2), edge_index_C(nedge,2), edge_count(nedge)
+           surf_index_C(nsurf,2), edge_index_C(nedge,2), &
+           knot_index(ngroup,2), edge_count(nedge)
   double precision, intent(in) ::  T(nT)
 
   !Output
@@ -77,14 +79,12 @@ subroutine getJacobian(nP, nJ, nT, nD, nsurf, nedge, ngroup, nvert, surf_vert, &
      allocate(Bv(kv))
      call extractSurfaceT(surf, nu, nv, nT, nsurf, nedge, & 
           surf_edge, surf_index_P, edge_index_P, T, bufferT)
-     call extractD(ugroup, ngroup, nD, ku+mu, group_k, group_m, group_d, & 
-          bufferD1)
-     call extractD(vgroup, ngroup, nD, kv+mv, group_k, group_m, group_d, & 
-          bufferD2)
-     call getMapping(surf, mu, mv, nsurf, nedge, ngroup, nvert, surf_vert, & 
-          surf_edge, edge_group, group_m, surf_index_C, edge_index_C, mappingC)
-     call getMapping(surf, nu, nv, nsurf, nedge, ngroup, nvert, surf_vert, & 
-          surf_edge, edge_group, group_n, surf_index_P, edge_index_P, mappingP)
+     bufferD1 = group_d(knot_index(ugroup,1)+1:knot_index(ugroup,2))
+     bufferD2 = group_d(knot_index(vgroup,1)+1:knot_index(vgroup,2))
+     call getMapping(surf, mu, mv, nsurf, nedge, nvert, surf_vert, & 
+          surf_edge, surf_index_C, edge_index_C, mappingC)
+     call getMapping(surf, nu, nv, nsurf, nedge, nvert, surf_vert, & 
+          surf_edge, surf_index_P, edge_index_P, mappingP)
      do v=1,2
         do u=2,nu-1
            call basis(ku,ku+mu,bufferT(u,1+(v-1)*(nv-1),1),bufferD1,Bu,i0)
@@ -211,16 +211,15 @@ end subroutine extractSurfaceT
 
 
 
-subroutine getMapping(surf, mu, mv, nsurf, nedge, ngroup, nvert, surf_vert, &
-           surf_edge, edge_group, group_m, surf_index_C, edge_index_C, mapping)
+subroutine getMapping(surf, mu, mv, nsurf, nedge, nvert, surf_vert, &
+           surf_edge, surf_index_C, edge_index_C, mapping)
 
   implicit none
 
   !Input
-  integer, intent(in) ::  surf, mu, mv, nsurf, nedge, ngroup, nvert
+  integer, intent(in) ::  surf, mu, mv, nsurf, nedge, nvert
   integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), & 
-           edge_group(nedge), group_m(ngroup), surf_index_C(nsurf,2), & 
-           edge_index_C(nedge,2)
+           surf_index_C(nsurf,2), edge_index_C(nedge,2)
 
   !Output
   integer, intent(out) ::  mapping(mu,mv)
@@ -282,24 +281,23 @@ end subroutine getMapping
 
 
 subroutine getJnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, & 
-           group_k, group_n, vert_count, edge_count, nJ)
+           group_k, group_n, edge_count, nJ)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_k, group_n, vert_count, edge_count
+  !f2py intent(in) nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_k, group_n, edge_count
   !f2py intent(out) nJ
   !f2py depend(nsurf) surf_edge
   !f2py depend(nedge) edge_group
   !f2py depend(ngroup) group_k
   !f2py depend(ngroup) group_n
-  !f2py depend(nvert) vert_count
   !f2py depend(nedge) edge_count
 
   !Input
   integer, intent(in) ::  nsurf, nedge, ngroup, nvert
   integer, intent(in) ::  surf_edge(nsurf,2,2), edge_group(nedge), & 
-                          group_k(ngroup), group_n(ngroup), vert_count(nvert), &
+                          group_k(ngroup), group_n(ngroup), &
                           edge_count(nedge)
 
   !Output
