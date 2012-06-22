@@ -67,13 +67,20 @@ oml1.importSurfaces(P0)
 oml1.computePoints()
 
 t0 = time.time()
-points = numpy.zeros((1000,3),order='F')
-for k in range(100):
-    points[k] = [0.5,-1,0.1]
-P,s,u,v = oml1.computeProjection(points)
+P0 = numpy.zeros((3,3),order='F')
+P0[0] = [0.5,-1,0.1]
+P0[1] = [-0.5,0.5,0.3]
+P0[2] = [0.2,0.1,-0.1]
+#P0[2] = [2,2,2]
+Q = numpy.zeros((3,3),order='F')
+Q[0] = [0,1,0]
+Q[1] = [0,1,0]
+Q[2] = [0,1,0]
+P,s,u,v = oml1.computeProjection(P0,Q=Q)
 print time.time()-t0
 print 'Projection test:'
-print P[0],s[0],u[0],v[0]
+print P,s[0],u[0],v[0]
+
 
 h=1e-5
 print '1st parametric derivative test:'
@@ -86,5 +93,8 @@ print oml1.computePt(0,0.1,0.4,0,2)
 for i in range(oml1.ngroup):
     oml1.group_n[i] -= 4
 oml1.updateEvaluation()
-oml1.plot(pylab.figure(),False)
+fig = pylab.figure()
+ax = oml1.plot(fig,False)
+for i in range(P.shape[0]):
+    ax.scatter([P[i,0],P0[i,0]],[P[i,1],P0[i,1]],[P[i,2],P0[i,2]])
 pylab.show()
