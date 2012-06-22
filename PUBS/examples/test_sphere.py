@@ -67,11 +67,13 @@ oml1.importSurfaces(P0)
 oml1.computePoints()
 
 t0 = time.time()
+points = numpy.zeros((1000,3),order='F')
 for k in range(100):
-    P,s,u,v = oml1.computeProjection(numpy.array([0.5,-1,0.1],order='F'))
+    points[k] = [0.5,-1,0.1]
+P,s,u,v = oml1.computeProjection(points)
 print time.time()-t0
 print 'Projection test:'
-print P[0,0],s[0,0],u[0,0],v[0,0]
+print P[0],s[0],u[0],v[0]
 
 h=1e-5
 print '1st parametric derivative test:'

@@ -209,43 +209,16 @@ class PUBS(object):
         P = PUBSlib.computept(surf+1,uder,vder,ku,kv,mu,mv,nB,self.nD,self.nC,self.nsurf,self.nedge,self.ngroup,self.nvert,u,v,self.surf_vert,self.surf_edge,self.edge_group,self.group_d,self.surf_index_C,self.edge_index_C,self.knot_index,self.C)
         return P
 
-    def computeProjection(self,P0,surf=None):
-        if len(P0.shape)==1:
-            P0 = numpy.array([[P0]],order='F')   
-        if surf==None:
-            projections = []
-            for surf in range(self.nsurf):
-                ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
-                vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
-                nu = self.group_n[ugroup-1]
-                nv = self.group_n[vgroup-1]     
-                t0 = time.time()
-                minP,minu,minv = PUBSlib.computeprojection(surf+1,nu,nv,self.nD,self.nT,self.nC,P0.shape[0],P0.shape[1],self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.knot_index,self.T,self.C,P0,self.P)
-                print time.time()-t0
-                projections.append([minP,minu,minv])
-            minP = numpy.zeros((P0.shape[0],P0.shape[1],3))
-            mins = numpy.zeros((P0.shape[0],P0.shape[1]),int)
-            minu = numpy.zeros((P0.shape[0],P0.shape[1]))
-            minv = numpy.zeros((P0.shape[0],P0.shape[1]))
-            for u in range(P0.shape[0]):
-                for v in range(P0.shape[1]):
-                    mind = 1e10
-                    for i in range(self.nsurf):
-                        d = numpy.linalg.norm(projections[i][0][u,v]-P0)
-                        if d < mind:
-                            mind = d
-                            mins[u,v] = i
-                            minu[u,v] = projections[i][1][u,v]
-                            minv[u,v] = projections[i][2][u,v]
-                            minP[u,v] = projections[i][0][u,v]
-            return minP,mins,minu,minv
+    def computeProjection(self, P0, surfs=None):
+        if surfs==None:
+            surfs = numpy.linspace(1,self.nsurf,self.nsurf)
         else:
-            ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
-            vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
-            nu = self.group_n[ugroup-1]
-            nv = self.group_n[vgroup-1]  
-            minP,minu,minv = PUBSlib.computeprojection(surf+1,nu,nv,self.nD,self.nT,self.nC,P0.shape[0],P0.shape[1],self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.knot_index,self.T,self.C,P0,self.P)
-            return minP,surf,minu,minv
+            surfs = numpy.array(surfs) + 1
+        s,u,v = PUBSlib.computeprojection(P0.shape[0],surfs.shape[0],self.nD,self.nT,self.nC,self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,surfs,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.knot_index,self.T,self.C,self.P,P0)
+        P = numpy.zeros((P0.shape[0],3))
+        for i in range(P0.shape[0]):
+            P[i] = self.computePt(s[i]-1,u[i],v[i])
+        return P,s,u,v
 
     def write2Tec(self,filename):
         f = open(filename+'.dat','w')
