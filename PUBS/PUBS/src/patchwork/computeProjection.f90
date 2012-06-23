@@ -145,7 +145,7 @@ subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
                  dx(i) = 1-x(i)
               end if
            end do
-           print *, counter,norm,g
+           !print *, counter,norm
            if ((norm.lt.1e-13).or.((dx(1)**2 + dx(2)**2)**0.5.lt.1e-13)) then
               exit
            end if
@@ -334,7 +334,7 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
               end if
            end do
            call getNorm(g, norm)
-           print *, counter,norm,g,dx,x
+           !print *, counter,norm
            if ((norm.lt.1e-13).or.((dx(1)**2 + dx(2)**2 + dx(3)**2)**0.5.lt.1e-13)) then
            !if ((norm.lt.1e-13).or.((dx(1)**2 + dx(2)**2)**0.5.lt.1e-13)) then
               exit

@@ -66,21 +66,27 @@ oml1.importSurfaces(P0)
 
 oml1.computePoints()
 
+n = 1000
+P0 = numpy.zeros((n,3),order='F')
+P0[:,0] = numpy.linspace(-0.5, 0.5, n)
+P0[:,1] = -0.2
+P0[:,2] = 0.4
+#P0[0] = [0.5,-1,0.1]
+#P0[1] = [-0.5,0.5,0.3]
+#P0[2] = [0.2,0.1,-0.1]
+Q = numpy.zeros((n,3),order='F')
+for i in range(n):
+    Q[i] = [0,0,1]
 t0 = time.time()
-P0 = numpy.zeros((3,3),order='F')
-P0[0] = [0.5,-1,0.1]
-P0[1] = [-0.5,0.5,0.3]
-P0[2] = [0.2,0.1,-0.1]
-#P0[2] = [2,2,2]
-Q = numpy.zeros((3,3),order='F')
-Q[0] = [0,1,0]
-Q[1] = [0,1,0]
-Q[2] = [0,1,0]
-P,s,u,v = oml1.computeProjection(P0,Q=Q)
+P,s,u,v = oml1.computeProjection(P0,Q=Q,surfs=[4])
 print time.time()-t0
+t0 = time.time()
+B = oml1.computeBases(s,u,v)
+print time.time()-t0
+P = B.dot(oml1.C)
 print 'Projection test:'
-print P,s[0],u[0],v[0]
-
+print P[0],s[0],u[0],v[0]
+exit()
 
 h=1e-5
 print '1st parametric derivative test:'

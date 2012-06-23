@@ -209,6 +209,12 @@ class PUBS(object):
         P = PUBSlib.computept(surf+1,uder,vder,ku,kv,mu,mv,nB,self.nD,self.nC,self.nsurf,self.nedge,self.ngroup,self.nvert,u,v,self.surf_vert,self.surf_edge,self.edge_group,self.group_d,self.surf_index_C,self.edge_index_C,self.knot_index,self.C)
         return P
 
+    def computeBases(self, s, u, v):
+        nB = PUBSlib.computebnnz(s.shape[0], self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_k, s)
+        Ba, Bi, Bj = PUBSlib.computebases(0, 0, s.shape[0], nB, self.nD, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_d, self.surf_index_C, self.edge_index_C, self.knot_index, s, u, v)
+        B = scipy.sparse.csc_matrix((Ba,(Bi,Bj)),shape=(s.shape[0],self.C.shape[0]))
+        return B
+
     def computeProjection(self, P0, surfs=None, Q=None):
         if surfs==None:
             surfs = numpy.linspace(1,self.nsurf,self.nsurf)

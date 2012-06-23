@@ -364,7 +364,7 @@ class Layout(object):
 if __name__ == '__main__':
 
     edges = []
-    if 1:
+    if 0:
         edges.append([[0.1,0.1],[0.9,0.9]])
         edges.append([[0.9,0.1],[0.1,0.9]])
     if 0:
@@ -372,7 +372,7 @@ if __name__ == '__main__':
         edges.append([[0.6,0.3],[0.2,0.4]])
         edges.append([[0.3,0.5],[0.3,0.2]])
         edges.append([[0.8,0.8],[0.1,0.4]])
-    if 0:
+    if 1:
         edges.append([[0,0],[0.3,0.3]])
         edges.append([[0,1],[0.3,0.7]])
         edges.append([[0,0.1],[0.1,0.1]])
