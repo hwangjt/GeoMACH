@@ -78,7 +78,7 @@ Q = numpy.zeros((n,3),order='F')
 for i in range(n):
     Q[i] = [0,0,1]
 t0 = time.time()
-P,s,u,v = oml1.computeProjection(P0,Q=Q,surfs=[4])
+s,u,v = oml1.computeProjection(P0,Q=Q,surfs=[3])
 print time.time()-t0
 t0 = time.time()
 B = oml1.computeBases(s,u,v)
@@ -86,7 +86,7 @@ print time.time()-t0
 P = B.dot(oml1.C)
 print 'Projection test:'
 print P[0],s[0],u[0],v[0]
-exit()
+
 
 h=1e-5
 print '1st parametric derivative test:'

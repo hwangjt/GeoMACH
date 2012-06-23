@@ -77,9 +77,10 @@ subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
         mind = 1e10
         u0 = 1
         v0 = 1
-        do u=1,nu
-           do v=1,nv
-              call getNorm(bufferP(u,v,:)-P0(k,:), d)
+        do u=1,nu,ceiling(nu/100.0)
+           do v=1,nv,ceiling(nv/100.0)
+              Pc = bufferP(u,v,:)
+              d = abs(dot_product(Pc-P0(k,:),Pc-P0(k,:)))
               if (d .lt. mind) then
                  mind = d
                  u0 = u
@@ -95,7 +96,7 @@ subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
         end if
         x(1) = bufferT(u0,v0,1)
         x(2) = bufferT(u0,v0,2)
-        do counter=0,100
+        do counter=0,40
            call computePt(surf,0,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pc)
@@ -119,8 +120,8 @@ subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
            g(2) = 2*dot_product(f,Pv)
            H(1,1) = 2*dot_product(Pu,Pu) + 2*dot_product(f,Puu)
            H(1,2) = 2*dot_product(Pu,Pv) + 2*dot_product(f,Puv)
-           H(2,1) = 2*dot_product(Pu,Pv) + 2*dot_product(f,Puv)
            H(2,2) = 2*dot_product(Pv,Pv) + 2*dot_product(f,Pvv)
+           H(2,1) = H(1,2)
            do i=1,2
               if (((x(i).eq.0).and.(g(i).gt.0)).or.((x(i).eq.1).and. & 
                  (g(i).lt.0))) then
@@ -133,8 +134,8 @@ subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
            det = H(1,1)*H(2,2) - H(1,2)*H(2,1)
            W(1,1) = H(2,2)/det
            W(1,2) = -H(1,2)/det
-           W(2,1) = -H(2,1)/det
            W(2,2) = H(1,1)/det
+           W(2,1) = W(1,2)
            norm = (g(1)**2 + g(2)**2)**0.5
            dx(1) = -dot_product(W(1,:),g)
            dx(2) = -dot_product(W(2,:),g)
@@ -154,7 +155,7 @@ subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
         call computePt(surf,0,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
              surf_vert,surf_edge,edge_group,group_d,& 
              surf_index_C,edge_index_C,knot_index,C,Pc)
-        call getNorm(Pc(:)-P0(k,:), d)
+        d = abs(dot_product(Pc-P0(k,:),Pc-P0(k,:)))
         if (d .lt. minP(k)) then
            minP(k) = d
            mins(k) = surf
@@ -220,8 +221,10 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
   integer surf, ugroup, vgroup, ku, kv, mu, mv, nu, nv, nB
   double precision, allocatable, dimension(:,:,:) ::  bufferT, bufferP
   integer k, i, s, u, v, u0, v0
-  double precision x(3), dx(3), g(3), H(3,3), W(3,3), norm, det
-  double precision Pc(3), Pu(3), Pv(3), Puu(3), Puv(3), Pvv(3), f(3)
+  double precision x(2), dx(2), g(2), H(2,2), W(2,2), norm, det
+  double precision Pc(3), Pu(3), Pv(3), Puu(3), Puv(3), Pvv(3)
+  double precision f(3), fu(3), fv(3), fuu(3), fuv(3), fvv(3)
+  double precision R(3)
   integer counter
   double precision minP(nP0), d, mind
 
@@ -247,13 +250,15 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
      call getSurfaceP(surf, nP, nu, nv, nsurf, nedge, nvert, surf_vert, &
           surf_edge, surf_index_P, edge_index_P, P, bufferP)
      do k=1,nP0
+        R(:) = Q(k,:)
         mind = 1e10
         u0 = 1
         v0 = 1
-        do u=1,nu
-           do v=1,nv
-              d = abs(dot_product(bufferP(u,v,:)-P0(k,:),Q(k,:)))
-              d = d/(Q(k,1)**2 + Q(k,2)**2 + Q(k,3)**2)**0.5
+        do u=1,nu,ceiling(nu/100.0)
+           do v=1,nv,ceiling(nv/100.0)
+              Pc = bufferP(u,v,:)
+              f = Pc - (P0(k,:) + R*dot_product(Pc-P0(k,:),R)/dot_product(R,R))
+              d = abs(dot_product(f,f))
               if (d .lt. mind) then
                  mind = d
                  u0 = u
@@ -269,8 +274,7 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
         end if
         x(1) = bufferT(u0,v0,1)
         x(2) = bufferT(u0,v0,2)
-        x(3) = 0
-        do counter=0,100
+        do counter=0,40
            call computePt(surf,0,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pc)
@@ -289,43 +293,35 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
            call computePt(surf,0,2,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pvv)
-           f = Pc - P0(k,:) + x(3)*Q(k,:)
-           g(1) = 2*dot_product(f,Pu)
-           g(2) = 2*dot_product(f,Pv)
-           g(3) = 2*dot_product(f,Q(k,:))
-           H(1,1) = 2*dot_product(Pu,Pu) + 2*dot_product(f,Puu)
-           H(1,2) = 2*dot_product(Pu,Pv) + 2*dot_product(f,Puv)
-           H(2,2) = 2*dot_product(Pv,Pv) + 2*dot_product(f,Pvv)
-           H(1,3) = 2*dot_product(Pu,Q(k,:))
-           H(2,3) = 2*dot_product(Pv,Q(k,:))
-           H(3,3) = 2*dot_product(Q(k,:),Q(k,:))
+           f = Pc - (P0(k,:) + R*dot_product(Pc-P0(k,:),R)/dot_product(R,R))
+           fu = Pu - R*dot_product(Pu,R)/dot_product(R,R)
+           fv = Pv - R*dot_product(Pv,R)/dot_product(R,R)
+           fuu = Puu - R*dot_product(Puu,R)/dot_product(R,R)
+           fuv = Puv - R*dot_product(Puv,R)/dot_product(R,R)
+           fvv = Pvv - R*dot_product(Pvv,R)/dot_product(R,R)
+           g(1) = 2*dot_product(f,fu)
+           g(2) = 2*dot_product(f,fv)
+           H(1,1) = 2*dot_product(fu,fu) + 2*dot_product(f,fuu)
+           H(1,2) = 2*dot_product(fu,fv) + 2*dot_product(f,fuv)
+           H(2,2) = 2*dot_product(fv,fv) + 2*dot_product(f,fvv)
            H(2,1) = H(1,2)
-           H(3,1) = H(1,3)
-           H(3,2) = H(2,3)
            do i=1,2
-              !if (((x(i).lt.1e-13).and.(g(i).gt.0)).or.((x(i).gt.1.0-1e-13).and. & 
               if (((x(i).eq.0).and.(g(i).gt.0)).or.((x(i).eq.1).and. & 
                  (g(i).lt.0))) then
                  g(i) = 0.0
-                 H(i,:) = 0.0
-                 H(:,i) = 0.0
+                 H(1,2) = 0.0
+                 H(2,1) = 0.0
                  H(i,i) = 1.0
               end if
            end do
-           W(1,1) = H(2,2)*H(3,3) - H(2,3)*H(3,2)
-           W(1,2) = H(2,3)*H(3,1) - H(2,1)*H(3,3)
-           W(1,3) = H(2,1)*H(3,2) - H(2,2)*H(3,1)
-           W(2,2) = H(1,1)*H(3,3) - H(1,3)*H(3,1)
-           W(2,3) = H(1,2)*H(3,1) - H(1,1)*H(3,2)
-           W(3,3) = H(1,1)*H(2,2) - H(1,2)*H(2,1)
+           det = H(1,1)*H(2,2) - H(1,2)*H(2,1)
+           W(1,1) = H(2,2)/det
+           W(1,2) = -H(1,2)/det
+           W(2,2) = H(1,1)/det
            W(2,1) = W(1,2)
-           W(3,1) = W(1,3)
-           W(3,2) = W(2,3)
-           det = H(1,1)*W(1,1) + H(1,2)*W(1,2) + H(1,3)*W(1,3)
-           W(:,:) = W(:,:)/det
+           norm = (g(1)**2 + g(2)**2)**0.5
            dx(1) = -dot_product(W(1,:),g)
            dx(2) = -dot_product(W(2,:),g)
-           dx(3) = -dot_product(W(3,:),g)
            do i=1,2
               if (x(i)+dx(i).lt.0) then
                  dx(i) = -x(i)
@@ -333,10 +329,8 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
                  dx(i) = 1-x(i)
               end if
            end do
-           call getNorm(g, norm)
            !print *, counter,norm
-           if ((norm.lt.1e-13).or.((dx(1)**2 + dx(2)**2 + dx(3)**2)**0.5.lt.1e-13)) then
-           !if ((norm.lt.1e-13).or.((dx(1)**2 + dx(2)**2)**0.5.lt.1e-13)) then
+           if ((norm.lt.1e-13).or.((dx(1)**2 + dx(2)**2)**0.5.lt.1e-13)) then
               exit
            end if
            x = x + dx
@@ -344,7 +338,8 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
         call computePt(surf,0,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
              surf_vert,surf_edge,edge_group,group_d,& 
              surf_index_C,edge_index_C,knot_index,C,Pc)
-        call getNorm(Pc(:)-P0(k,:)+x(3)*Q(k,:), d)
+        f = Pc - (P0(k,:) + R*dot_product(Pc-P0(k,:),R)/dot_product(R,R))
+        d = abs(dot_product(f,f))
         if (d .lt. minP(k)) then
            minP(k) = d
            mins(k) = surf
@@ -375,20 +370,6 @@ subroutine getOuter(a,b,C)
   end do
 
 end subroutine getOuter
-
-
-
-subroutine getNorm(P,norm)
-
-  implicit none
-
-  double precision, intent(in) ::  P(3)
-  double precision, intent(out) ::  norm
-
-  !norm = (P(1)**2 + P(2)**2 + P(3)**2)**0.5
-  norm = dot_product(P,P)**0.5
-
-end subroutine getNorm
 
 
 
