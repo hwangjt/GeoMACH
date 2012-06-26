@@ -1,29 +1,21 @@
-#import os.path
 import setuptools
-#import sys
-
 from numpy.distutils.core import setup
 from numpy.distutils.misc_util import Configuration
 
-#sources = [
-#    'PAM/components/component.py', 
-#    'PAM/components/halfbody.py', 
-#    'PAM/components/fullplate.py', 
-#    'PAM/components/fulljunction.py', 
-#    'PAM/configurations/configuration.py', 
-#    'PAM/configurations/fuse.py', 
-#    'PAM/configurations/wing.py', 
-#    'PAM/configurations/wingbody.py', 
-#    'PAM/configurations/wingbodytail.py',
-#    ]
+sources = [
+    'PAM/src/layout/importEdges.f90',
+    'PAM/src/layout/computeIntersections.f90',
+    'PAM/src/layout/deleteDuplicates.f90',
+    'PAM/src/layout/addConnectors.f90',
+    ]
 
 config = Configuration(name='PAM')
-#config.add_extension('PAMlib', sources=sources)
+config.add_extension('PAMlib', sources=sources)
 
 kwds = {'install_requires':['numpy','scipy', 'PUBS'],
         'version': '0.1',
         'zip_safe': False,
-        'license': 'public domain',
+        'license': 'LGPL',
         }
 kwds.update(config.todict())
 
