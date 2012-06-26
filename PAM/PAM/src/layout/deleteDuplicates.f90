@@ -1,4 +1,4 @@
-subroutine countDuplicates(nedge, edges, count)
+subroutine countDuplicateEdges(nedge, edges, count)
 
   implicit none
 
@@ -39,11 +39,11 @@ subroutine countDuplicates(nedge, edges, count)
   end do
   count = nedge - index
 
-end subroutine countDuplicates
+end subroutine countDuplicateEdges
 
 
 
-subroutine deleteDuplicates(nedge, nedge0, edges0, edges)
+subroutine deleteDuplicateEdges(nedge, nedge0, edges0, edges)
 
   implicit none
 
@@ -88,4 +88,107 @@ subroutine deleteDuplicates(nedge, nedge0, edges0, edges)
      end if
   end do
 
-end subroutine deleteDuplicates
+end subroutine deleteDuplicateEdges
+
+
+
+subroutine countDuplicateVerts(nvert, verts, count)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) nvert, verts
+  !f2py intent(out) count
+  !f2py depend(nvert) verts
+
+  !Input
+  integer, intent(in) ::  nvert
+  double precision, intent(in) ::  verts(nvert,2)
+
+  !Output
+  integer, intent(out) ::  count
+
+  !Working
+  integer v1, v2
+  integer vertID(nvert), index
+  double precision dP(2), norm
+
+  vertID(:) = 0
+  
+  index = 0
+  do v1=1,nvert
+     if (vertID(v1) .eq. 0) then
+        index = index + 1
+        vertID(v1) = index
+        do v2=v1+1,nvert
+           if (vertID(v2) .eq. 0) then
+              dP = verts(v1,:) - verts(v2,:)
+              norm = dot_product(dP,dP)**0.5
+              if (norm .lt. 1e-14) then
+                 vertID(v2) = index
+              end if
+           end if
+        end do
+     end if
+  end do
+  count = nvert - index
+
+end subroutine countDuplicateVerts
+
+
+
+
+
+
+
+subroutine deleteDuplicateVerts(nvert, nvert0, nedge0, verts0, edges0, verts, edges)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) nvert, nvert0, nedge0, verts0, edges0
+  !f2py intent(out) verts, edges
+  !f2py depend(nvert0) verts0
+  !f2py depend(nedge0) edges0
+  !f2py depend(nvert) verts
+  !f2py depend(nedge0) edges
+
+  !Input
+  integer, intent(in) ::  nvert, nvert0, nedge0
+  double precision, intent(in) ::  verts0(nvert0,2), edges0(nedge0,5)
+
+  !Output
+  double precision, intent(out) ::  verts(nvert,2), edges(nedge0,5)
+
+  !Working
+  integer v1, v2, e, d
+  integer vertID(nvert0), index
+  double precision dP(2), norm
+
+  vertID(:) = 0
+
+  index = 0
+  do v1=1,nvert0
+     if (vertID(v1) .eq. 0) then
+        index = index + 1
+        vertID(v1) = index
+        verts(index,:) = verts0(v1,:)
+        do v2=v1+1,nvert0
+           if (vertID(v2) .eq. 0) then
+              dP = verts0(v1,:) - verts0(v2,:)
+              norm = dot_product(dP,dP)**0.5
+              if (norm .lt. 1e-14) then
+                 vertID(v2) = index
+              end if
+           end if
+        end do
+     end if
+  end do
+
+  do e=1,nedge0
+     do d=1,2
+        edges(e,d) = vertID(int(edges0(e,d)))
+     end do
+  end do
+
+end subroutine deleteDuplicateVerts

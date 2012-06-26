@@ -1,7 +1,5 @@
 from __future__ import division
 import numpy, pylab, time
-import sys
-sys.path.append('/../')
 import PAM.PAMlib as PAMlib
 
 
@@ -51,6 +49,13 @@ class Layout(object):
         self.members[name] = Member(mat, nedge, SP1, EP1, SP2, EP2)
         self.keys.append(name)
 
+    def initialize(self):
+        self.importEdges()
+        self.computeIntersections()
+        self.addConnectors()
+        self.computeIntersections()
+        #print self.checkForPentagons()
+
     def importEdges(self):
         def getv(r, v1, v2):
             return numpy.array(v1)*(1-r) + numpy.array(v2)*r
@@ -93,8 +98,12 @@ class Layout(object):
         nsplit = PAMlib.numsplits(self.nvert, self.nedge, self.verts, self.edges)
         self.edges = PAMlib.splitedges(self.nedge + nsplit, self.nvert, self.nedge, self.verts, self.edges)
         self.nedge = self.edges.shape[0]
-        ndup = PAMlib.countduplicates(self.nedge, self.edges)
-        self.edges = PAMlib.deleteduplicates(self.nedge - ndup, self.nedge, self.edges)
+        ndup = PAMlib.countduplicateverts(self.nvert, self.verts)
+        self.verts, self.edges = PAMlib.deleteduplicateverts(self.nvert - ndup, self.nvert, self.nedge, self.verts, self.edges)
+        self.nvert = self.verts.shape[0]
+        self.nedge = self.edges.shape[0]
+        ndup = PAMlib.countduplicateedges(self.nedge, self.edges)
+        self.edges = PAMlib.deleteduplicateedges(self.nedge - ndup, self.nedge, self.edges)
         self.nedge = self.edges.shape[0]
  
     def splitEdges(self):
@@ -124,7 +133,12 @@ class Layout(object):
         self.nvert = self.verts.shape[0]
         self.nedge = self.edges.shape[0]
 
+    def checkForPentagons(self):
+        return PAMlib.haspentagons(self.nvert, self.nedge, self.verts, self.edges)
+
     def plot(self):
+        print '# verts:', self.nvert
+        print '# edges:', self.nedge
         v = self.verts
         for e in range(self.edges.shape[0]):
             v0,v1 = self.edges[e,:2]
@@ -138,12 +152,11 @@ class Layout(object):
 if __name__ == '__main__':
         
     l = Layout()
-    l.addMembers('Spars2', 1, 2, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.3,0.4], EP2=[0.9,0.9])
-    l.addMembers('Spars', 1, 5, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.1,0.9], EP2=[1,1])
-    l.addMembers('Ribs', 1, 5, SP1=[0.1,0.1], EP1=[0,1], SP2=[1,0], EP2=[1,1])
-    l.importEdges()
-    l.computeIntersections()
-    l.addConnectors()
-    l.computeIntersections()
+    #l.addMembers('Spars2', 1, 2, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.3,0.4], EP2=[0.9,0.9])
+    #l.addMembers('Spars', 1, 5, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.1,0.9], EP2=[1,1])
+    #l.addMembers('Ribs', 1, 5, SP1=[0.1,0.1], EP1=[0,1], SP2=[1,0], EP2=[1,1])
+    l.addMembers('Ribs', 1, 5, SP1=[0.1,0], EP1=[0,1], SP2=[1,0], EP2=[1,1])
+    l.addMembers('Spars', 1, 5, SP1=[0,0], EP1=[1,0], SP2=[0,1], EP2=[1,1])
+    l.initialize()
     l.plot()
     
