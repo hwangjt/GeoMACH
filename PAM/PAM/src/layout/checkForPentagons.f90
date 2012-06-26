@@ -18,29 +18,29 @@ subroutine hasPentagons(nvert, nedge, verts, edges, val)
   !Working
   integer v0, v1, v2, e0, e1, e2
   double precision pi
-  integer count
+  integer count, counter
 
   pi = 2*acos(0.0)
 
+  counter = 0
   val = .False.
   do v0=1,nvert
      do e0=1,nedge
         e1 = e0
-        call getOtherV(v0, edges(e1,:), v1)
+        call getOtherV(v0, edges(e1,1:2), v1)
         if (v1 .ne. 0) then
-           do count=1,3
+           turns: do count=1,3
               call turnRight(nvert, nedge, v1, e1, verts, edges, v2, e2)
               if ((v2 .eq. 0) .or. (v2 .eq. v0)) then
-                 exit
+                 exit turns
               else if (count .eq. 3) then
                  val = .True.
-                 print *, 'found'
-                 exit
+                 counter = counter + 1
               else
                  v1 = v2
                  e1 = e2
               end if
-           end do
+           end do turns
         end if
      end do
   end do
@@ -67,16 +67,16 @@ subroutine turnRight(nvert, nedge, v1, e1, verts, edges, v2, e2)
 
   pi = 2*acos(0.0)
 
-  call getOtherV(v1, edges(e1,:), v0)
-  call arc_tan(verts(v0,:)-verts(v1,:), 1, 1, t1)
+  call getOtherV(v1, edges(e1,1:2), v0)
+  call arc_tan(verts(v0,:)-verts(v1,:), 1.0, 1.0, t1)
   t1 = t1/pi
   
   mint = 4.0
   mine = 0
   do e=1,nedge
-     call getOtherV(v1, edges(e,:), v)
+     call getOtherV(v1, edges(e,1:2), v)
      if ((v .ne. 0) .and. (e .ne. e1)) then
-        call arc_tan(verts(v,:)-verts(v1,:), 1, 1, t)
+        call arc_tan(verts(v,:)-verts(v1,:), 1.0, 1.0, t)
         t = t/pi
         if (t .le. t1) then
            t = t + 2.0
@@ -89,7 +89,7 @@ subroutine turnRight(nvert, nedge, v1, e1, verts, edges, v2, e2)
   end do
   if (mint - t1 .lt. 1) then
      e2 = mine
-     call getOtherV(v1, edges(e2,:), v2)
+     call getOtherV(v1, edges(e2,1:2), v2)
   else
      v2 = 0
      e2 = 0

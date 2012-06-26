@@ -54,7 +54,12 @@ class Layout(object):
         self.computeIntersections()
         self.addConnectors()
         self.computeIntersections()
-        #print self.checkForPentagons()
+        print self.checkForPentagons()
+        while self.checkForPentagons():
+            self.addConnectors()
+            self.computeIntersections()
+            print 'a'
+            
 
     def importEdges(self):
         def getv(r, v1, v2):
@@ -95,37 +100,19 @@ class Layout(object):
         nint = PAMlib.numintersections(self.nvert, self.nedge, self.verts, self.edges)
         self.verts = PAMlib.addintersections(self.nvert + nint, self.nvert, self.nedge, self.verts, self.edges)
         self.nvert = self.verts.shape[0]
-        nsplit = PAMlib.numsplits(self.nvert, self.nedge, self.verts, self.edges)
-        self.edges = PAMlib.splitedges(self.nedge + nsplit, self.nvert, self.nedge, self.verts, self.edges)
-        self.nedge = self.edges.shape[0]
+
         ndup = PAMlib.countduplicateverts(self.nvert, self.verts)
         self.verts, self.edges = PAMlib.deleteduplicateverts(self.nvert - ndup, self.nvert, self.nedge, self.verts, self.edges)
         self.nvert = self.verts.shape[0]
         self.nedge = self.edges.shape[0]
+
+        nsplit = PAMlib.numsplits(self.nvert, self.nedge, self.verts, self.edges)
+        self.edges = PAMlib.splitedges(self.nedge + nsplit, self.nvert, self.nedge, self.verts, self.edges)
+        self.nedge = self.edges.shape[0]
+
         ndup = PAMlib.countduplicateedges(self.nedge, self.edges)
         self.edges = PAMlib.deleteduplicateedges(self.nedge - ndup, self.nedge, self.edges)
         self.nedge = self.edges.shape[0]
- 
-    def splitEdges(self):
-        verts = self.verts
-        edges = self.edges
-        e = 0
-        while e < len(edge_vert):
-            v = 0
-            while v < len(verts):
-                v0 = edges[e,0] - 1
-                v1 = edges[e,1] - 1
-                if (not v==v0) and (not v==v1):
-                    r0 = (verts[v]-verts[v0])/numpy.linalg.norm(verts[v]-verts[v0])
-                    r1 = (verts[v]-verts[v1])/numpy.linalg.norm(verts[v]-verts[v1])
-                    if abs(numpy.dot(r0,r1)+1) < 1e-14:
-                        v0,v1 = self.edges[e,:2] - 1
-                        edge_vert.append([v0,v])
-                        edge_vert.append([v,v1])
-                        edge_vert.pop(e)
-                        v = -1
-                v += 1
-            e += 1
 
     def addConnectors(self):
         ncon, quadrants = PAMlib.countconnectors(self.nvert, self.nedge, self.Lx, self.Ly, self.verts, self.edges)
@@ -134,7 +121,8 @@ class Layout(object):
         self.nedge = self.edges.shape[0]
 
     def checkForPentagons(self):
-        return PAMlib.haspentagons(self.nvert, self.nedge, self.verts, self.edges)
+        val = PAMlib.haspentagons(self.nvert, self.nedge, self.verts, self.edges)
+        return val
 
     def plot(self):
         print '# verts:', self.nvert
@@ -152,11 +140,10 @@ class Layout(object):
 if __name__ == '__main__':
         
     l = Layout()
-    #l.addMembers('Spars2', 1, 2, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.3,0.4], EP2=[0.9,0.9])
-    #l.addMembers('Spars', 1, 5, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.1,0.9], EP2=[1,1])
-    #l.addMembers('Ribs', 1, 5, SP1=[0.1,0.1], EP1=[0,1], SP2=[1,0], EP2=[1,1])
-    l.addMembers('Ribs', 1, 5, SP1=[0.1,0], EP1=[0,1], SP2=[1,0], EP2=[1,1])
-    l.addMembers('Spars', 1, 5, SP1=[0,0], EP1=[1,0], SP2=[0,1], EP2=[1,1])
+    l.addMembers('Spars', 1, 5, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.1,0.9], EP2=[1,1])
+    l.addMembers('Ribs', 1, 5, SP1=[0.1,0.1], EP1=[0,1], SP2=[1,0], EP2=[1,1])
+    #l.addMembers('Ribs', 1, 5, SP1=[0.1,0], EP1=[0,1], SP2=[1,0], EP2=[1,1])
+    #l.addMembers('Spars', 1, 5, SP1=[0,0], EP1=[1,0], SP2=[0,1], EP2=[1,1])
     l.initialize()
     l.plot()
     
