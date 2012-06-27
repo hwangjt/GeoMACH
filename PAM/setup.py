@@ -7,7 +7,8 @@ sources = [
     'PAM/src/layout/computeIntersections.f90',
     'PAM/src/layout/deleteDuplicates.f90',
     'PAM/src/layout/addConnectors.f90',
-    'PAM/src/layout/checkForPentagons.f90',
+    'PAM/src/layout/computePolygons.f90',
+    'PAM/src/layout/splitPolygons.f90',
     ]
 
 config = Configuration(name='PAM')

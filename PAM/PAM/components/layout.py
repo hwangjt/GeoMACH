@@ -54,12 +54,7 @@ class Layout(object):
         self.computeIntersections()
         self.addConnectors()
         self.computeIntersections()
-        print self.checkForPentagons()
-        while self.checkForPentagons():
-            self.addConnectors()
-            self.computeIntersections()
-            print 'a'
-            
+        self.splitPolygons()
 
     def importEdges(self):
         def getv(r, v1, v2):
@@ -106,7 +101,7 @@ class Layout(object):
         self.nvert = self.verts.shape[0]
         self.nedge = self.edges.shape[0]
 
-        nsplit = PAMlib.numsplits(self.nvert, self.nedge, self.verts, self.edges)
+        nsplit = PAMlib.countedgesplits(self.nvert, self.nedge, self.verts, self.edges)
         self.edges = PAMlib.splitedges(self.nedge + nsplit, self.nvert, self.nedge, self.verts, self.edges)
         self.nedge = self.edges.shape[0]
 
@@ -120,9 +115,27 @@ class Layout(object):
         self.nvert = self.verts.shape[0]
         self.nedge = self.edges.shape[0]
 
-    def checkForPentagons(self):
-        val = PAMlib.haspentagons(self.nvert, self.nedge, self.verts, self.edges)
-        return val
+    def computePolygons(self):
+        self.npent, self.nquad, self.ntri = PAMlib.countpolygons(self.nvert, self.nedge, self.verts, self.edges)
+        npoly = 5*self.npent + 4*self.nquad + 3*self.ntri
+        poly_vert, poly_edge = PAMlib.computepolygons(npoly, self.nvert, self.nedge, self.verts, self.edges)
+        self.npoly = self.npent + self.nquad + self.ntri 
+        self.poly_vert, self.poly_edge = PAMlib.deleteduplicatepolygons(self.npoly, npoly, poly_vert, poly_edge)
+
+    def splitPolygons(self):
+        self.computePolygons()
+        self.edges = PAMlib.splitpentagons(self.nedge + self.npent, self.nvert, self.nedge, self.npoly, self.verts, self.edges, self.poly_vert)
+        self.nedge = self.edges.shape[0]
+        self.computePolygons()
+        self.edge_group = PAMlib.computegroups(self.nedge, self.npoly, self.poly_edge)
+        self.ngroup = max(self.edge_group)
+        group_split = PAMlib.computetrisplits(self.nedge, self.ngroup, self.npoly, self.edge_group, self.poly_edge)
+        nsplit = PAMlib.countquadsplits(self.nedge, self.ngroup, self.npoly, self.poly_edge, self.edge_group, group_split)
+        self.verts, self.edges = PAMlib.addpolysplits(self.nvert + 4*self.ntri + 2*nsplit, self.nedge + 3*self.ntri + nsplit, self.nvert, self.nedge, self.ngroup, self.npoly, self.verts, self.edges, self.edge_group, self.poly_vert, self.poly_edge, group_split)
+        self.nvert = self.verts.shape[0]
+        self.nedge = self.edges.shape[0]
+        self.computeIntersections()
+        self.computePolygons()
 
     def plot(self):
         print '# verts:', self.nvert
@@ -140,6 +153,7 @@ class Layout(object):
 if __name__ == '__main__':
         
     l = Layout()
+    #l.addMembers('Spars2', 1, 2, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.3,0.4], EP2=[0.9,0.9])
     l.addMembers('Spars', 1, 5, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.1,0.9], EP2=[1,1])
     l.addMembers('Ribs', 1, 5, SP1=[0.1,0.1], EP1=[0,1], SP2=[1,0], EP2=[1,1])
     #l.addMembers('Ribs', 1, 5, SP1=[0.1,0], EP1=[0,1], SP2=[1,0], EP2=[1,1])

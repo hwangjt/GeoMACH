@@ -83,7 +83,7 @@ end subroutine splitEdges
 
 
 
-subroutine numSplits(nvert, nedge, verts, edges, nsplit)
+subroutine countEdgeSplits(nvert, nedge, verts, edges, nsplit)
 
   implicit none
 
@@ -114,7 +114,7 @@ subroutine numSplits(nvert, nedge, verts, edges, nsplit)
      end do
   end do
 
-end subroutine numSplits
+end subroutine countEdgeSplits
 
 
 
