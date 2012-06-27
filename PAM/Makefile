@@ -6,6 +6,7 @@ SRC_FILES = PAM/src/layout/addConnectors.f90 \
 	PAM/src/layout/computeIntersections.f90 \
 	PAM/src/layout/computePolygons.f90 \
 	PAM/src/layout/deleteDuplicates.f90 \
+	PAM/src/layout/extractSurface.f90 \
 	PAM/src/layout/importEdges.f90 \
 	PAM/src/layout/splitPolygons.f90 \
 

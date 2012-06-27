@@ -9,6 +9,7 @@ sources = [
     'PAM/src/layout/addConnectors.f90',
     'PAM/src/layout/computePolygons.f90',
     'PAM/src/layout/splitPolygons.f90',
+    'PAM/src/layout/extractSurface.f90',
     ]
 
 config = Configuration(name='PAM')

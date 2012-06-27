@@ -55,6 +55,7 @@ class Layout(object):
         self.addConnectors()
         self.computeIntersections()
         self.splitPolygons()
+        self.extractSurfaces()
 
     def importEdges(self):
         def getv(r, v1, v2):
@@ -137,16 +138,35 @@ class Layout(object):
         self.computeIntersections()
         self.computePolygons()
 
+    def extractSurfaces(self):
+        self.P = []
+        for p in range(self.npoly):
+            self.P.append(PAMlib.extractsurface(p+1, 10, self.nvert, self.npoly, self.verts, self.poly_vert))
+
     def plot(self):
         print '# verts:', self.nvert
         print '# edges:', self.nedge
+        print '# quads:', self.nquad
         v = self.verts
         for e in range(self.edges.shape[0]):
             v0,v1 = self.edges[e,:2]
             v0 -= 1
             v1 -= 1
-            pylab.plot([v[v0,0],v[v1,0]],[v[v0,1],v[v1,1]],'k')            
+            if self.edges[e,2]==0:
+                line = 'k:'
+            else:
+                line = 'k'
+            pylab.plot([v[v0,0],v[v1,0]],[v[v0,1],v[v1,1]],line)
         pylab.plot(self.verts[:,0],self.verts[:,1],'ok')
+        pylab.show()
+
+    def plot2(self):
+        for k in range(len(self.P)):
+            P = self.P[k]
+            for i in range(P.shape[0]):
+                pylab.plot(P[i,:,0],P[i,:,1],'k')
+            for j in range(P.shape[1]):
+                pylab.plot(P[:,j,0],P[:,j,1],'k')
         pylab.show()
 
 
@@ -159,5 +179,5 @@ if __name__ == '__main__':
     #l.addMembers('Ribs', 1, 5, SP1=[0.1,0], EP1=[0,1], SP2=[1,0], EP2=[1,1])
     #l.addMembers('Spars', 1, 5, SP1=[0,0], EP1=[1,0], SP2=[0,1], EP2=[1,1])
     l.initialize()
-    l.plot()
+    l.plot2()
     

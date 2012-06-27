@@ -137,10 +137,6 @@ end subroutine countDuplicateVerts
 
 
 
-
-
-
-
 subroutine deleteDuplicateVerts(nvert, nvert0, nedge0, verts0, edges0, verts, edges)
 
   implicit none
@@ -186,6 +182,7 @@ subroutine deleteDuplicateVerts(nvert, nvert0, nedge0, verts0, edges0, verts, ed
   end do
 
   do e=1,nedge0
+     edges(e,:) = edges0(e,:)
      do d=1,2
         edges(e,d) = vertID(int(edges0(e,d)))
      end do
