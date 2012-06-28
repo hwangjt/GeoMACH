@@ -159,6 +159,10 @@ subroutine arc_tan(P, Lx, Ly, t)
 
   implicit none
 
+  !Fortran-python interface directives
+  !f2py intent(in) P, Lx, Ly
+  !f2py intent(out) t
+
   !Input
   double precision, intent(in) ::  P(2), Lx, Ly
 

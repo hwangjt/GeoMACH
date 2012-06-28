@@ -168,6 +168,10 @@ class PUBS(object):
             self.P[:,i] = self.JM.dot(self.Q[:,i])
         self.C = self.M.dot(self.Q)
 
+    def computePointsC(self):
+        for i in range(3):
+            self.P[:,i] = self.J.dot(self.C[:,i])
+
     def computeIndex(self, surf, u, v, quantity):
         ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
         vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]

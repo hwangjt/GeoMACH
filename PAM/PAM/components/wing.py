@@ -1,7 +1,8 @@
 from __future__ import division
-from PAM.components import Component, Property, airfoils
-import numpy, pylab
+from PAM.components import Component, Property, airfoils, Layout
+import numpy, pylab, time
 import mpl_toolkits.mplot3d.axes3d as p3
+import PAM.PAMlib as PAMlib
 
 
 class Wing(Component):
@@ -138,27 +139,6 @@ class Wing(Component):
             Qs[0][-1,:,2] = 0
 
     def computeRotations(self):
-        def arctan(x,y):
-            if x==0:
-                if y > 0:
-                    t = numpy.pi/2.0
-                elif y < 0:
-                    t = 3*numpy.pi/2.0
-            elif y==0:
-                if x > 0:
-                    t = 0
-                elif x < 0:
-                    t = numpy.pi
-            elif x<0:
-                t = numpy.arctan(y/x) + numpy.pi
-            elif y<0:
-                t = numpy.arctan(y/x) + 2*numpy.pi
-            elif y>0:
-                t = numpy.arctan(y/x)
-            else:
-                t = 0
-            return t
-
         pos = numpy.zeros((self.Ns[0].shape[1],3))
         for j in range(self.Ns[0].shape[1]):
             pos[j,:] = [self.props['posx'].data[j], self.props['posy'].data[j], self.props['posz'].data[j]]
@@ -172,8 +152,8 @@ class Wing(Component):
                 t2 = pos[j] - pos[j-1]
                 tangent = t1/numpy.linalg.norm(t1) + t2/numpy.linalg.norm(t2)
             x,y,z = tangent
-            p = arctan(z,y)
-            q = arctan((y**2+z**2)**0.5,x) 
+            p = PAMlib.arc_tan([z,y], 1.0, 1.0)
+            q = PAMlib.arc_tan([(y**2+z**2)**0.5,x], 1.0, 1.0)
             self.SECTrot0[j,:2] = [p,q]
             self.SECTrot0[j,:2] *= 180.0/numpy.pi
 
@@ -196,3 +176,39 @@ class Wing(Component):
         T[2,:] = [   0   ,   0   ,   1   ]
         T0 = numpy.dot(T,T0)
         return T0
+
+    def initializeStructure(self):
+        self.structure = Layout(5,1)
+
+    def buildStructure(self):
+        oml0 = self.oml0
+        Ms = self.getMs()
+        for f in range(len(Ms)):      
+            ni = Ms[f].shape[0]
+            nj = Ms[f].shape[1]
+            for i in range(ni):
+                for j in range(nj):
+                    if f==0:
+                        oml0.C[Ms[f][i,j],:] = [j/(nj-1),(ni-1-i)/(ni-1),0]
+                    else:
+                        oml0.C[Ms[f][i,j],:] = [j/(nj-1),i/(ni-1),0]
+        oml0.computePointsC()
+
+        P = self.structure.extractFlattened()
+        Q = numpy.zeros((P.shape[0],3))
+        Q[:,2] = 1.0
+        surfs = numpy.unique(self.Ks[f].flatten())
+        if surfs[0] == -1:            
+            surfs = numpy.delete(surfs,0)
+        s,u,v = oml0.computeProjection(P, surfs=surfs, Q=Q)
+        B = oml0.computeBases(s,u,v)
+        BM = B.dot(oml0.M)
+        P = BM.dot(oml0.Q)
+
+        f = open('test.dat','w')
+        f.write('title = "PUBSlib output"\n')
+        f.write('variables = "x", "y", "z"\n')        
+        f.write('zone i='+str(P.shape[0])+', DATAPACKING=POINT\n')
+        for i in range(P.shape[0]):
+            f.write(str(P[i,0]) + ' ' + str(P[i,1]) + ' ' + str(P[i,2]) + '\n')
+        f.close()

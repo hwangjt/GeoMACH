@@ -164,13 +164,13 @@ end subroutine addPolySplits
 
 
 
-subroutine splitPentagons(nedge, nvert, nedge0, npoly, &
+subroutine splitPentagons(nedge, nvert, nedge0, npoly, Lx, Ly, &
      verts, edges0, poly_vert, edges)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nedge, nvert, nedge0, npoly, verts, edges0, poly_vert
+  !f2py intent(in) nedge, nvert, nedge0, npoly, Lx, Ly, verts, edges0, poly_vert
   !f2py intent(out) edges
   !f2py depend(nvert) verts
   !f2py depend(nedge0) edges0
@@ -179,6 +179,7 @@ subroutine splitPentagons(nedge, nvert, nedge0, npoly, &
 
   !Input
   integer, intent(in) ::  nedge, nvert, nedge0, npoly
+  double precision, intent(in) ::  Lx, Ly
   double precision, intent(in) ::  verts(nvert,2), edges0(nedge0,5)
   integer, intent(in) ::  poly_vert(npoly,5)
 
@@ -208,7 +209,7 @@ subroutine splitPentagons(nedge, nvert, nedge0, npoly, &
         v(6,:) = v(1,:)
         do i=1,5
            L2(i) = dot_product(v(i+1,:)-v(i,:),v(i+1,:)-v(i,:))
-           call arc_tan(v(i+1,:)-v(i,:), 1.0, 1.0, t(i+1))
+           call arc_tan(v(i+1,:)-v(i,:), Lx, Ly, t(i+1))
            t(i+1) = t(i+1)/pi
         end do
         t(1) = t(6)

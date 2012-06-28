@@ -49,7 +49,7 @@ class Layout(object):
         self.members[name] = Member(mat, nedge, SP1, EP1, SP2, EP2)
         self.keys.append(name)
 
-    def initialize(self):
+    def build(self):
         self.importEdges()
         self.computeIntersections()
         self.addConnectors()
@@ -117,15 +117,15 @@ class Layout(object):
         self.nedge = self.edges.shape[0]
 
     def computePolygons(self):
-        self.npent, self.nquad, self.ntri = PAMlib.countpolygons(self.nvert, self.nedge, self.verts, self.edges)
+        self.npent, self.nquad, self.ntri = PAMlib.countpolygons(self.nvert, self.nedge, self.Lx, self.Ly, self.verts, self.edges)
         npoly = 5*self.npent + 4*self.nquad + 3*self.ntri
-        poly_vert, poly_edge = PAMlib.computepolygons(npoly, self.nvert, self.nedge, self.verts, self.edges)
+        poly_vert, poly_edge = PAMlib.computepolygons(npoly, self.nvert, self.nedge, self.Lx, self.Ly, self.verts, self.edges)
         self.npoly = self.npent + self.nquad + self.ntri 
         self.poly_vert, self.poly_edge = PAMlib.deleteduplicatepolygons(self.npoly, npoly, poly_vert, poly_edge)
 
     def splitPolygons(self):
         self.computePolygons()
-        self.edges = PAMlib.splitpentagons(self.nedge + self.npent, self.nvert, self.nedge, self.npoly, self.verts, self.edges, self.poly_vert)
+        self.edges = PAMlib.splitpentagons(self.nedge + self.npent, self.nvert, self.nedge, self.npoly, self.Lx, self.Ly, self.verts, self.edges, self.poly_vert)
         self.nedge = self.edges.shape[0]
         self.computePolygons()
         self.edge_group = PAMlib.computegroups(self.nedge, self.npoly, self.poly_edge)
@@ -142,6 +142,11 @@ class Layout(object):
         self.P = []
         for p in range(self.npoly):
             self.P.append(PAMlib.extractsurface(p+1, 10, self.nvert, self.npoly, self.verts, self.poly_vert))
+
+    def extractFlattened(self):
+        n = 6
+        P = PAMlib.extractflattened(n, self.npoly*n**2, self.nvert, self.npoly, self.verts, self.poly_vert)
+        return P
 
     def plot(self):
         print '# verts:', self.nvert
@@ -178,6 +183,6 @@ if __name__ == '__main__':
     l.addMembers('Ribs', 1, 5, SP1=[0.1,0.1], EP1=[0,1], SP2=[1,0], EP2=[1,1])
     #l.addMembers('Ribs', 1, 5, SP1=[0.1,0], EP1=[0,1], SP2=[1,0], EP2=[1,1])
     #l.addMembers('Spars', 1, 5, SP1=[0,0], EP1=[1,0], SP2=[0,1], EP2=[1,1])
-    l.initialize()
-    l.plot2()
+    l.build()
+    l.plot()
     

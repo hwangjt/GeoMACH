@@ -15,7 +15,7 @@ sources = [
 config = Configuration(name='PAM')
 config.add_extension('PAMlib', sources=sources)
 
-kwds = {'install_requires':['numpy','scipy', 'PUBS'],
+kwds = {'install_requires':['numpy','scipy'],
         'version': '0.1',
         'zip_safe': False,
         'license': 'LGPL',

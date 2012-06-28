@@ -115,12 +115,13 @@ end subroutine comparePolygons
 
 
 
-subroutine computePolygons(npoly, nvert, nedge, verts, edges, poly_vert, poly_edge)
+subroutine computePolygons(npoly, nvert, nedge, Lx, Ly, &
+     verts, edges, poly_vert, poly_edge)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) npoly, nvert, nedge, verts, edges
+  !f2py intent(in) npoly, nvert, nedge, Lx, Ly, verts, edges
   !f2py intent(out) poly_vert, poly_edge
   !f2py depend(nvert) verts
   !f2py depend(nedge) edges
@@ -128,6 +129,7 @@ subroutine computePolygons(npoly, nvert, nedge, verts, edges, poly_vert, poly_ed
 
   !Input
   integer, intent(in) ::  npoly, nvert, nedge
+  double precision, intent(in) ::  Lx, Ly
   double precision, intent(in) ::  verts(nvert,2), edges(nedge,5)
 
   !Output
@@ -149,7 +151,7 @@ subroutine computePolygons(npoly, nvert, nedge, verts, edges, poly_vert, poly_ed
            poly_vert(p,1) = v1
            poly_edge(p,1) = e1
            turns: do count=1,4
-              call turnRight(nvert, nedge, v1, e1, verts, edges, v2, e2)
+              call turnRight(nvert, nedge, v1, e1, Lx, Ly, verts, edges, v2, e2)
               poly_vert(p,count+1) = v2
               poly_edge(p,count+1) = e2
               if (v2 .eq. 0) then
@@ -173,18 +175,19 @@ end subroutine computePolygons
 
 
 
-subroutine countPolygons(nvert, nedge, verts, edges, npent, nquad, ntri)
+subroutine countPolygons(nvert, nedge, Lx, Ly, verts, edges, npent, nquad, ntri)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nvert, nedge, verts, edges
+  !f2py intent(in) nvert, nedge, Lx, Ly, verts, edges
   !f2py intent(out) npent, nquad, ntri
   !f2py depend(nvert) verts
   !f2py depend(nedge) edges
 
   !Input
   integer, intent(in) ::  nvert, nedge
+  double precision, intent(in) ::  Lx, Ly
   double precision, intent(in) ::  verts(nvert,2), edges(nedge,5)
 
   !Output
@@ -204,7 +207,7 @@ subroutine countPolygons(nvert, nedge, verts, edges, npent, nquad, ntri)
         call getOtherV(v0, edges(e1,1:2), v1)
         if (v1 .ne. 0) then
            turns: do count=1,4
-              call turnRight(nvert, nedge, v1, e1, verts, edges, v2, e2)
+              call turnRight(nvert, nedge, v1, e1, Lx, Ly, verts, edges, v2, e2)
               if (v2 .eq. 0) then
                  exit turns
               else if (v2 .eq. v0) then
@@ -236,13 +239,14 @@ end subroutine countPolygons
 
 
 
-subroutine turnRight(nvert, nedge, v1, e1, verts, edges, v2, e2)
+subroutine turnRight(nvert, nedge, v1, e1, Lx, Ly, verts, edges, v2, e2)
 
   implicit none
 
   !Input
   integer, intent(in) ::  nvert, nedge
   integer, intent(in) ::  v1, e1
+  double precision, intent(in) ::  Lx, Ly
   double precision, intent(in) ::  verts(nvert,2), edges(nedge,5)
 
   !Output
@@ -255,7 +259,7 @@ subroutine turnRight(nvert, nedge, v1, e1, verts, edges, v2, e2)
   pi = 2*acos(0.0)
 
   call getOtherV(v1, edges(e1,1:2), v0)
-  call arc_tan(verts(v0,:)-verts(v1,:), 1.0, 1.0, t1)
+  call arc_tan(verts(v0,:)-verts(v1,:), Lx, Ly, t1)
   t1 = t1/pi
   
   mint = 4.0
@@ -263,7 +267,7 @@ subroutine turnRight(nvert, nedge, v1, e1, verts, edges, v2, e2)
   do e=1,nedge
      call getOtherV(v1, edges(e,1:2), v)
      if ((v .ne. 0) .and. (e .ne. e1)) then
-        call arc_tan(verts(v,:)-verts(v1,:), 1.0, 1.0, t)
+        call arc_tan(verts(v,:)-verts(v1,:), Lx, Ly, t)
         t = t/pi
         if (t .le. t1) then
            t = t + 2.0

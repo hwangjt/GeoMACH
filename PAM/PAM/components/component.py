@@ -231,9 +231,9 @@ class Component(object):
                     surf = Ks[f][i,j]
                     if surf != -1:
                         for v in range(nj[j]+1):
+                            jj = sum(nj[:j]) + v
                             for u in range(ni[i]+1):
                                 ii = sum(ni[:i]) + u
-                                jj = sum(nj[:j]) + v
                                 Ms[f][ii,jj] = oml0.computeIndex(surf,u,v,1)
         return Ms
 
