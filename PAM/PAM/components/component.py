@@ -73,43 +73,45 @@ class Component(object):
 
     def initializeDOFs(self):
         oml0 = self.oml0
+        Ks = self.Ks
 
         Qs = []
         Ns = []
 
-        for f in range(len(self.Ks)):
+        for f in range(len(Ks)):
             ni = self.getni(f,0)
             nj = self.getni(f,1)
             Qs.append(numpy.zeros((sum(ni)+1,sum(nj)+1,3),complex))
             Ns.append(numpy.zeros((sum(ni)+1,sum(nj)+1,5),int))
             Ns[f][:,:,:] = -1
-            for j in range(Ns[f].shape[1]):
-                v,jj = self.divide(j,nj)
-                for i in range(Ns[f].shape[0]):
-                    u,ii = self.divide(i,ni)
-                    surf = self.Ks[f][ii,jj]
-                    uType = self.classifyC(u,i,Ns[f].shape[0])
-                    vType = self.classifyC(v,j,Ns[f].shape[1])
-                    isInteriorDOF = (uType==2 and vType==2)
-                    if surf != -1 and (isInteriorDOF or self.isExteriorDOF(f,uType,vType,ii,jj)):
-                        Ns[f][i,j,0] = oml0.computeIndex(surf,u,v,2)
-                        Ns[f][i,j,1] = ii
-                        Ns[f][i,j,2] = u
-                        Ns[f][i,j,3] = jj
-                        Ns[f][i,j,4] = v
-
+            for j in range(Ks[f].shape[1]):
+                for i in range(Ks[f].shape[0]):
+                    surf = Ks[f][i,j]
+                    if surf != -1:
+                        for v in range(nj[j]+1):
+                            jj = sum(nj[:j]) + v
+                            for u in range(ni[i]+1):
+                                ii = sum(ni[:i]) + u
+                                uType = self.classifyC(u,ii,ni[i]+1,Ns[f].shape[0])
+                                vType = self.classifyC(v,jj,nj[j]+1,Ns[f].shape[1])
+                                isInteriorDOF = (uType==2 and vType==2)
+                                if isInteriorDOF or self.isExteriorDOF(f,uType,vType,i,j):
+                                    Ns[f][ii,jj,0] = oml0.computeIndex(surf,u,v,2)
+                                    Ns[f][ii,jj,1] = i
+                                    Ns[f][ii,jj,2] = u
+                                    Ns[f][ii,jj,3] = j
+                                    Ns[f][ii,jj,4] = v
         self.Qs = Qs
         self.Ns = Ns
 
-    def isDOF(self, f, uType, vType, i, j):
-        return False
-
-    def classifyC(self, u, i, leni):
+    def classifyC(self, u, i, lenu, leni):
         if i==0:
             return 0
         elif i==leni-1:
             return -1
-        elif u==-1:
+        elif u==0:
+            return 1
+        elif u==lenu-1:
             return 1
         else:
             return 2
@@ -151,18 +153,6 @@ class Component(object):
             return self.dims[d]
         else:
             return self.dims[d][::-1]
-
-    def divide(self, i, ni):
-        u = i
-        for ii in range(ni.shape[0]):
-            if u > ni[ii]:
-                u -= ni[ii]
-            elif u == ni[ii]:
-                u = -1
-                break
-            else:
-                break
-        return u, ii
 
     def setC1(self, t, f, i=None, j=None, u=None, v=None, d=None, val=True):
         if t=='surf':
@@ -225,6 +215,27 @@ class Component(object):
         else:
             vVal = vType==v
         return uVal and vVal
+
+    def getMs(self):
+        oml0 = self.oml0
+        Ks = self.Ks
+
+        Ms = []
+        for f in range(len(Ks)):
+            ni = self.getni(f,0)
+            nj = self.getni(f,1)
+            Ms.append(numpy.zeros((sum(ni)+1,sum(nj)+1),int))
+            Ms[f][:,:] = -1
+            for j in range(Ks[f].shape[1]):
+                for i in range(Ks[f].shape[0]):
+                    surf = Ks[f][i,j]
+                    if surf != -1:
+                        for v in range(nj[j]+1):
+                            for u in range(ni[i]+1):
+                                ii = sum(ni[:i]) + u
+                                jj = sum(nj[:j]) + v
+                                Ms[f][ii,jj] = oml0.computeIndex(surf,u,v,1)
+        return Ms
 
 
 
