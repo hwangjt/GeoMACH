@@ -9,6 +9,7 @@ SRC_FILES = PAM/src/layout/addConnectors.f90 \
 	PAM/src/layout/extractSurface.f90 \
 	PAM/src/layout/importEdges.f90 \
 	PAM/src/layout/splitPolygons.f90 \
+	PAM/src/component/initialize.f90
 
 default:	
 	f2py --fcompiler=intelem -I$(CGNS_INCLUDE) -c ${SRC_FILES} -m PAMlib ${LIB_CGNS}

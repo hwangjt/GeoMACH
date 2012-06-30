@@ -1,37 +1,21 @@
 from __future__ import division
-import numpy, pylab
+import numpy, pylab, time
+import PAM.PAMlib as PAMlib
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
 class Component(object):
         
     def createSurfaces(self, Ks, nu, nv, du, dv, d):
-        r = [0,0,0]
-        if du<0:
-            r[abs(du)-1] = 1
-        if dv<0:
-            r[abs(dv)-1] = 1
-        du = abs(du)-1
-        dv = abs(dv)-1
-
         Ps = []
         for j in range(len(nv)):
             for i in range(len(nu)):
-                P = d*numpy.ones((nu[i],nv[j],3),order='F')
                 u1 = (sum(nu[:i])-i)/(sum(nu)-len(nu))
                 u2 = (sum(nu[:i+1])-i-1)/(sum(nu)-len(nu))
                 v1 = (sum(nv[:j])-j)/(sum(nv)-len(nv))
                 v2 = (sum(nv[:j+1])-j-1)/(sum(nv)-len(nv))
-                for v in range(nv[j]):
-                    P[:,v,du] = numpy.linspace(u1,u2,nu[i])
-                for u in range(nu[i]):
-                    P[u,:,dv] = numpy.linspace(v1,v2,nv[j])
-                Ps.append(P)
-        for k in range(len(Ps)):
-            for i in range(3):
-                if r[i]:
-                    Ps[k][:,:,i] *= -1
-                    Ps[k][:,:,i] += 1    
+                P = PAMlib.createsurfaces(nu[i],nv[j],du,dv,d,u1,u2,v1,v2)
+                Ps.append(P)  
 
         K = numpy.zeros((len(nu),len(nv)),int)
         counter = 0
@@ -44,14 +28,9 @@ class Component(object):
         return Ps, K
 
     def createInterface(self, n, edge1, edge2, swap=False):
-        nu = n
-        nv = edge1.shape[0]
-        P = numpy.zeros((nu,nv,3),order='F')
-        for j in range(nv):
-            P[:,j,:] += numpy.outer(numpy.linspace(0,1,nu),edge2[j,:])
-            P[:,j,:] += numpy.outer(numpy.linspace(1,0,nu),edge1[j,:])
+        P = PAMlib.createinterface(n, edge1.shape[0], edge1, edge2)
         if swap:
-            P = numpy.swapaxes(P,0,1)            
+            P = numpy.swapaxes(P,0,1) 
         return P
 
     def translatePoints(self, dx, dy, dz):
@@ -216,7 +195,7 @@ class Component(object):
             vVal = vType==v
         return uVal and vVal
 
-    def getMs(self):
+    def computeMs(self):
         oml0 = self.oml0
         Ks = self.Ks
 
@@ -235,7 +214,57 @@ class Component(object):
                             for u in range(ni[i]+1):
                                 ii = sum(ni[:i]) + u
                                 Ms[f][ii,jj] = oml0.computeIndex(surf,u,v,1)
-        return Ms
+        self.Ms = Ms
+
+    def findJunctions(self):
+        oml0 = self.oml0
+        Ks = self.Ks
+        Ms = self.Ms
+
+        Js = []
+        for f in range(len(Ks)):
+            ni = self.getni(f,0)
+            nj = self.getni(f,1)
+            k0 = Ks[f].shape[0]
+            k1 = Ks[f].shape[1]
+            SPs = []
+            EPs = []
+            for j in range(k1):
+                for i in range(k0):
+                    if Ks[f][i,j]==-1:
+                        SPs.append([i,j])
+                        EPs.append([i,j])
+                        if (i > 0 and Ks[f][i-1,j] == -1) or (j > 0 and Ks[f][i,j-1] == -1):
+                            SPs.pop()
+                        if (i < k0-1 and Ks[f][i+1,j] == -1) or (j < k1-1 and Ks[f][i,j+1] == -1):
+                            EPs.pop()
+            J = numpy.zeros((len(SPs),4),int)
+            for s in range(len(SPs)):
+                SP = SPs[s]
+                for e in range(len(EPs)):
+                    EP = EPs[e]
+                    if SP[0] <= EP[0] and SP[1] <= EP[1]:
+                        if numpy.linalg.norm(1+Ks[f][SP[0]:EP[0]+1,SP[1]:EP[1]+1]) < 1e-14:
+                            J[s,:] = [sum(ni[:SP[0]]),sum(nj[:SP[1]]),sum(ni[:EP[0]+1]),sum(nj[:EP[1]+1])]
+            Js.append(J)
+        self.Js = Js
+
+    def addJunctionEdges(self):
+        oml0 = self.oml0
+        Ms = self.Ms
+        Js = self.Js
+        ctr = 0
+        for f in range(len(Js)):
+            for k in range(Js[f].shape[0]):
+                C11 = oml0.C[Ms[f][Js[f][k,0],Js[f][k,1]],:2]
+                C12 = oml0.C[Ms[f][Js[f][k,0],Js[f][k,3]],:2]
+                C21 = oml0.C[Ms[f][Js[f][k,2],Js[f][k,1]],:2]
+                C22 = oml0.C[Ms[f][Js[f][k,2],Js[f][k,3]],:2]      
+                self.structure.addMembers('Junction'+str(ctr+0), 1, 1, SP1=C11, EP1=C12)
+                self.structure.addMembers('Junction'+str(ctr+1), 1, 1, SP1=C21, EP1=C22)
+                self.structure.addMembers('Junction'+str(ctr+2), 1, 1, SP1=C11, EP1=C21)
+                self.structure.addMembers('Junction'+str(ctr+3), 1, 1, SP1=C12, EP1=C22) 
+                ctr += 4   
 
 
 

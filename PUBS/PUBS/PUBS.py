@@ -72,7 +72,7 @@ class PUBS(object):
         self.ns = numpy.zeros((self.nsurf,2),order='F')
         for k in range(self.nsurf):
             self.ns[k,:] = P[k].shape[0:2]
-        self.nvert,self.nedge,self.surf_vert,self.surf_edge = PUBSlib.computetopology(self.nsurf,1e-15,1e-5,Ps)
+        self.nvert,self.nedge,self.surf_vert,self.surf_edge = PUBSlib.computetopology(self.nsurf,1e-13,1e-5,Ps)
         print '# Vertices =',self.nvert
         print '# Edges =',self.nedge
         self.vert_count,self.edge_count = PUBSlib.countveptrs(self.nsurf,self.nvert,self.nedge,self.surf_vert,self.surf_edge)
