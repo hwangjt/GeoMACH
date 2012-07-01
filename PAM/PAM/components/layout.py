@@ -78,8 +78,12 @@ class Layout(object):
             nedge = member.nedge
             ntypes = len(member.types)-1
             for i in range(nedge):
-                SP = getv(i/(nedge-1), member.SP1, member.SP2)
-                EP = getv(i/(nedge-1), member.EP1, member.EP2)
+                if nedge==1:
+                    SP = getv(0, member.SP1, member.SP2)
+                    EP = getv(0, member.EP1, member.EP2)
+                else:
+                    SP = getv(i/(nedge-1), member.SP1, member.SP2)
+                    EP = getv(i/(nedge-1), member.EP1, member.EP2)
                 for j in range(ntypes):
                     edges[index,0:2] = getv(member.types[j][0], SP, EP)
                     edges[index,2:4] = getv(member.types[j+1][0], SP, EP)
@@ -143,10 +147,16 @@ class Layout(object):
         for p in range(self.npoly):
             self.P.append(PAMlib.extractsurface(p+1, 10, self.nvert, self.npoly, self.verts, self.poly_vert))
 
-    def extractFlattened(self):
+    def extractFlattened(self, JQ):
         n = 6
-        P = PAMlib.extractflattened(n, self.npoly*n**2, self.nvert, self.npoly, self.verts, self.poly_vert)
+        if len(JQ)==0:
+            P = PAMlib.extractflattened(n, 1, (self.npoly-len(JQ))*n**2, self.nvert, self.npoly, [-1], self.verts, self.poly_vert)            
+        else:
+            P = PAMlib.extractflattened(n, len(JQ), (self.npoly-len(JQ))*n**2, self.nvert, self.npoly, JQ, self.verts, self.poly_vert)
         return P
+
+    def getQuadIndices(self, JQ):
+        return PAMlib.getquadindices(len(JQ), self.npoly, JQ)
 
     def plot(self):
         print '# verts:', self.nvert

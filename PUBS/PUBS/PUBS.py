@@ -230,6 +230,27 @@ class PUBS(object):
             s,u,v = PUBSlib.computepjtnalongq(P0.shape[0],surfs.shape[0],self.nD,self.nT,self.nC,self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,surfs,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.knot_index,self.T,self.C,self.P,P0,Q)
         return s,u,v
 
+    def vstackSparse(self, Bs):
+        n0 = 0
+        n1 = Bs[0].shape[1]
+        data = []
+        indices = []
+        indptr = []
+        offset = 0
+        for k in range(len(Bs)):
+            if not scipy.sparse.isspmatrix_csr(Bs[k]):
+                Bs[k] = scipy.sparse.csr_matrix(Bs[k])
+            n0 += Bs[k].shape[0]
+            data.append(Bs[k].data)
+            indices.append(Bs[k].indices)
+            indptr.append(Bs[k].indptr[:-1]+offset)
+            offset += Bs[k].indptr[-1]
+        indptr.append(numpy.array([offset]))
+        data = numpy.hstack(data)
+        indices = numpy.hstack(indices)
+        indptr = numpy.hstack(indptr)
+        return scipy.sparse.csr_matrix((data, indices, indptr), shape=(n0, n1))
+
     def write2Tec(self,filename):
         f = open(filename+'.dat','w')
         f.write('title = "PUBSlib output"\n')

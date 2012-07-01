@@ -264,7 +264,36 @@ class Component(object):
                 self.structure.addMembers('Junction'+str(ctr+1), 1, 1, SP1=C21, EP1=C22)
                 self.structure.addMembers('Junction'+str(ctr+2), 1, 1, SP1=C11, EP1=C21)
                 self.structure.addMembers('Junction'+str(ctr+3), 1, 1, SP1=C12, EP1=C22) 
-                ctr += 4   
+                ctr += 4
+
+    def findJunctionQuads(self):
+        nquad = self.structure.nquad
+        verts = self.structure.verts
+        poly_vert = self.structure.poly_vert
+
+        oml0 = self.oml0
+        Ms = self.Ms
+        Js = self.Js
+
+        C = numpy.zeros((4,2))
+        ctd = numpy.zeros(2)
+
+        JQs = []
+        for f in range(len(Js)):
+            JQ = []
+            for q in range(nquad):
+                ctd[:] = 0
+                for k in range(4):
+                    ctd[:] += 0.25*verts[poly_vert[q,k]-1,:]
+                for k in range(Js[f].shape[0]):
+                    C[0,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,1]],:2]
+                    C[1,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,3]],:2]
+                    C[2,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,1]],:2]
+                    C[3,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,3]],:2]
+                    if min(C[:,0]) < ctd[0] and ctd[0] < max(C[:,0]) and min(C[:,1]) < ctd[1] and ctd[1] < max(C[:,1]):
+                        JQ.append(q+1)
+            JQs.append(JQ)
+        self.JQs = JQs
 
 
 

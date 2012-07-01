@@ -1,5 +1,5 @@
 from __future__ import division
-import numpy
+import numpy, time
 import sys
 from PAM.components import Wing, Body, FullInterface, HalfInterface
 from PAM.configurations import Configuration
@@ -98,7 +98,6 @@ class Conventional(Configuration):
         #c['wing'].structure.addMembers('Ribs', 1, 5, SP1=[0.1,0.1], EP1=[0,1], SP2=[1,0], EP2=[1,1]) 
         c['wing'].structure.addMembers('Spars', 1, 5, SP1=[0,0], EP1=[1,0], SP2=[0,1], EP2=[1,1])
         c['wing'].structure.addMembers('Ribs', 1, 5, SP1=[0,0], EP1=[0,1], SP2=[1,0], EP2=[1,1]) 
-        c['wing'].structure.build()
         c['wing'].buildStructure()
 
         #c['wing'].structure.plot()

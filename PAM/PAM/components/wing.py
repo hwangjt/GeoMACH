@@ -179,10 +179,22 @@ class Wing(Component):
 
     def initializeStructure(self):
         self.structure = Layout(5,1)
+        self.computeMs()
+        self.findJunctions()
 
     def buildStructure(self):
+        def computeBases(i):
+            P = self.structure.extractFlattened(self.JQs[i])
+            surfs = numpy.unique(self.Ks[i].flatten())
+            if surfs[0] == -1:            
+                surfs = numpy.delete(surfs,0)
+            Q = numpy.zeros((P.shape[0],3))
+            Q[:,2] = 1.0
+            s,u,v = oml0.computeProjection(P, surfs=surfs, Q=Q)
+            return oml0.computeBases(s,u,v)
+
         oml0 = self.oml0
-        Ms = self.getMs()
+        Ms = self.Ms
         for f in range(len(Ms)):      
             ni = Ms[f].shape[0]
             nj = Ms[f].shape[1]
@@ -193,15 +205,14 @@ class Wing(Component):
                     else:
                         oml0.C[Ms[f][i,j],:] = [j/(nj-1),i/(ni-1),0]
         oml0.computePointsC()
+        self.addJunctionEdges()
+        self.structure.build()
+        self.findJunctionQuads()
 
-        P = self.structure.extractFlattened()
-        Q = numpy.zeros((P.shape[0],3))
-        Q[:,2] = 1.0
-        surfs = numpy.unique(self.Ks[f].flatten())
-        if surfs[0] == -1:            
-            surfs = numpy.delete(surfs,0)
-        s,u,v = oml0.computeProjection(P, surfs=surfs, Q=Q)
-        B = oml0.computeBases(s,u,v)
+        B0 = computeBases(0)
+        B1 = computeBases(1)
+        B = oml0.vstackSparse([B0,B1])
+
         BM = B.dot(oml0.M)
         P = BM.dot(oml0.Q)
 
