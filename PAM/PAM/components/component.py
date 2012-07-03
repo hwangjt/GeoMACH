@@ -45,10 +45,7 @@ class Component(object):
         oml0 = self.oml0
 
         for f in range(len(Ns)):
-            for j in range(Ns[f].shape[1]):
-                for i in range(Ns[f].shape[0]):
-                    if Ns[f][i,j,0] != -1:
-                        oml0.Q[Ns[f][i,j,0],:] = Qs[f][i,j,:].real
+            PAMlib.updateqs(oml0.nQ, Ns[f].shape[0], Ns[f].shape[1], Ns[f], Qs[f], oml0.Q)
 
     def initializeDOFs(self):
         oml0 = self.oml0
@@ -266,8 +263,10 @@ class Component(object):
                 self.structure.addMembers('Junction'+str(ctr+3), 1, 1, SP1=C12, EP1=C22) 
                 ctr += 4
 
-    def findJunctionQuads(self):
+    def findJunctionQuadsAndEdges(self):
         nquad = self.structure.nquad
+        nedge = self.structure.nedge
+        edges = self.structure.edges
         verts = self.structure.verts
         poly_vert = self.structure.poly_vert
 
@@ -279,6 +278,7 @@ class Component(object):
         ctd = numpy.zeros(2)
 
         JQs = []
+        JEs = []
         for f in range(len(Js)):
             JQ = []
             for q in range(nquad):
@@ -293,8 +293,21 @@ class Component(object):
                     if min(C[:,0]) < ctd[0] and ctd[0] < max(C[:,0]) and min(C[:,1]) < ctd[1] and ctd[1] < max(C[:,1]):
                         JQ.append(q+1)
             JQs.append(JQ)
+            JE = []
+            for e in range(nedge):
+                ctd[:] = 0
+                for k in range(2):
+                    ctd[:] += 0.5*verts[edges[e,k]-1,:]
+                for k in range(Js[f].shape[0]):
+                    C[0,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,1]],:2]
+                    C[1,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,3]],:2]
+                    C[2,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,1]],:2]
+                    C[3,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,3]],:2]
+                    if min(C[:,0]) < ctd[0] and ctd[0] < max(C[:,0]) and min(C[:,1]) < ctd[1] and ctd[1] < max(C[:,1]):
+                        JE.append(e+1)
+            JEs.append(JE)
         self.JQs = JQs
-
+        self.JEs = JEs
 
 
 class Property(object):

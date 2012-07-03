@@ -129,7 +129,7 @@ class Wing(Component):
                 pos = numpy.array(pos)
                 rot = numpy.array(rot)
                 prp = numpy.array(prp)
-                T = self.computeRtnMtx(rot+self.SECTrot0[j,:]*prp)
+                T = PAMlib.computertnmtx(rot+self.SECTrot0[j,:]*prp)
                 for i in range(Ns[f].shape[0]):
                     Qs[f][i,j,:] = numpy.dot(T,self.SECTshape[f,i,j,:]-[a,b,0])*self.props['chord'].data[j]
                     Qs[f][i,j,:] += self.offset + pos
@@ -157,42 +157,12 @@ class Wing(Component):
             self.SECTrot0[j,:2] = [p,q]
             self.SECTrot0[j,:2] *= 180.0/numpy.pi
 
-    def computeRtnMtx(self, rot):
-        p,q,r = rot*numpy.pi/180.0
-        cos = numpy.cos
-        sin = numpy.sin
-        T0 = numpy.eye(3)
-        T = numpy.zeros((3,3))
-        T[0,:] = [   1   ,   0   ,   0   ]
-        T[1,:] = [   0   , cos(p), sin(p)]
-        T[2,:] = [   0   ,-sin(p), cos(p)]
-        T0 = numpy.dot(T,T0)
-        T[0,:] = [ cos(q),   0   , sin(q)]
-        T[1,:] = [   0   ,   1   ,   0   ]
-        T[2,:] = [-sin(q),   0   , cos(q)]
-        T0 = numpy.dot(T,T0)
-        T[0,:] = [ cos(r), sin(r),   0   ]
-        T[1,:] = [-sin(r), cos(r),   0   ]
-        T[2,:] = [   0   ,   0   ,   1   ]
-        T0 = numpy.dot(T,T0)
-        return T0
-
     def initializeStructure(self):
         self.structure = Layout(5,1)
         self.computeMs()
         self.findJunctions()
 
     def buildStructure(self):
-        def computeBases(i):
-            P = self.structure.extractFlattened(self.JQs[i])
-            surfs = numpy.unique(self.Ks[i].flatten())
-            if surfs[0] == -1:            
-                surfs = numpy.delete(surfs,0)
-            Q = numpy.zeros((P.shape[0],3))
-            Q[:,2] = 1.0
-            s,u,v = oml0.computeProjection(P, surfs=surfs, Q=Q)
-            return oml0.computeBases(s,u,v)
-
         oml0 = self.oml0
         Ms = self.Ms
         for f in range(len(Ms)):      
@@ -200,21 +170,52 @@ class Wing(Component):
             nj = Ms[f].shape[1]
             for i in range(ni):
                 for j in range(nj):
+                    ii = i/(ni-1)
+                    jj = j/(nj-1)
                     if f==0:
-                        oml0.C[Ms[f][i,j],:] = [j/(nj-1),(ni-1-i)/(ni-1),0]
+                        oml0.C[Ms[f][i,j],:] = [jj,1 - ii,0]
                     else:
-                        oml0.C[Ms[f][i,j],:] = [j/(nj-1),i/(ni-1),0]
+                        oml0.C[Ms[f][i,j],:] = [jj,ii,0]
         oml0.computePointsC()
         self.addJunctionEdges()
         self.structure.build()
-        self.findJunctionQuads()
+        self.findJunctionQuadsAndEdges()
 
-        B0 = computeBases(0)
-        B1 = computeBases(1)
-        B = oml0.vstackSparse([B0,B1])
+        Bs = []
+        quad_indices = []
+        for i in range(len(Ms)):
+            oml0 = self.oml0
+            P = self.structure.extractFlattened(self.JQs[i])
+            surfs = numpy.unique(self.Ks[i].flatten())
+            if surfs[0] == -1:            
+                surfs = numpy.delete(surfs,0)
+            Q = numpy.zeros((P.shape[0],3))
+            Q[:,2] = 1.0
+            s,u,v = oml0.computeProjection(P, surfs=surfs, Q=Q)
+            Bs.append(oml0.computeBases(s,u,v))
+            quad_indices.append(self.structure.getQuadIndices(self.JQs[i]))
+        B = oml0.vstackSparse(Bs)
 
         BM = B.dot(oml0.M)
         P = BM.dot(oml0.Q)
+        
+        segment_edge = []
+        for s in range(self.structure.segments.shape[0]):
+            segment_edge.append([])
+            
+        edges = self.structure.edges
+        poly_edge = self.structure.poly_edge
+        for q in range(self.structure.nquad):
+            for k in range(4):
+                s = int(edges[poly_edge[q,k]-1,2]) - 1
+                if s > -1:
+                    segment_edge[s].append(edges[poly_edge[q,k]-1,3:])
+        for s in range(self.structure.segments.shape[0]):
+            print segment_edge[s]                    
+
+        print edges[:,2]
+        self.structure.plot()
+        exit()
 
         f = open('test.dat','w')
         f.write('title = "PUBSlib output"\n')

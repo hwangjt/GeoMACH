@@ -11,6 +11,7 @@ sources = [
     'PAM/src/layout/splitPolygons.f90',
     'PAM/src/layout/extractSurface.f90',
     'PAM/src/component/initialize.f90',
+    'PAM/src/component/updateQs.f90',
     ]
 
 config = Configuration(name='PAM')
