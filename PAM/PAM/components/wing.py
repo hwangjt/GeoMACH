@@ -1,5 +1,5 @@
 from __future__ import division
-from PAM.components import Component, Property, airfoils, Layout
+from PAM.components import Component, Property, airfoils
 import numpy, pylab, time
 import mpl_toolkits.mplot3d.axes3d as p3
 import PAM.PAMlib as PAMlib
@@ -157,70 +157,14 @@ class Wing(Component):
             self.SECTrot0[j,:2] = [p,q]
             self.SECTrot0[j,:2] *= 180.0/numpy.pi
 
-    def initializeStructure(self):
-        self.structure = Layout(5,1)
-        self.computeMs()
-        self.findJunctions()
+    def getFlattenedC(self, f, ii, jj):
+        if f==0:
+            return [jj,1 - ii,0]
+        else:
+            return [jj,ii,0]
 
-    def buildStructure(self):
-        oml0 = self.oml0
-        Ms = self.Ms
-        for f in range(len(Ms)):      
-            ni = Ms[f].shape[0]
-            nj = Ms[f].shape[1]
-            for i in range(ni):
-                for j in range(nj):
-                    ii = i/(ni-1)
-                    jj = j/(nj-1)
-                    if f==0:
-                        oml0.C[Ms[f][i,j],:] = [jj,1 - ii,0]
-                    else:
-                        oml0.C[Ms[f][i,j],:] = [jj,ii,0]
-        oml0.computePointsC()
-        self.addJunctionEdges()
-        self.structure.build()
-        self.findJunctionQuadsAndEdges()
+    def getAR(self):
+        return 5
 
-        Bs = []
-        quad_indices = []
-        for i in range(len(Ms)):
-            oml0 = self.oml0
-            P = self.structure.extractFlattened(self.JQs[i])
-            surfs = numpy.unique(self.Ks[i].flatten())
-            if surfs[0] == -1:            
-                surfs = numpy.delete(surfs,0)
-            Q = numpy.zeros((P.shape[0],3))
-            Q[:,2] = 1.0
-            s,u,v = oml0.computeProjection(P, surfs=surfs, Q=Q)
-            Bs.append(oml0.computeBases(s,u,v))
-            quad_indices.append(self.structure.getQuadIndices(self.JQs[i]))
-        B = oml0.vstackSparse(Bs)
-
-        BM = B.dot(oml0.M)
-        P = BM.dot(oml0.Q)
-        
-        segment_edge = []
-        for s in range(self.structure.segments.shape[0]):
-            segment_edge.append([])
-            
-        edges = self.structure.edges
-        poly_edge = self.structure.poly_edge
-        for q in range(self.structure.nquad):
-            for k in range(4):
-                s = int(edges[poly_edge[q,k]-1,2]) - 1
-                if s > -1:
-                    segment_edge[s].append(edges[poly_edge[q,k]-1,3:])
-        for s in range(self.structure.segments.shape[0]):
-            print segment_edge[s]                    
-
-        print edges[:,2]
-        self.structure.plot()
-        exit()
-
-        f = open('test.dat','w')
-        f.write('title = "PUBSlib output"\n')
-        f.write('variables = "x", "y", "z"\n')        
-        f.write('zone i='+str(P.shape[0])+', DATAPACKING=POINT\n')
-        for i in range(P.shape[0]):
-            f.write(str(P[i,0]) + ' ' + str(P[i,1]) + ' ' + str(P[i,2]) + '\n')
-        f.close()
+    def getSkinIndices(self):
+        return [[0],[1]]

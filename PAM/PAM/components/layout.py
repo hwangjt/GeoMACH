@@ -3,96 +3,21 @@ import numpy, pylab, time
 import PAM.PAMlib as PAMlib
 
 
-class Member(object):
-
-    def __init__(self, mat, nedge, SP1, EP1, SP2, EP2):
-        self.mat = mat
-        self.nedge = nedge
-        self.SP1 = SP1
-        self.EP1 = EP1
-        self.SP2 = SP2
-        self.EP2 = EP2
-        self.types = [[0.0,'None'],[1.0]]
-
-    def setTypes(self, mtype, limits=[0,1], n=1):
-        if self.types == [[0.0,'None'],[1.0]]:
-            self.types = [[1.0]]
-        pos = numpy.linspace(limits[0],limits[1],n+1)
-        for i in range(n):
-            if mtype=='None':
-                self.types.insert(-1,[pos[i],mtype])
-            elif mtype=='Solid':
-                self.types.insert(-1,[pos[i],mtype])
-            elif mtype=='Stringer':
-                self.types.insert(-1,[pos[i],mtype,0.1])
-            elif mtype=='vStringer':
-                self.types.insert(-1,[pos[i],mtype,0.1])
-            elif mtype=='hStringer':
-                self.types.insert(-1,[pos[i],mtype,0.1])
-            elif mtype=='LErib':
-                self.types.insert(-1,[pos[i],mtype,0.1])
-            elif mtype=='TErib':
-                self.types.insert(-1,[pos[i],mtype,0.1])
-            elif mtype=='Hole':
-                self.types.insert(-1,[pos[i],mtype,0.2,0.2,0.1,1.0])
-
-
 class Layout(object):
 
-    def __init__(self, Lx=1, Ly=1):
+    def __init__(self, Lx, Ly, edges):
         self.Lx = Lx
         self.Ly = Ly
-        self.members = {}
-        self.keys = []
-
-    def addMembers(self, name, mat, nedge, SP1=[0,0], EP1=[0,0], SP2=[0,0], EP2=[0,0]):
-        self.members[name] = Member(mat, nedge, SP1, EP1, SP2, EP2)
-        self.keys.append(name)
-
-    def build(self):
-        self.importEdges()
+        self.importEdges(edges)
         self.computeIntersections()
         self.addConnectors()
         self.computeIntersections()
         self.splitPolygons()
         self.extractSurfaces()
 
-    def importEdges(self):
-        def getv(r, v1, v2):
-            return numpy.array(v1)*(1-r) + numpy.array(v2)*r
-
-        self.addMembers('hWall', 1, 2, SP1=[0,0], EP1=[0,1], SP2=[1,0], EP2=[1,1])
-        self.addMembers('vWall', 1, 2, SP1=[0,0], EP1=[1,0], SP2=[0,1], EP2=[1,1])
-
-        nTotal = 0
-        for m in self.keys:
-            member = self.members[m]
-            nedge = member.nedge
-            ntypes = len(member.types)-1
-            nTotal += nedge*ntypes
-        edges = numpy.zeros((nTotal,4))
-        segments = numpy.zeros((nTotal,3))
-        index = 0
-        for m in range(len(self.keys)):
-            member = self.members[self.keys[m]]
-            nedge = member.nedge
-            ntypes = len(member.types)-1
-            for i in range(nedge):
-                if nedge==1:
-                    SP = getv(0, member.SP1, member.SP2)
-                    EP = getv(0, member.EP1, member.EP2)
-                else:
-                    SP = getv(i/(nedge-1), member.SP1, member.SP2)
-                    EP = getv(i/(nedge-1), member.EP1, member.EP2)
-                for j in range(ntypes):
-                    edges[index,0:2] = getv(member.types[j][0], SP, EP)
-                    edges[index,2:4] = getv(member.types[j+1][0], SP, EP)
-                    segments[index,:] = [m,i,j]
-                    index += 1
-        
-        self.segments = segments
-        self.edges = PAMlib.getedges(nTotal, edges)
-        self.verts = PAMlib.getverts(numpy.max(self.edges[:,:2]), nTotal, edges, self.edges)
+    def importEdges(self, edges):
+        self.edges = PAMlib.getedges(edges.shape[0], edges)
+        self.verts = PAMlib.getverts(numpy.max(self.edges[:,:2]), edges.shape[0], edges, self.edges)
         self.nedge = self.edges.shape[0]
         self.nvert = self.verts.shape[0]
 
@@ -150,13 +75,15 @@ class Layout(object):
     def extractFlattened(self, JQ):
         n = 6
         if len(JQ)==0:
-            P = PAMlib.extractflattened(n, 1, (self.npoly-len(JQ))*n**2, self.nvert, self.npoly, [-1], self.verts, self.poly_vert)            
+            return PAMlib.extractflattened(n, 1, (self.npoly-len(JQ))*n**2, self.nvert, self.npoly, [-1], self.verts, self.poly_vert)            
         else:
-            P = PAMlib.extractflattened(n, len(JQ), (self.npoly-len(JQ))*n**2, self.nvert, self.npoly, JQ, self.verts, self.poly_vert)
-        return P
+            return PAMlib.extractflattened(n, len(JQ), (self.npoly-len(JQ))*n**2, self.nvert, self.npoly, JQ, self.verts, self.poly_vert)
 
     def getQuadIndices(self, JQ):
-        return PAMlib.getquadindices(len(JQ), self.npoly, JQ)
+        if len(JQ)==0:
+            return PAMlib.getquadindices(1, self.npoly, [-1])
+        else:
+            return PAMlib.getquadindices(len(JQ), self.npoly, JQ)
 
     def plot(self):
         print '# verts:', self.nvert

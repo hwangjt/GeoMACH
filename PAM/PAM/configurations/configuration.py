@@ -1,5 +1,5 @@
 from __future__ import division
-import numpy, pylab
+import numpy, pylab, time
 import PUBS
 import mpl_toolkits.mplot3d.axes3d as p3
 from mayavi import mlab
@@ -45,6 +45,8 @@ class Configuration(object):
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
             comp.oml0 = self.oml0
+            comp.members = {}
+            comp.keys = []
             comp.computeDims(self)
             comp.setDOFs()
         self.oml0.updateBsplines()

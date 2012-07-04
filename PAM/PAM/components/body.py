@@ -192,3 +192,17 @@ class Body(Component):
                             z,y = body_sections.rounded(rz, ry, t, t1L, t2L)
                         Qs[f][i,j,:] = self.offset + [posx,posy,0] + [0,y,z]
                         Qs[f][i,j,0] += self.props['noseL'] - self.props['posx'].data[1]
+
+    def getFlattenedC(self, f, ii, jj):
+        if f==1:
+            return [jj,1 - 0.25*ii,0]
+        elif f==2:
+            return [jj,0.75 - 0.5*ii,0]
+        elif f==3:
+            return [jj,0.25 - 0.25*ii,0]
+
+    def getAR(self):
+        return 8
+
+    def getSkinIndices(self):
+        return [[1,2,3]]

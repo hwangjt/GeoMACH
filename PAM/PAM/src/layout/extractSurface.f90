@@ -5,6 +5,8 @@ subroutine getQuadIndices(nJQ, npoly, JQ, quad_index)
   !Fortran-python interface directives
   !f2py intent(in) nJQ, npoly, JQ
   !f2py intent(out) quad_index
+  !f2py depend(nJQ) JQ
+  !f2py depend(npoly) quad_index
 
   !Input
   integer, intent(in) ::  nJQ, npoly

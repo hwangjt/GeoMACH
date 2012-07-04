@@ -73,18 +73,18 @@ subroutine computeRtnMtx(rot, T)
 
   T0(:,:) = 0.0
   T0(2,2) = 1.0
-  T0(1,1) = cos(p)
-  T0(1,3) = sin(p)
-  T0(3,1) = -sin(p)
-  T0(3,3) = cos(p)
+  T0(1,1) = cos(q)
+  T0(1,3) = sin(q)
+  T0(3,1) = -sin(q)
+  T0(3,3) = cos(q)
   T = matmul(T0, T)
 
   T0(:,:) = 0.0
   T0(3,3) = 1.0
-  T0(1,1) = cos(p)
-  T0(1,2) = sin(p)
-  T0(2,1) = -sin(p)
-  T0(2,2) = cos(p)
+  T0(1,1) = cos(r)
+  T0(1,2) = sin(r)
+  T0(2,1) = -sin(r)
+  T0(2,2) = cos(r)
   T = matmul(T0, T)
 
 end subroutine computeRtnMtx

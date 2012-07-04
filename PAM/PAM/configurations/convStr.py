@@ -93,17 +93,20 @@ class Conventional(Configuration):
 
         self.computePoints()
   
-        c['wing'].initializeStructure()
-        #c['wing'].structure.addMembers('Spars', 1, 5, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.1,0.9], EP2=[1,1])
-        #c['wing'].structure.addMembers('Ribs', 1, 5, SP1=[0.1,0.1], EP1=[0,1], SP2=[1,0], EP2=[1,1]) 
-        c['wing'].structure.addMembers('Spars', 1, 5, SP1=[0,0], EP1=[1,0], SP2=[0,1], EP2=[1,1])
-        c['wing'].structure.addMembers('Ribs', 1, 5, SP1=[0,0], EP1=[0,1], SP2=[1,0], EP2=[1,1]) 
+        c['wing'].addMembers('Spars', 1, 1, 5, 1, SP1=[0,0,0], EP1=[1,0,1], SP2=[0,1,0], EP2=[1,1,1])
+        c['wing'].addMembers('Ribs', 1, 1, 5, 1, SP1=[0,0,0], EP1=[0,1,1], SP2=[1,0,0], EP2=[1,1,1])
         c['wing'].buildStructure()
+  
+        c['fuse'].addMembers('Longerons', 1, 1, 5, 1, SP1=[0,0,0], EP1=[1,0,1], SP2=[0,1,0], EP2=[1,1,1])
+        c['fuse'].addMembers('Formers', 1, 1, 5, 1, SP1=[0,0,0], EP1=[0,1,1], SP2=[1,0,0], EP2=[1,1,1])
+        c['fuse'].buildStructure()
 
         #c['wing'].structure.plot()
         #exit()
 
+        t0 = time.time()
         self.computePoints()        
+        print time.time() - t0
 
 
 if __name__ == '__main__':

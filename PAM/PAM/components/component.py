@@ -1,10 +1,11 @@
 from __future__ import division
+from layout import Layout
 import numpy, pylab, time
 import PAM.PAMlib as PAMlib
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
-class Component(object):
+class Component(object):      
         
     def createSurfaces(self, Ks, nu, nv, du, dv, d):
         Ps = []
@@ -216,7 +217,6 @@ class Component(object):
     def findJunctions(self):
         oml0 = self.oml0
         Ks = self.Ks
-        Ms = self.Ms
 
         Js = []
         for f in range(len(Ks)):
@@ -246,30 +246,59 @@ class Component(object):
             Js.append(J)
         self.Js = Js
 
-    def addJunctionEdges(self):
+    def flattenGeometry(self):
+        oml0 = self.oml0
+        Ms = self.Ms
+        for f in range(len(Ms)):      
+            ni = Ms[f].shape[0]
+            nj = Ms[f].shape[1]
+            for i in range(ni):
+                for j in range(nj):
+                    oml0.C[Ms[f][i,j],:] = self.getFlattenedC(f, i/(ni-1), j/(nj-1))
+        oml0.computePointsC()
+
+    def initializeLayout(self):
+        def getv(r, v1, v2):
+            return numpy.array(v1)*(1-r) + numpy.array(v2)*r
+
         oml0 = self.oml0
         Ms = self.Ms
         Js = self.Js
-        ctr = 0
-        for f in range(len(Js)):
-            for k in range(Js[f].shape[0]):
-                C11 = oml0.C[Ms[f][Js[f][k,0],Js[f][k,1]],:2]
-                C12 = oml0.C[Ms[f][Js[f][k,0],Js[f][k,3]],:2]
-                C21 = oml0.C[Ms[f][Js[f][k,2],Js[f][k,1]],:2]
-                C22 = oml0.C[Ms[f][Js[f][k,2],Js[f][k,3]],:2]      
-                self.structure.addMembers('Junction'+str(ctr+0), 1, 1, SP1=C11, EP1=C12)
-                self.structure.addMembers('Junction'+str(ctr+1), 1, 1, SP1=C21, EP1=C22)
-                self.structure.addMembers('Junction'+str(ctr+2), 1, 1, SP1=C11, EP1=C21)
-                self.structure.addMembers('Junction'+str(ctr+3), 1, 1, SP1=C12, EP1=C22) 
-                ctr += 4
+
+        edges = []
+        edges.append([0,0,0,1])
+        edges.append([0,0,1,0])
+        edges.append([0,1,1,1])
+        edges.append([1,0,1,1])
+
+        skinIndices = self.getSkinIndices()
+        for s in range(len(skinIndices)):
+            for f in skinIndices[s]:
+                for k in range(Js[f].shape[0]):
+                    C11 = oml0.C[Ms[f][Js[f][k,0],Js[f][k,1]],:2]
+                    C12 = oml0.C[Ms[f][Js[f][k,0],Js[f][k,3]],:2]
+                    C21 = oml0.C[Ms[f][Js[f][k,2],Js[f][k,1]],:2]
+                    C22 = oml0.C[Ms[f][Js[f][k,2],Js[f][k,3]],:2]  
+                    edges.append([C11[0],C11[1],C12[0],C12[1]])
+                    edges.append([C11[0],C11[1],C21[0],C21[1]])
+                    edges.append([C12[0],C12[1],C22[0],C22[1]])
+                    edges.append([C21[0],C21[1],C22[0],C22[1]])
+        for m in self.keys:
+            member = self.members[m]
+            for i in range(member.nedge):
+                if member.nedge==1:
+                    ii = 0
+                else:
+                    ii = i/(member.nedge-1)
+                SP = getv(ii, member.SP1[:2], member.SP2[:2])
+                EP = getv(ii, member.EP1[:2], member.EP2[:2])
+                for j in range(member.ndiv):
+                    V0 = getv(j/member.ndiv, SP, EP)
+                    V1 = getv((j+1)/member.ndiv, SP, EP)
+                    edges.append([V0[0],V0[1],V1[0],V1[1]])                
+        self.layout = Layout(self.getAR(),1,numpy.array(edges))
 
     def findJunctionQuadsAndEdges(self):
-        nquad = self.structure.nquad
-        nedge = self.structure.nedge
-        edges = self.structure.edges
-        verts = self.structure.verts
-        poly_vert = self.structure.poly_vert
-
         oml0 = self.oml0
         Ms = self.Ms
         Js = self.Js
@@ -277,37 +306,111 @@ class Component(object):
         C = numpy.zeros((4,2))
         ctd = numpy.zeros(2)
 
+        nquad = self.layout.nquad
+        nedge = self.layout.nedge
+        edges = self.layout.edges
+        verts = self.layout.verts
+        poly_vert = self.layout.poly_vert
+
+        skinIndices = self.getSkinIndices()
+
         JQs = []
         JEs = []
-        for f in range(len(Js)):
+        for s in range(len(skinIndices)):
             JQ = []
-            for q in range(nquad):
-                ctd[:] = 0
-                for k in range(4):
-                    ctd[:] += 0.25*verts[poly_vert[q,k]-1,:]
-                for k in range(Js[f].shape[0]):
-                    C[0,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,1]],:2]
-                    C[1,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,3]],:2]
-                    C[2,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,1]],:2]
-                    C[3,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,3]],:2]
-                    if min(C[:,0]) < ctd[0] and ctd[0] < max(C[:,0]) and min(C[:,1]) < ctd[1] and ctd[1] < max(C[:,1]):
-                        JQ.append(q+1)
+            for f in skinIndices[s]:
+                for q in range(nquad):
+                    ctd[:] = 0
+                    for k in range(4):
+                        ctd[:] += 0.25*verts[poly_vert[q,k]-1,:]
+                    for k in range(Js[f].shape[0]):
+                        C[0,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,1]],:2]
+                        C[1,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,3]],:2]
+                        C[2,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,1]],:2]
+                        C[3,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,3]],:2]
+                        if min(C[:,0]) < ctd[0] and ctd[0] < max(C[:,0]) and min(C[:,1]) < ctd[1] and ctd[1] < max(C[:,1]):
+                            JQ.append(q+1)
             JQs.append(JQ)
+
             JE = []
-            for e in range(nedge):
-                ctd[:] = 0
-                for k in range(2):
-                    ctd[:] += 0.5*verts[edges[e,k]-1,:]
-                for k in range(Js[f].shape[0]):
-                    C[0,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,1]],:2]
-                    C[1,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,3]],:2]
-                    C[2,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,1]],:2]
-                    C[3,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,3]],:2]
-                    if min(C[:,0]) < ctd[0] and ctd[0] < max(C[:,0]) and min(C[:,1]) < ctd[1] and ctd[1] < max(C[:,1]):
-                        JE.append(e+1)
+            for f in skinIndices[s]:
+                for e in range(nedge):
+                    ctd[:] = 0
+                    for k in range(2):
+                        ctd[:] += 0.5*verts[edges[e,k]-1,:]
+                    for k in range(Js[f].shape[0]):
+                        C[0,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,1]],:2]
+                        C[1,:] = oml0.C[Ms[f][Js[f][k,0],Js[f][k,3]],:2]
+                        C[2,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,1]],:2]
+                        C[3,:] = oml0.C[Ms[f][Js[f][k,2],Js[f][k,3]],:2]
+                        if min(C[:,0]) < ctd[0] and ctd[0] < max(C[:,0]) and min(C[:,1]) < ctd[1] and ctd[1] < max(C[:,1]):
+                            JEs.append(e+1)
             JEs.append(JE)
+
         self.JQs = JQs
         self.JEs = JEs
+
+    def projectSkins(self):
+        oml0 = self.oml0
+
+        skinIndices = self.getSkinIndices()
+
+        Bs = []
+        quad_indices = []
+        for s in range(len(skinIndices)):
+            P = self.layout.extractFlattened(self.JQs[s])
+            surfindices = []
+            for f in skinIndices[s]:
+                surfindices.append(self.Ks[f].flatten())
+            surfs = numpy.unique(numpy.hstack(surfindices))
+            if surfs[0] == -1:            
+                surfs = numpy.delete(surfs,0)
+            Q = numpy.zeros((P.shape[0],3))
+            Q[:,2] = 1.0
+            ss, u, v = oml0.computeProjection(P, surfs=surfs, Q=Q)
+            Bs.append(oml0.computeBases(ss,u,v))
+            quad_indices.append(self.layout.getQuadIndices(self.JQs[s]))
+        B = oml0.vstackSparse(Bs)
+
+        BM = B.dot(oml0.M)
+        P = BM.dot(oml0.Q)
+
+        f = open('test.dat','w')
+        f.write('title = "PUBSlib output"\n')
+        f.write('variables = "x", "y", "z"\n')        
+        f.write('zone i='+str(P.shape[0])+', DATAPACKING=POINT\n')
+        for i in range(P.shape[0]):
+            f.write(str(P[i,0]) + ' ' + str(P[i,1]) + ' ' + str(P[i,2]) + '\n')
+        f.close()
+
+    def buildStructure(self):
+        self.computeMs()
+        self.findJunctions()
+        self.flattenGeometry()
+        self.initializeLayout()
+        self.findJunctionQuadsAndEdges()
+        self.projectSkins()
+
+    def addMembers(self, name, domain, shape, nedge, ndiv, SP1=[0,0,0], EP1=[0,0,0], SP2=[0,0,0], EP2=[0,0,0], tx=0.5, ty=0.5, rx=1.0, ry=1.0):
+        self.members[name] = Member(domain, shape, nedge, ndiv, SP1, EP1, SP2, EP2, tx, ty, rx, ry)
+        self.keys.append(name)
+
+
+class Member(object):
+
+    def __init__(self, domain, shape, nedge, ndiv, SP1, EP1, SP2, EP2, tx, ty, rx, ry):
+        self.domain = domain
+        self.shape = shape
+        self.nedge = nedge
+        self.ndiv = ndiv
+        self.SP1 = SP1
+        self.EP1 = EP1
+        self.SP2 = SP2
+        self.EP2 = EP2
+        self.tx = tx
+        self.ty = ty
+        self.rx = rx
+        self.ry = ry
 
 
 class Property(object):
