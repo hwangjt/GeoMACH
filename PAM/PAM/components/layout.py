@@ -5,7 +5,8 @@ import PAM.PAMlib as PAMlib
 
 class Layout(object):
 
-    def __init__(self, Lx, Ly, edges):
+    def __init__(self, n, Lx, Ly, edges):
+        self.n = n
         self.Lx = Lx
         self.Ly = Ly
         self.importEdges(edges)
@@ -72,12 +73,16 @@ class Layout(object):
         for p in range(self.npoly):
             self.P.append(PAMlib.extractsurface(p+1, 10, self.nvert, self.npoly, self.verts, self.poly_vert))
 
-    def extractFlattened(self, JQ):
-        n = 6
-        if len(JQ)==0:
-            return PAMlib.extractflattened(n, 1, (self.npoly-len(JQ))*n**2, self.nvert, self.npoly, [-1], self.verts, self.poly_vert)            
-        else:
-            return PAMlib.extractflattened(n, len(JQ), (self.npoly-len(JQ))*n**2, self.nvert, self.npoly, JQ, self.verts, self.poly_vert)
+    def extractFlattened(self, JQ, npoly):
+        return PAMlib.extractflattened(self.n, len(JQ), npoly*self.n**2, self.nvert, self.npoly, JQ, self.verts, self.poly_vert), self.n*numpy.ones((npoly,2),order='F')
+
+    def countJunctionEdges(self, JQ, u1, u2, v1, v2):
+        return PAMlib.countjunctionedges(len(JQ), self.nvert, self.nquad, u1, u2, v1, v2, JQ, self.verts, self.poly_vert)
+
+    def extractEdges(self, JQ, u1, u2, v1, v2):
+        nu1, nu2, nv1, nv2 = self.countJunctionEdges(JQ, u1, u2, v1, v2)
+        nP = self.n*(nu1 + nu2 + nv1 + nv2)
+        return PAMlib.extractedges(nP, self.n, nu1, nu2, nv1, nv2, self.nvert, u1, u2, v1, v2, self.verts)
 
     def getQuadIndices(self, JQ):
         if len(JQ)==0:

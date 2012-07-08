@@ -93,13 +93,17 @@ class Conventional(Configuration):
 
         self.computePoints()
   
-        c['wing'].addMembers('Spars', 1, 1, 5, 1, SP1=[0,0,0], EP1=[1,0,1], SP2=[0,1,0], EP2=[1,1,1])
-        c['wing'].addMembers('Ribs', 1, 1, 5, 1, SP1=[0,0,0], EP1=[0,1,1], SP2=[1,0,0], EP2=[1,1,1])
-        c['wing'].buildStructure()
+        c['tail'].addMembers('Spars', 1, 1, 5, 5, A1=[0,0,0], C1=[1,0,1], A2=[0,1,0], C2=[1,1,1])
+        c['tail'].addMembers('Ribs', 1, 1, 5, 5, A1=[0,0,0], C1=[0,1,1], A2=[1,0,0], C2=[1,1,1])
+        c['tail'].addMembers('Ustiff', 1, 1, 5, 5, A1=[0,0.2,0.9], C1=[1,0.2,1], A2=[0,0.8,0.9], C2=[1,0.8,1])
+        c['tail'].addMembers('UstiffL', 1, 1, 5, 5, A1=[0,0.2,0.9], C1=[1,0.22,0.9], A2=[0,0.8,0.9], C2=[1,0.82,0.9])
+        c['tail'].addMembers('Lstiff', 1, 1, 5, 5, A1=[0,0.2,0], C1=[1,0.2,0.1], A2=[0,0.8,0], C2=[1,0.8,0.1])
+        c['tail'].addMembers('LstiffL', 1, 1, 5, 5, A1=[0,0.2,0.1], C1=[1,0.22,0.1], A2=[0,0.8,0.1], C2=[1,0.82,0.1])
+        c['tail'].buildStructure()
   
-        c['fuse'].addMembers('Longerons', 1, 1, 5, 1, SP1=[0,0,0], EP1=[1,0,1], SP2=[0,1,0], EP2=[1,1,1])
-        c['fuse'].addMembers('Formers', 1, 1, 5, 1, SP1=[0,0,0], EP1=[0,1,1], SP2=[1,0,0], EP2=[1,1,1])
-        c['fuse'].buildStructure()
+        c['fuse'].addMembers('Longerons', 1, 1, 5, 5, A1=[0,0,0], C1=[1,0,1], A2=[0,1,0], C2=[1,1,1])
+        c['fuse'].addMembers('Formers', 1, 1, 5, 5, A1=[0,0,0], C1=[0,1,1], A2=[1,0,0], C2=[1,1,1])
+        #c['fuse'].buildStructure()
 
         #c['wing'].structure.plot()
         #exit()
@@ -117,4 +121,4 @@ if __name__ == '__main__':
     aircraft.oml0.write2TecC(name+'_C')
     aircraft.oml0.write2IGES(name)
     aircraft.oml0.write2EGADS(name+'_EGADS')
-    aircraft.plot()
+    #aircraft.plot()
