@@ -14,7 +14,7 @@ class Conventional(Configuration):
         self.addComp('fuse', Body([70,10,10,20,10,10,10,50,10,25,10,10],[25,25,25,25],[15]))
         self.addComp('wing', Wing([10,10,10,50],[10,20,10,10]))
         self.addComp('tail', Wing([30],[25]))
-        self.addComp('nacelle', Body([50,10,20,30],[30],[20,10,10,20],full=True))
+        self.addComp('nacelle', Body([50,10,20,30],[31],[20,10,10,20],full=True))
         self.addComp('pylon', Wing([30],[20],opentip=True))
         self.addComp('fin', Wing([30],[25],half=True))
 
@@ -54,7 +54,7 @@ class Conventional(Configuration):
         c['tail'].props['chord'].set([0.85,0.15],[0,1])
 
         e = numpy.zeros((11,4))
-        e[0,:] = [0.20, 0.03, 1, 1]
+        e[0,:] = [0.20, 0.08, 1, 1]
         e[1,:] = [0.30, 0.10, 0, 0]
         e[2,:] = [0.30, 0.29, 0.5, 0]
         e[3,:] = [0.00, 0.29, 1, 1]
@@ -64,7 +64,7 @@ class Conventional(Configuration):
         e[7,:] = [1.00, 0.27, 0, 0]
         e[8,:] = [0.65, 0.27, 0, 0]
         e[9,:] = [0.65, 0.20, 1, 0]
-        e[10,:] = [1.2, 0.05, 0, 0]
+        e[10,:] = [1.2, 0.03, 0, 0]
         e[:,:2] *= 0.8
         l = numpy.linspace(0,1,e.shape[0])
         c['nacelle'].offset[:] = [3.3, -0.05, 1.5]
@@ -92,6 +92,10 @@ class Conventional(Configuration):
         c['fin'].props['chord'].set([1,0.2],[0,1])
 
         self.computePoints()
+
+        #c['wing'].addMembers('Spars', 1, 1, 5, 5, A1=[0,0,0], C1=[1,0,1], A2=[0,1,0], C2=[1,1,1])
+        #c['wing'].addMembers('Ribs', 1, 1, 5, 5, A1=[0,0,0], C1=[0,1,1], A2=[1,0,0], C2=[1,1,1])
+        #c['wing'].buildStructure()
   
         c['tail'].addMembers('Spars', 1, 1, 5, 5, A1=[0,0,0], C1=[1,0,1], A2=[0,1,0], C2=[1,1,1])
         c['tail'].addMembers('Ribs', 1, 1, 5, 5, A1=[0,0,0], C1=[0,1,1], A2=[1,0,0], C2=[1,1,1])

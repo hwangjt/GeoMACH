@@ -12,7 +12,8 @@ SRC_FILES = PAM/src/layout/addConnectors.f90 \
 	PAM/src/component/initialize.f90 \
 	PAM/src/component/updateQs.f90 \
 	PAM/src/component/computeInternalStructure.f90 \
-	PAM/src/component/shapeTypes.f90
+	PAM/src/component/shapeTypes.f90 \
+	PAM/src/component/bodysections.f90
 
 default:	
 	f2py --fcompiler=intelem -I$(CGNS_INCLUDE) -c ${SRC_FILES} -m PAMlib ${LIB_CGNS}

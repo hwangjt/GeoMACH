@@ -51,12 +51,14 @@ class Configuration(object):
             comp.setDOFs()
         self.oml0.updateBsplines()
 
+        t0 = time.time()
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
             comp.initializeDOFs()
             comp.initializeParameters()
             comp.propagateQs()
             comp.updateQs()
+        print time.time()-t0
         self.oml0.computePoints()
 
     def updateComponents(self):

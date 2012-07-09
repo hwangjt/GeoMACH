@@ -1,10 +1,10 @@
-subroutine assembleAmtx(nA, n1, nP, nJ1, nJ2, nJQ1, nJQ2, nvert, nquad, &
+subroutine assembleAmtx(nA, n0, nP, nJ1, nJ2, nJQ1, nJQ2, nvert, nquad, &
      Jn1, Jn2, Ju1, Ju2, JQ1, JQ2, quad_indices, verts, poly_vert, P, Aa, Ai, Aj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nA, n1, nP, nJ1, nJ2, nJQ1, nJQ2, nvert, nquad, Jn1, Jn2, Ju1, Ju2, JQ1, JQ2, quad_indices, verts, poly_vert, P
+  !f2py intent(in) nA, n0, nP, nJ1, nJ2, nJQ1, nJQ2, nvert, nquad, Jn1, Jn2, Ju1, Ju2, JQ1, JQ2, quad_indices, verts, poly_vert, P
   !f2py intent(out) Aa, Ai, Aj
   !f2py depend(nJ1) Jn1
   !f2py depend(nJ2) Jn2
@@ -19,7 +19,7 @@ subroutine assembleAmtx(nA, n1, nP, nJ1, nJ2, nJQ1, nJQ2, nvert, nquad, &
   !f2py depend(nA) Aa, Ai, Aj
 
   !Input
-  integer, intent(in) ::  nA, n1, nP, nJ1, nJ2, nJQ1, nJQ2, nvert, nquad
+  integer, intent(in) ::  nA, n0, nP, nJ1, nJ2, nJQ1, nJQ2, nvert, nquad
   integer, intent(in) ::  Jn1(nJ1,4), Jn2(nJ2,4)
   double precision, intent(in) ::  Ju1(nJ1,4), Ju2(nJ2,4)
   integer, intent(in) ::  JQ1(nJQ1), JQ2(nJQ2)
@@ -54,7 +54,7 @@ subroutine assembleAmtx(nA, n1, nP, nJ1, nJ2, nJQ1, nJQ2, nvert, nquad, &
                    verts, poly_vert, Ju2, jctn, Q)
            end if
            call invBilinearMap(P(iP,1), P(iP,2), Q, uu, vv)
-           call appendJunctionA(s, quad, nA, n1, nquad, nJ1, &
+           call appendJunctionA(s, quad, nA, n0, nquad, nJ1, &
                 quad_indices, Jn1, uu, vv, P(iP,3), iP, iA, Aa, Ai, Aj)
         else
            Q(1,:) = verts(poly_vert(quad,1),:)
@@ -62,7 +62,7 @@ subroutine assembleAmtx(nA, n1, nP, nJ1, nJ2, nJQ1, nJQ2, nvert, nquad, &
            Q(3,:) = verts(poly_vert(quad,3),:)
            Q(4,:) = verts(poly_vert(quad,4),:)
            call invBilinearMap(P(iP,1), P(iP,2), Q, uu, vv)
-           call appendQuadA(s, quad, nA, n1, nquad, nJ1, &
+           call appendQuadA(s, quad, nA, n0, nquad, nJ1, &
                 quad_indices, Jn1, uu, vv, P(iP,3), iP, iA, Aa, Ai, Aj)
         end if
      end do
@@ -116,20 +116,20 @@ end subroutine countAnnz
 
 
 
-subroutine computeInternalNodes(nP, nS, n1, nM, members, P, S)
+subroutine computeInternalNodes(nP, nS, n0, nM, members, P, S)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nP, nS, n1, nM, members
+  !f2py intent(in) nP, nS, n0, nM, members
   !f2py intent(out) P, S
   !f2py depend(nM) members
   !f2py depend(nP) P
   !f2py depend(nS) S
 
   !Input
-  integer, intent(in) ::  nP, nS, n1, nM
-  double precision, intent(in) ::  members(nM,33)
+  integer, intent(in) ::  nP, nS, n0, nM
+  double precision, intent(in) ::  members(nM,34)
 
   !Output
   double precision, intent(out) ::  P(nP,3)
@@ -137,7 +137,7 @@ subroutine computeInternalNodes(nP, nS, n1, nM, members, P, S)
 
   !Working
   integer iM, mem, div, iP, iS, i
-  integer shape, nmem, ndiv, n2, n
+  integer shape, nmem, ndiv, n1, n2, n
   double precision mm, dd
   double precision A(3), B(3), C(3), D(3)
   double precision A0(3), B0(3), C0(3), D0(3)
@@ -153,7 +153,8 @@ subroutine computeInternalNodes(nP, nS, n1, nM, members, P, S)
      shape = int(members(iM,2))
      nmem = int(members(iM,3))
      ndiv = int(members(iM,4))
-     n2 = int(members(iM,33))
+     n1 = int(members(iM,33))
+     n2 = int(members(iM,34))
      A1 = members(iM,5:7)
      B1 = members(iM,8:10)
      C1 = members(iM,11:13)
@@ -179,9 +180,11 @@ subroutine computeInternalNodes(nP, nS, n1, nM, members, P, S)
            call weightedAvg(div*dd, B0, C0, C)
            call weightedAvg(div*dd, A0, D0, D)
            if (shape .eq. 1) then
-              n = n1*n2
+              n = n0*n1
               iS = iS + 1
-              S(iS,:) = (/ n1 , n2 /)
+              S(iS,:) = (/ n0 , n1 /)
+           else if (shape .eq. 2) then
+              n = 0
            else
               n = 0
            end if
@@ -192,7 +195,7 @@ subroutine computeInternalNodes(nP, nS, n1, nM, members, P, S)
               allocate(v(n))
               allocate(w(n))
               if (shape .eq. 1) then   
-                 call getShapeRect(n, n1, n2, u0, v0)
+                 call getShapeRect(n, n0, n1, u0, v0)
               else
                  print *, 'Shape not found'
               end if
@@ -217,25 +220,25 @@ end subroutine computeInternalNodes
 
 
 
-subroutine countInternalNodes(n1, nM, members, nP, nS)
+subroutine countInternalNodes(n0, nM, members, nP, nS)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) n1, nM, members
+  !f2py intent(in) n0, nM, members
   !f2py intent(out) nP, nS
   !f2py depend(nM) members
 
   !Input
-  integer, intent(in) ::  n1, nM
-  double precision, intent(in) ::  members(nM,33)
+  integer, intent(in) ::  n0, nM
+  double precision, intent(in) ::  members(nM,34)
 
   !Output
   integer, intent(out) ::  nP, nS
 
   !Working
   integer iM, mem, div
-  integer shape, nmem, ndiv, n2
+  integer shape, nmem, ndiv, n1, n2
   
   nP = 0
   nS = 0
@@ -243,11 +246,12 @@ subroutine countInternalNodes(n1, nM, members, nP, nS)
      shape = int(members(iM,2))
      nmem = int(members(iM,3))
      ndiv = int(members(iM,4))
-     n2 = int(members(iM,33))
+     n1 = int(members(iM,33))
+     n2 = int(members(iM,34))
      do mem=1,nmem
         do div=1,ndiv
            if (shape .eq. 1) then
-              nP = nP + n1*n2
+              nP = nP + n0*n1
               nS = nS + 1
            end if
         end do
@@ -258,13 +262,13 @@ end subroutine countInternalNodes
 
 
 
-subroutine appendJunctionA(s, quad, nA, n1, nquad, nJ1, &
+subroutine appendJunctionA(s, quad, nA, n0, nquad, nJ1, &
      quad_indices, Jn1, uu, vv, ww, iP, iA, Aa, Ai, Aj)
 
   implicit none
 
   !Input
-  integer, intent(in) ::  s, quad, nA, n1, nquad, nJ1
+  integer, intent(in) ::  s, quad, nA, n0, nquad, nJ1
   integer, intent(in) ::  quad_indices(nquad,2)
   integer, intent(in) ::  Jn1(nJ1,4)
   double precision, intent(in) ::  uu, vv, ww
@@ -280,15 +284,15 @@ subroutine appendJunctionA(s, quad, nA, n1, nquad, nJ1, &
   integer i1, i2, j1, j2
   integer index
 
-  u1 = floor(uu*(n1-1))/(n1-1)
-  u2 = ceiling(uu*(n1-1))/(n1-1)
-  v1 = floor(vv*(n1-1))/(n1-1)
-  v2 = ceiling(vv*(n1-1))/(n1-1)
+  u1 = floor(uu*(n0-1))/(n0-1)
+  u2 = ceiling(uu*(n0-1))/(n0-1)
+  v1 = floor(vv*(n0-1))/(n0-1)
+  v2 = ceiling(vv*(n0-1))/(n0-1)
 
-  i1 = floor(uu*(n1-1)) + 1
-  i2 = ceiling(uu*(n1-1)) + 1
-  j1 = floor(vv*(n1-1)) + 1
-  j2 = ceiling(vv*(n1-1)) + 1
+  i1 = floor(uu*(n0-1)) + 1
+  i2 = ceiling(uu*(n0-1)) + 1
+  j1 = floor(vv*(n0-1)) + 1
+  j2 = ceiling(vv*(n0-1)) + 1
 
   if (s .eq. 1) then
      w = ww
@@ -307,13 +311,13 @@ end subroutine appendJunctionA
 
 
 
-subroutine appendQuadA(s, quad, nA, n1, nquad, nJ1, &
+subroutine appendQuadA(s, quad, nA, n0, nquad, nJ1, &
      quad_indices, Jn1, uu, vv, ww, iP, iA, Aa, Ai, Aj)
 
   implicit none
 
   !Input
-  integer, intent(in) ::  s, quad, nA, n1, nquad, nJ1
+  integer, intent(in) ::  s, quad, nA, n0, nquad, nJ1
   integer, intent(in) ::  quad_indices(nquad,2), Jn1(nJ1,4)
   double precision, intent(in) ::  uu, vv, ww
   integer, intent(in) ::  iP
@@ -328,18 +332,18 @@ subroutine appendQuadA(s, quad, nA, n1, nquad, nJ1, &
   integer ii, jj, i1, i2, j1, j2
   integer index
 
-  den = 1.0/(n1-1)
+  den = 1.0/(n0-1)
 
   if (uu .ge. (1 - 1e-14)) then
-     ii = n1 - 1
+     ii = n0 - 1
   else
-     ii = floor(uu*(n1-1)) + 1
+     ii = floor(uu*(n0-1)) + 1
   end if
 
   if (vv .ge. (1 - 1e-14)) then
-     jj = n1 - 1
+     jj = n0 - 1
   else
-     jj = floor(vv*(n1-1)) + 1
+     jj = floor(vv*(n0-1)) + 1
   end if
   
   i1 = ii
@@ -360,29 +364,29 @@ subroutine appendQuadA(s, quad, nA, n1, nquad, nJ1, &
 
   iA = iA + 1
   call getIndexQuad(s, quad, i1, j1, &
-       n1, nquad, nJ1, quad_indices, Jn1, index)
-  Aa(iA) = w*(u2 - uu)*(v2 - vv)*(n1-1)**2
+       n0, nquad, nJ1, quad_indices, Jn1, index)
+  Aa(iA) = w*(u2 - uu)*(v2 - vv)*(n0-1)**2
   Ai(iA) = iP
   Aj(iA) = index
 
   iA = iA + 1
   call getIndexQuad(s, quad, i2, j1, &
-       n1, nquad, nJ1, quad_indices, Jn1, index)
-  Aa(iA) = w*(uu - u1)*(v2 - vv)*(n1-1)**2
+       n0, nquad, nJ1, quad_indices, Jn1, index)
+  Aa(iA) = w*(uu - u1)*(v2 - vv)*(n0-1)**2
   Ai(iA) = iP
   Aj(iA) = index
 
   iA = iA + 1
   call getIndexQuad(s, quad, i1, j2, &
-       n1, nquad, nJ1, quad_indices, Jn1, index)
-  Aa(iA) = w*(u2 - uu)*(vv - v1)*(n1-1)**2
+       n0, nquad, nJ1, quad_indices, Jn1, index)
+  Aa(iA) = w*(u2 - uu)*(vv - v1)*(n0-1)**2
   Ai(iA) = iP
   Aj(iA) = index
 
   iA = iA + 1
   call getIndexQuad(s, quad, i2, j2, &
-       n1, nquad, nJ1, quad_indices, Jn1, index)
-  Aa(iA) = w*(uu - u1)*(vv - v1)*(n1-1)**2
+       n0, nquad, nJ1, quad_indices, Jn1, index)
+  Aa(iA) = w*(uu - u1)*(vv - v1)*(n0-1)**2
   Ai(iA) = iP
   Aj(iA) = index
 
@@ -391,13 +395,13 @@ end subroutine appendQuadA
 
 
 subroutine getIndexQuad(s, quad, i, j, &
-     n1, nquad, nJ1, quad_indices, Jn1, index)
+     n0, nquad, nJ1, quad_indices, Jn1, index)
 
   implicit none
 
   !Input
   integer, intent(in) ::  s, quad, i, j
-  integer, intent(in) ::  n1, nquad, nJ1
+  integer, intent(in) ::  n0, nquad, nJ1
   integer, intent(in) ::  quad_indices(nquad,2)
   integer, intent(in) ::  Jn1(nJ1,4)
 
@@ -405,10 +409,10 @@ subroutine getIndexQuad(s, quad, i, j, &
   integer, intent(out) ::  index
 
   if (s .eq. 1) then
-     index = n1**2*(quad_indices(quad,1)-1) + i + (j-1)*n1
+     index = n0**2*(quad_indices(quad,1)-1) + i + (j-1)*n0
   else     
-     index = n1**2*(maxval(quad_indices(:,1))) &
-          + n1**2*(quad_indices(quad,2)-1) + i + (j-1)*n1
+     index = n0**2*(maxval(quad_indices(:,1))) &
+          + n0**2*(quad_indices(quad,2)-1) + i + (j-1)*n0
      if (Jn1(1,1) .ne. -1) then
         index = index + sum(Jn1(:,:))
      end if
@@ -419,13 +423,13 @@ end subroutine getIndexQuad
 
 
 subroutine getIndexJunction(s, jctn, edge, i, &
-     n1, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
+     n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
 
   implicit none
 
   !Input
   integer, intent(in) ::  s, jctn, edge, i
-  integer, intent(in) ::  n1, nquad, nJ1, nJ2
+  integer, intent(in) ::  n0, nquad, nJ1, nJ2
   integer, intent(in) ::  quad_indices(nquad,2)
   integer, intent(in) ::  Jn1(nJ1,4), Jn2(nJ2,4)
 
@@ -433,10 +437,10 @@ subroutine getIndexJunction(s, jctn, edge, i, &
   integer, intent(out) ::  index
 
   if (s .eq. 1) then
-     index = n1**2*(maxval(quad_indices(:,1))) + sum(Jn1(1:jctn-1,:)) &
+     index = n0**2*(maxval(quad_indices(:,1))) + sum(Jn1(1:jctn-1,:)) &
           + sum(Jn1(jctn,1:edge-1)) + i
   else     
-     index = n1**2*(maxval(quad_indices(:,1)) + maxval(quad_indices(:,2))) &
+     index = n0**2*(maxval(quad_indices(:,1)) + maxval(quad_indices(:,2))) &
           + sum(Jn1(:,:)) + sum(Jn2(1:jctn-1,:)) + sum(Jn2(jctn,1:edge-1)) + i
   end if
 

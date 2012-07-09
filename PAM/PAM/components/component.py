@@ -427,14 +427,6 @@ class Component(object):
                     iP += 1
         f.close()
 
-        #f = open('test.dat','w')
-        #f.write('title = "PUBSlib output"\n')
-        #f.write('variables = "x", "y", "z"\n')        
-        #f.write('zone i='+str(P.shape[0])+', DATAPACKING=POINT\n')
-        #for i in range(P.shape[0]):
-        #    f.write(str(P[i,0]) + ' ' + str(P[i,1]) + ' ' + str(P[i,2]) + '\n')
-        #f.close()
-
     def computeStructure(self, P):
         oml0 = self.oml0
         Ms = self.Ms
@@ -474,13 +466,13 @@ class Component(object):
             Jus.append(numpy.array(Ju, order='F'))
             
         nM = len(self.keys)
-        members = numpy.zeros((nM,33),order='F')
+        members = numpy.zeros((nM,34),order='F')
         for i in range(nM):
             member = self.members[self.keys[i]]
             members[i,:4] = [member.domain, member.shape, member.nmem, member.ndiv]
             members[i, 4:16] = member.A1 + member.B1 + member.C1 + member.D1
             members[i,16:28] = member.A2 + member.B2 + member.C2 + member.D2
-            members[i,28:] = [member.tx, member.ty, member.rx, member.ry, member.n]
+            members[i,28:] = [member.tx, member.ty, member.rx, member.ry, member.n1, member.n2]
 
         nP, nS = PAMlib.countinternalnodes(self.layout.n, nM, members)
         P2, S = PAMlib.computeinternalnodes(nP, nS, self.layout.n, nM, members)
@@ -502,9 +494,7 @@ class Component(object):
     def addMembers(self, name, domain, shape, nmem, ndiv, 
                    A1=None, B1=None, C1=None, D1=None, 
                    A2=None, B2=None, C2=None, D2=None, 
-#                   A1=[-1,-1,-1], B1=[-1,-1,-1], C1=[-1,-1,-1], D1=[-1,-1,-1], 
-#                   A2=[-1,-1,-1], B2=[-1,-1,-1], C2=[-1,-1,-1], D2=[-1,-1,-1], 
-                   tx=0.5, ty=0.5, rx=1.0, ry=1.0, n=5):
+                   tx=0.5, ty=0.5, rx=1.0, ry=1.0, n1=5, n2=5):
 
         if A2==None:
             A2 = [-1,-1,-1]
@@ -528,14 +518,14 @@ class Component(object):
             D2[:2] = C2[:2]
             D2[2] = A2[2]
         self.members[name] = Member(domain, shape, nmem, ndiv, A1, B1, C1, D1, 
-                                    A2, B2, C2, D2, tx, ty, rx, ry, n)
+                                    A2, B2, C2, D2, tx, ty, rx, ry, n1, n2)
         self.keys.append(name)
 
 
 class Member(object):
 
     def __init__(self, domain, shape, nmem, ndiv, 
-                 A1, B1, C1, D1, A2, B2, C2, D2, tx, ty, rx, ry, n):
+                 A1, B1, C1, D1, A2, B2, C2, D2, tx, ty, rx, ry, n1, n2):
         self.domain = domain
         self.shape = shape
         self.nmem = nmem
@@ -552,7 +542,8 @@ class Member(object):
         self.ty = ty
         self.rx = rx
         self.ry = ry
-        self.n = n
+        self.n1 = n1
+        self.n2 = n2
 
 
 class Property(object):

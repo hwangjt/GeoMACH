@@ -14,6 +14,7 @@ sources = [
     'PAM/src/component/updateQs.f90',
     'PAM/src/component/computeInternalStructure.f90',
     'PAM/src/component/shapeTypes.f90',
+    'PAM/src/component/bodysections.f90',
     ]
 
 config = Configuration(name='PAM')

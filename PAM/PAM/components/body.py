@@ -1,6 +1,7 @@
 from __future__ import division
 from PAM.components import Component, Property, body_sections
-import numpy, pylab
+import numpy, pylab, time
+import PAM.PAMlib as PAMlib
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
@@ -97,7 +98,7 @@ class Body(Component):
             't1L':Property(Ns[1].shape[1]),
             't2L':Property(Ns[1].shape[1]),
             'noseL':0.1,
-            'tailL':0.05
+            'tailL':0.1
             }
         self.setSections()
 
@@ -118,49 +119,57 @@ class Body(Component):
                 self.props['t2L'].data[j] = t2L
 
     def propagateQs(self):
-        wR = 0.8
-        wL = 0.9
-        wD = 1.1
         Ns = self.Ns
         Qs = self.Qs
         for f in range(len(Ns)):
             if f==0 or f==4:
                 if f==0:
-                    sect = 1
+                    L = self.props['noseL']
+                    i0 = 0
                     i1 = 1
                     i2 = 2
-                    L = wL*self.props['noseL']
                 else:
-                    sect = -2
-                    i1 = -3
-                    i2 = -2
-                    L = -wL*self.props['tailL']
-                posx = self.props['posx'].data[sect]
-                posy = self.props['posy'].data[sect]
-                rz = wR*self.props['rz'].data[sect]
-                ry = wR*self.props['ry'].data[sect]
-                dx = self.props['posx'].data[i2] - self.props['posx'].data[i1]
-                dy = self.props['ry'].data[i2] - self.props['ry'].data[i1]
-                dz = self.props['rz'].data[i2] - self.props['rz'].data[i1]    
-                d = wD*abs(dy/dx)
-                e = wD*abs(dz/dx)
-                for j in range(Ns[f].shape[1]):
-                    for i in range(Ns[f].shape[0]):
-                        yy = 1 - 2*i/(Ns[f].shape[0]-1)
-                        if self.full:
-                            zz = -1 + 2*j/(Ns[f].shape[1]-1)
-                        elif f==0:
-                            zz = j/(Ns[f].shape[1]-1)
-                        elif f==4:
-                            zz = -1 + j/(Ns[f].shape[1]-1)
-                        x,y,z = body_sections.cone(L,rz,ry,d,e,yy,zz)
-                        Qs[f][i,j,:] = self.offset + [posx,posy,0] + [x,y,z] 
-                        Qs[f][i,j,0] -= self.props['posx'].data[1]
-                        if f==4:
-                            Qs[f][i,j,0] += self.props['noseL']
-                            Qs[f][i,j,0] += (1-wL)*self.props['tailL']
+                    L = self.props['tailL']
+                    i0 = -1
+                    i1 = -2
+                    i2 = -3
+                y0 = self.props['posy'].data[i1]
+                y1 = self.props['posy'].data[i1]
+                y2 = self.props['posy'].data[i2]
+                rz1 = self.props['rz'].data[i1]
+                ry1 = self.props['ry'].data[i1]
+                rz2 = self.props['rz'].data[i2]
+                ry2 = self.props['ry'].data[i2]
+                dx = abs(self.props['posx'].data[i2] - self.props['posx'].data[i1])  
+                Qs[f][:,:,:] = PAMlib.computecone(self.full, Ns[f].shape[0], Ns[f].shape[1], L, y0, y1, y2, ry1, ry2, rz1, rz2, dx)
+                if f==4:
+                    Qs[f][:,:,0] *= -1
+                    Qs[f][:,:,0] += self.props['noseL']
+                    Qs[f][:,:,0] += self.props['posx'].data[-2] - self.props['posx'].data[1]
+                    Qs[f][:,:,0] += self.props['tailL']
+                    Qs[f][:,:,:] = Qs[f][:,::-1,:]
+                Qs[f][:,:,0] += self.offset[0]
+                Qs[f][:,:,1] += self.offset[1]
+                Qs[f][:,:,2] += self.offset[2]
             else:
-                pi = numpy.pi
+                if f==1 and self.full:
+                    t1 = 3/4.0
+                    t2 = 1/4.0
+                elif f==1 and not self.full:
+                    t1 = 1/2.0
+                    t2 = 1/4.0
+                elif f==2:
+                    t1 = 1/4.0
+                    t2 = -1/4.0
+                elif f==3 and self.full:
+                    t1 = 7/4.0
+                    t2 = 5/4.0
+                elif f==3 and not self.full:
+                    t1 = 7/4.0
+                    t2 = 6/4.0
+                elif f==5:
+                    t1 = 5/4.0
+                    t2 = 3/4.0
                 for j in range(Ns[f].shape[1]):
                     posx = self.props['posx'].data[j]
                     posy = self.props['posy'].data[j]
@@ -170,28 +179,11 @@ class Body(Component):
                     t2U = self.props['t2U'].data[j]
                     t1L = self.props['t1L'].data[j]
                     t2L = self.props['t2L'].data[j]
-                    for i in range(Ns[f].shape[0]):
-                        ii = i/(Ns[f].shape[0]-1)
-                        if f==1 and self.full:
-                            t = 3/4.0 - ii/2.0
-                        elif f==1 and not self.full:
-                            t = 1/2.0 - ii/4.0
-                        elif f==2:
-                            t = 1/4.0 - ii/2.0
-                        elif f==3 and self.full:
-                            t = 7/4.0 - ii/2.0
-                        elif f==3 and not self.full:
-                            t = 7/4.0 - ii/4.0
-                        elif f==5:
-                            t = 5/4.0 - ii/2.0
-                        if t < 0:
-                            t += 2
-                        if t <= 1:
-                            z,y = body_sections.rounded(rz, ry, t, t1U, t2U)
-                        else:
-                            z,y = body_sections.rounded(rz, ry, t, t1L, t2L)
-                        Qs[f][i,j,:] = self.offset + [posx,posy,0] + [0,y,z]
-                        Qs[f][i,j,0] += self.props['noseL'] - self.props['posx'].data[1]
+                    z, y = PAMlib.computeroundedsection(Ns[f].shape[0], rz, ry, t1U, t2U, t1L, t2L, t1, t2)
+                    Qs[f][:,j,0] = self.offset[0] + posx - self.props['posx'].data[1]
+                    Qs[f][:,j,0] += self.props['noseL']
+                    Qs[f][:,j,1] = self.offset[1] + posy + y
+                    Qs[f][:,j,2] = self.offset[2] + z
 
     def getFlattenedC(self, f, ii, jj):
         if f==1:
