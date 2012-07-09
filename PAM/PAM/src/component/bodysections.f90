@@ -238,6 +238,41 @@ end subroutine computeInterpolantB
 
 
 
+subroutine computeBodySections(ni, nj, t1, t2, noseL, posx, posy, rz, ry, t1U, t2U, t1L, t2L, Q)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) ni, nj, t1, t2, noseL, posx, posy, rz, ry, t1U, t2U, t1L, t2L
+  !f2py intent(out) Q
+  !f2py depend(nj) posx, posy, rz, ry, t1U, t2U, t1L, t2L
+  !f2py depend(ni,nj) Q
+
+  !Input
+  integer, intent(in) ::  ni, nj
+  double precision, intent(in) ::  t1, t2, noseL
+  double precision, intent(in) ::  posx(nj), posy(nj), rz(nj), ry(nj)
+  double precision, intent(in) ::  t1U(nj), t2U(nj), t1L(nj), t2L(nj)
+
+  !Output
+  double precision, intent(out) ::  Q(ni,nj,3)
+
+  !Working
+  integer j
+  double precision z(ni), y(ni), zero
+
+  zero = 0.0
+  do j=1,nj
+     call computeRoundedSection(ni, rz(j), ry(j), t1U(j), t2U(j), t1L(j), t2L(j), t1, t2, z, y)
+     Q(:,j,1) = zero + posx(j) - posx(2) + noseL
+     Q(:,j,2) = y + posy(j)
+     Q(:,j,3) = z
+  end do
+
+end subroutine computeBodySections
+
+
+
 subroutine computeRoundedSection(n, rz, ry, ta1, tb1, ta2, tb2, t1, t2, z, y)
 
   implicit none

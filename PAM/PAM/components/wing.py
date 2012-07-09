@@ -88,8 +88,8 @@ class Wing(Component):
     def initializeParameters(self):
         Ns = self.Ns
         self.offset = numpy.zeros(3)
-        self.SECTshape = numpy.zeros((len(self.Ks),Ns[0].shape[0],Ns[0].shape[1],3))
-        self.SECTrot0 = numpy.zeros((Ns[0].shape[1],3))
+        self.SECTshape = numpy.zeros((len(self.Ks),Ns[0].shape[0],Ns[0].shape[1],3),order='F')
+        self.SECTrot0 = numpy.zeros((Ns[0].shape[1],3),order='F')
         self.props = {
             'chord':Property(Ns[0].shape[1]),
             'posx':Property(Ns[0].shape[1]),
@@ -119,43 +119,16 @@ class Wing(Component):
         b = 0.0
         Ns = self.Ns
         Qs = self.Qs
-        self.computeRotations()
         for f in range(len(self.Ks)):
-            Qs[f][:,:,:] = 0
-            for j in range(Ns[f].shape[1]):
-                pos = [self.props['posx'].data[j], self.props['posy'].data[j], self.props['posz'].data[j]]
-                rot = [self.props['rotx'].data[j], self.props['roty'].data[j], self.props['rotz'].data[j]]
-                prp = [self.props['prpx'].data[j], self.props['prpy'].data[j], 0]
-                pos = numpy.array(pos)
-                rot = numpy.array(rot)
-                prp = numpy.array(prp)
-                T = PAMlib.computertnmtx(rot+self.SECTrot0[j,:]*prp)
-                for i in range(Ns[f].shape[0]):
-                    Qs[f][i,j,:] = numpy.dot(T,self.SECTshape[f,i,j,:]-[a,b,0])*self.props['chord'].data[j]
-                    Qs[f][i,j,:] += self.offset + pos
+            p = self.props
+            Qs[f][:,:,:] = PAMlib.computewingsections(Ns[f].shape[0], Ns[f].shape[1], a, b, p['posx'].data, p['posy'].data, p['posz'].data, p['rotx'].data, p['roty'].data, p['rotz'].data, p['prpx'].data, p['prpy'].data, p['chord'].data, self.SECTshape[f])
+            Qs[f][:,:,0] += self.offset[0]
+            Qs[f][:,:,1] += self.offset[1]
+            Qs[f][:,:,2] += self.offset[2]
         if self.half:
             Qs[0][:,-1,2] = 0
             Qs[0][0,:,2] = 0
             Qs[0][-1,:,2] = 0
-
-    def computeRotations(self):
-        pos = numpy.zeros((self.Ns[0].shape[1],3))
-        for j in range(self.Ns[0].shape[1]):
-            pos[j,:] = [self.props['posx'].data[j], self.props['posy'].data[j], self.props['posz'].data[j]]
-        for j in range(self.Ns[0].shape[1]):
-            if j==0:
-                tangent = pos[j+1] - pos[j]
-            elif j==self.Ns[0].shape[1]-1:
-                tangent = pos[j] - pos[j-1]
-            else:
-                t1 = pos[j+1] - pos[j]
-                t2 = pos[j] - pos[j-1]
-                tangent = t1/numpy.linalg.norm(t1) + t2/numpy.linalg.norm(t2)
-            x,y,z = tangent
-            p = PAMlib.arc_tan([z,y], 1.0, 1.0)
-            q = PAMlib.arc_tan([(y**2+z**2)**0.5,x], 1.0, 1.0)
-            self.SECTrot0[j,:2] = [p,q]
-            self.SECTrot0[j,:2] *= 180.0/numpy.pi
 
     def getFlattenedC(self, f, ii, jj):
         if f==0:

@@ -133,15 +133,9 @@ class Body(Component):
                     i0 = -1
                     i1 = -2
                     i2 = -3
-                y0 = self.props['posy'].data[i1]
-                y1 = self.props['posy'].data[i1]
-                y2 = self.props['posy'].data[i2]
-                rz1 = self.props['rz'].data[i1]
-                ry1 = self.props['ry'].data[i1]
-                rz2 = self.props['rz'].data[i2]
-                ry2 = self.props['ry'].data[i2]
+                p = self.props
                 dx = abs(self.props['posx'].data[i2] - self.props['posx'].data[i1])  
-                Qs[f][:,:,:] = PAMlib.computecone(self.full, Ns[f].shape[0], Ns[f].shape[1], L, y0, y1, y2, ry1, ry2, rz1, rz2, dx)
+                Qs[f][:,:,:] = PAMlib.computecone(self.full, Ns[f].shape[0], Ns[f].shape[1], L, p['posy'].data[i0], p['posy'].data[i1], p['posy'].data[i2], p['ry'].data[i1], p['ry'].data[i2], p['rz'].data[i1], p['rz'].data[i2], dx)
                 if f==4:
                     Qs[f][:,:,0] *= -1
                     Qs[f][:,:,0] += self.props['noseL']
@@ -170,20 +164,11 @@ class Body(Component):
                 elif f==5:
                     t1 = 5/4.0
                     t2 = 3/4.0
-                for j in range(Ns[f].shape[1]):
-                    posx = self.props['posx'].data[j]
-                    posy = self.props['posy'].data[j]
-                    rz = self.props['rz'].data[j]
-                    ry = self.props['ry'].data[j]
-                    t1U = self.props['t1U'].data[j]
-                    t2U = self.props['t2U'].data[j]
-                    t1L = self.props['t1L'].data[j]
-                    t2L = self.props['t2L'].data[j]
-                    z, y = PAMlib.computeroundedsection(Ns[f].shape[0], rz, ry, t1U, t2U, t1L, t2L, t1, t2)
-                    Qs[f][:,j,0] = self.offset[0] + posx - self.props['posx'].data[1]
-                    Qs[f][:,j,0] += self.props['noseL']
-                    Qs[f][:,j,1] = self.offset[1] + posy + y
-                    Qs[f][:,j,2] = self.offset[2] + z
+                p = self.props
+                Qs[f][:,:,:] = PAMlib.computebodysections(Ns[f].shape[0], Ns[f].shape[1], t1, t2, p['noseL'], p['posx'].data, p['posy'].data, p['rz'].data, p['ry'].data, p['t1U'].data, p['t2U'].data, p['t1L'].data, p['t2L'].data)
+                Qs[f][:,:,0] += self.offset[0]
+                Qs[f][:,:,1] += self.offset[1]
+                Qs[f][:,:,2] += self.offset[2]
 
     def getFlattenedC(self, f, ii, jj):
         if f==1:

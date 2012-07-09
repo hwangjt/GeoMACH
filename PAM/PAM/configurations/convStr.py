@@ -35,7 +35,7 @@ class Conventional(Configuration):
         c['fuse'].props['ry'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
         c['fuse'].props['rz'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
 
-        c['wing'].offset[:] = [3.75, 0.3, 0.5]
+        c['wing'].offset[:] = [3.25, 0.3, 0.5]
         c['wing'].setAirfoil("rae2822.dat")
         c['wing'].props['posx'].set([0,3.2,4],[0,0.8,1],w=[0.4,1,0])
         c['wing'].props['posy'].set([0,0.9,2.1],[0,0.8,1],w=[0.5,1,0])
@@ -44,7 +44,7 @@ class Conventional(Configuration):
         c['wing'].props['prpy'].set([0,0],[0,1])
         c['wing'].props['chord'].set([2,0.25],[0,1])
 
-        c['tail'].offset[:] = [8.5, 0.5, 0.35]
+        c['tail'].offset[:] = [8.3, 0.5, 0.35]
         c['tail'].props['posx'].set([0,1.6],[0,1],w=[0.2,0])
         c['tail'].props['posy'].set([0,0.3],[0,1],w=[0,0])
         c['tail'].props['posz'].set([0,1.7],[0,1])
@@ -82,7 +82,7 @@ class Conventional(Configuration):
         c['pylon'].props['prpy'].set([0,0],[0,1])
         c['pylon'].props['chord'].set([0.75,0.75],[0,1])
 
-        c['fin'].offset[:] = [8.5, 0.85, 0]
+        c['fin'].offset[:] = [8.25, 0.85, 0]
         c['fin'].props['posx'].set([0,1.5],[0,1])
         c['fin'].props['posy'].set([0,1.4],[0,1])
         c['fin'].props['posz'].set([0,0],[0,1])
@@ -124,5 +124,5 @@ if __name__ == '__main__':
     aircraft.oml0.write2Tec(name)
     aircraft.oml0.write2TecC(name+'_C')
     aircraft.oml0.write2IGES(name)
-    aircraft.oml0.write2EGADS(name+'_EGADS')
+    #aircraft.oml0.write2EGADS(name+'_EGADS')
     #aircraft.plot()
