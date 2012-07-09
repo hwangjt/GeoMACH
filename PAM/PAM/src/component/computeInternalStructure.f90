@@ -184,7 +184,15 @@ subroutine computeInternalNodes(nP, nS, n0, nM, members, P, S)
               iS = iS + 1
               S(iS,:) = (/ n0 , n1 /)
            else if (shape .eq. 2) then
-              n = 0
+              n = 2*n1*n2 + 2*n0*n2
+              iS = iS + 1
+              S(iS,:) = (/ n1 , n2 /)
+              iS = iS + 1
+              S(iS,:) = (/ n0 , n2 /)
+              iS = iS + 1
+              S(iS,:) = (/ n1 , n2 /)
+              iS = iS + 1
+              S(iS,:) = (/ n0 , n2 /)
            else
               n = 0
            end if
@@ -196,6 +204,8 @@ subroutine computeInternalNodes(nP, nS, n0, nM, members, P, S)
               allocate(w(n))
               if (shape .eq. 1) then   
                  call getShapeRect(n, n0, n1, u0, v0)
+              else if (shape .eq. 2) then
+                 call getShapeHole(n, n0, n1, n2, u0, v0)
               else
                  print *, 'Shape not found'
               end if
@@ -253,6 +263,9 @@ subroutine countInternalNodes(n0, nM, members, nP, nS)
            if (shape .eq. 1) then
               nP = nP + n0*n1
               nS = nS + 1
+           else if (shape .eq. 2) then
+              nP = nP + 2*n0*n2 + 2*n1*n2
+              nS = nS + 4
            end if
         end do
      end do

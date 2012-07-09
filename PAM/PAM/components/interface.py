@@ -1,6 +1,6 @@
 from __future__ import division
 from PAM.components import Component
-import numpy, pylab
+import numpy, pylab, time
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
@@ -259,7 +259,7 @@ class FullInterface(Interface):
         Ns = self.Ns
         Qs = self.Qs
         Ks = self.Ks
-        fQs = self.fComp.Qs[self.fFace]    
+        fQs = self.fComp.Qs[self.fFace]  
 
         Qs[0][:,:,:] = 0
         for j in range(int(Ns[0].shape[1]-sj[0]-sj[-1])):

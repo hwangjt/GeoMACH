@@ -170,7 +170,9 @@ class Body(Component):
                 Qs[f][:,:,1] += self.offset[1]
                 Qs[f][:,:,2] += self.offset[2]
 
-    def getFlattenedC(self, f, ii, jj):
+    def getFlattenedC(self, f, i, j, ni, nj):
+        ii = i/(ni-1)
+        jj = j/(nj-1)
         if f==1:
             return [jj,1 - 0.25*ii,0]
         elif f==2:

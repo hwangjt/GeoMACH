@@ -130,11 +130,13 @@ class Wing(Component):
             Qs[0][0,:,2] = 0
             Qs[0][-1,:,2] = 0
 
-    def getFlattenedC(self, f, ii, jj):
+    def getFlattenedC(self, f, i, j, ni, nj):
+        ii = i/(ni-1)
+        jj = j/(nj-1)
         if f==0:
-            return [jj,1 - ii,0]
+            return [jj,self.SECTshape[f][i,j,0],0]
         else:
-            return [jj,ii,0]
+            return [jj,self.SECTshape[f][i,j,0],0]
 
     def getAR(self):
         return 5

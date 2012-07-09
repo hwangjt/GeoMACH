@@ -255,7 +255,7 @@ class Component(object):
             nj = Ms[f].shape[1]
             for i in range(ni):
                 for j in range(nj):
-                    oml0.C[Ms[f][i,j],:] = self.getFlattenedC(f, i/(ni-1), j/(nj-1))
+                    oml0.C[Ms[f][i,j],:] = self.getFlattenedC(f, i, j, ni, nj)
         oml0.computePointsC()
 
     def initializeLayout(self):

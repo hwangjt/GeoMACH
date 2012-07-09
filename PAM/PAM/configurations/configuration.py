@@ -69,12 +69,12 @@ class Configuration(object):
 
     def computePoints(self):
         for k in range(len(self.comps)):
-            t0 = time.time()
             comp = self.comps[self.keys[k]]
             comp.propagateQs()
             comp.updateQs()
-            print self.keys[k],time.time()-t0
+        t0 = time.time()
         self.oml0.computePoints()
+        print '0',time.time()-t0
 
     def plot(self):
         #self.oml0.plot(pylab.figure(),False)
