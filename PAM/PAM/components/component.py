@@ -475,9 +475,9 @@ class Component(object):
             members[i,28:] = [member.tx, member.ty, member.rx, member.ry, member.n1, member.n2]
 
         nP, nS = PAMlib.countinternalnodes(self.layout.n, nM, members)
-        P2, S = PAMlib.computeinternalnodes(nP, nS, self.layout.n, nM, members)
+        P2, M, S = PAMlib.computeinternalnodes(nP, nS, self.layout.n, nM, members)
         nA = PAMlib.countannz(nP, layout.nvert, layout.nquad, layout.verts, layout.poly_vert, self.quad_indices, P2)
-        Aa, Ai, Aj = PAMlib.assembleamtx(nA, self.layout.n, nP, Jns[0].shape[0], Jns[1].shape[0], len(self.JQs[0]), len(self.JQs[1]), self.layout.nvert, self.layout.nquad, Jns[0], Jns[1], Jus[0], Jus[1], self.JQs[0], self.JQs[1], self.quad_indices, self.layout.verts, self.layout.poly_vert, P2)
+        Aa, Ai, Aj = PAMlib.assembleamtx(nA, self.layout.n, nP, Jns[0].shape[0], Jns[1].shape[0], self.layout.nvert, self.layout.nquad, Jns[0], Jns[1], Jus[0], Jus[1], self.quad_indices, self.layout.verts, self.layout.poly_vert, P2, M)
         As.append(scipy.sparse.csr_matrix((Aa,(Ai,Aj)), shape=(max(Ai)+1,P.shape[0])))
             
         return As, S

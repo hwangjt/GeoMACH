@@ -17,11 +17,67 @@ subroutine extractEdges(nP, n, nu1, nu2, nv1, nv2, nvert, u1, u2, v1, v2, verts,
   double precision, intent(out) ::  P(nP,3)
 
   !Working
-  integer iP, i1, i2, j1, j2
+  integer iP
   double precision Cu1(nu1+1,2), Cu2(nu2+1,2), Cv1(nv1+1,2), Cv2(nv2+1,2)
   integer i, u, v
-  logical val
   double precision den(2)
+
+  call getJunctionVerts(nvert, nu1, nu2, nv1, nv2, &
+       u1, u2, v1, v2, verts, Cu1, Cu2, Cv1, Cv2)
+  
+  P(:,:) = 0.0
+
+  iP = 0
+  do i=1,nu1
+     den = (Cu1(i+1,:) - Cu1(i,:))/(n-1)
+     do u=1,n
+        iP = iP + 1
+        P(iP,1:2) = Cu1(i,:) + (u-1)*den
+     end do
+  end do
+  do i=1,nu2
+     den = (Cu2(i+1,:) - Cu2(i,:))/(n-1)
+     do u=1,n
+        iP = iP + 1
+        P(iP,1:2) = Cu2(i,:) + (u-1)*den
+     end do
+  end do
+  do i=1,nv1
+     den = (Cv1(i+1,:) - Cv1(i,:))/(n-1)
+     do v=1,n
+        iP = iP + 1
+        P(iP,1:2) = Cv1(i,:) + (v-1)*den
+     end do
+  end do
+  do i=1,nv2
+     den = (Cv2(i+1,:) - Cv2(i,:))/(n-1)
+     do v=1,n
+        iP = iP + 1
+        P(iP,1:2) = Cv2(i,:) + (v-1)*den
+     end do
+  end do
+
+end subroutine extractEdges
+
+
+
+subroutine getJunctionVerts(nvert, nu1, nu2, nv1, nv2, &
+     u1, u2, v1, v2, verts, Cu1, Cu2, Cv1, Cv2)
+
+  implicit none
+
+  !Input
+  integer, intent(in) ::  nvert, nu1, nu2, nv1, nv2
+  double precision, intent(in) ::  u1, u2, v1, v2
+  double precision, intent(in) ::  verts(nvert,2)
+
+  !Output
+  double precision, intent(out) ::  Cu1(nu1+1,2), Cu2(nu2+1,2)
+  double precision, intent(out) ::  Cv1(nv1+1,2), Cv2(nv2+1,2)
+
+  !Working
+  integer i1, i2, j1, j2, v
+  logical val
 
   i1 = 0
   i2 = 0
@@ -57,40 +113,8 @@ subroutine extractEdges(nP, n, nu1, nu2, nv1, nv2, nvert, u1, u2, v1, v2, verts,
   call sortVerts(nu2+1, Cu2)
   call sortVerts(nv1+1, Cv1)
   call sortVerts(nv2+1, Cv2)
-  
-  P(:,:) = 0.0
 
-  iP = 0
-  do i=1,nu1
-     den = (Cu1(i+1,:) - Cu1(i,:))/(n-1)
-     do u=1,n
-        iP = iP + 1
-        P(iP,1:2) = Cu1(i,:) + (u-1)*den
-     end do
-  end do
-  do i=1,nu2
-     den = (Cu2(i+1,:) - Cu2(i,:))/(n-1)
-     do u=1,n
-        iP = iP + 1
-        P(iP,1:2) = Cu2(i,:) + (u-1)*den
-     end do
-  end do
-  do i=1,nv1
-     den = (Cv1(i+1,:) - Cv1(i,:))/(n-1)
-     do u=1,n
-        iP = iP + 1
-        P(iP,1:2) = Cv1(i,:) + (u-1)*den
-     end do
-  end do
-  do i=1,nv2
-     den = (Cv2(i+1,:) - Cv2(i,:))/(n-1)
-     do u=1,n
-        iP = iP + 1
-        P(iP,1:2) = Cv2(i,:) + (u-1)*den
-     end do
-  end do
-
-end subroutine extractEdges
+end subroutine getJunctionVerts
 
 
 

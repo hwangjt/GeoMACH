@@ -38,6 +38,13 @@ subroutine computeCone(full, ni, nj, L, y0, y1, y2, ry1, ry2, rz1, rz2, dx, Q)
   C(2,3,:) = (/ L , y1 + ry1     , z /)
   C(3,3,:) = (/ L , y1 + ry1*ir2 , rz1*ir2 /)
 
+  OO(:) = 0.0
+  Ol(:) = 0.0
+  lO(:) = 0.0
+  ll(:) = 0.0
+  u = 1
+  v = 1
+
   do i=1,ni
      ii = -1.0 + 2.0*(i-1)/(ni-1)
      do j=1,nj
