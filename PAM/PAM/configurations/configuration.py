@@ -68,13 +68,39 @@ class Configuration(object):
         self.computePoints()
 
     def computePoints(self):
+        t0 = time.time()
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
             comp.propagateQs()
             comp.updateQs()
-        t0 = time.time()
         self.oml0.computePoints()
-        print '0',time.time()-t0
+        print 'cPts',time.time()-t0
+
+    def buildStructure(self, name):
+        Ps = []        
+        Ss = []
+        for k in range(len(self.comps)):
+            comp = self.comps[self.keys[k]]
+            if not comp.keys==[]:
+                comp.buildStructure()       
+                Ps.append(comp.strP)
+                Ss.append(comp.strS)
+        P = numpy.vstack(Ps)
+        S = numpy.vstack(Ss)
+
+        f = open(name+'.dat','w')
+        f.write('title = "PUBSlib output"\n')
+        f.write('variables = "x", "y", "z"\n')
+        iP = 0
+        for surf in range(S.shape[0]):    
+            nu = int(S[surf,0])
+            nv = int(S[surf,1])
+            f.write('zone i='+str(nu)+', j='+str(nv)+', DATAPACKING=POINT\n')
+            for v in range(nv):
+                for u in range(nu):
+                    f.write(str(P[iP,0]) + ' ' + str(P[iP,1]) + ' ' + str(P[iP,2]) + '\n')
+                    iP += 1
+        f.close()
 
     def plot(self):
         #self.oml0.plot(pylab.figure(),False)

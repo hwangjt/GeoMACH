@@ -359,6 +359,9 @@ class Component(object):
             JEs.append(JE)
 
             quad_indices.append(self.layout.getQuadIndices(JQ))
+        
+        if len(quad_indices)==1:
+            quad_indices.append(quad_indices[0])
 
         self.JQs = JQs
         self.JEs = JEs
@@ -410,22 +413,10 @@ class Component(object):
         A = oml0.vstackSparse(As)
 
         P = A.dot(P)
-
         S = numpy.vstack(Ss)
 
-        f = open('test.dat','w')
-        f.write('title = "PUBSlib output"\n')
-        f.write('variables = "x", "y", "z"\n')
-        iP = 0
-        for surf in range(S.shape[0]):    
-            nu = int(S[surf,0])
-            nv = int(S[surf,1])
-            f.write('zone i='+str(nu)+', j='+str(nv)+', DATAPACKING=POINT\n')
-            for v in range(nv):
-                for u in range(nu):
-                    f.write(str(P[iP,0]) + ' ' + str(P[iP,1]) + ' ' + str(P[iP,2]) + '\n')
-                    iP += 1
-        f.close()
+        self.strP = P
+        self.strS = S
 
     def computeStructure(self, P):
         oml0 = self.oml0
@@ -476,8 +467,11 @@ class Component(object):
 
         nP, nS = PAMlib.countinternalnodes(self.layout.n, nM, members)
         P2, M, S = PAMlib.computeinternalnodes(nP, nS, self.layout.n, nM, members)
-        nA = PAMlib.countannz(nP, layout.nvert, layout.nquad, layout.verts, layout.poly_vert, self.quad_indices, P2)
-        Aa, Ai, Aj = PAMlib.assembleamtx(nA, self.layout.n, nP, Jns[0].shape[0], Jns[1].shape[0], self.layout.nvert, self.layout.nquad, Jns[0], Jns[1], Jus[0], Jus[1], self.quad_indices, self.layout.verts, self.layout.poly_vert, P2, M)
+        nA = PAMlib.countannz(nP, layout.nvert, layout.nquad, layout.verts, layout.poly_vert, self.quad_indices, P2, M)
+        if len(skinIndices)==1:
+            Aa, Ai, Aj = PAMlib.assembleamtx(nA, self.layout.n, nP, Jns[0].shape[0], Jns[0].shape[0], self.layout.nvert, self.layout.nquad, Jns[0], Jns[0], Jus[0], Jus[0], self.quad_indices, self.layout.verts, self.layout.poly_vert, P2, M)
+        else:
+            Aa, Ai, Aj = PAMlib.assembleamtx(nA, self.layout.n, nP, Jns[0].shape[0], Jns[1].shape[0], self.layout.nvert, self.layout.nquad, Jns[0], Jns[1], Jus[0], Jus[1], self.quad_indices, self.layout.verts, self.layout.poly_vert, P2, M)
         As.append(scipy.sparse.csr_matrix((Aa,(Ai,Aj)), shape=(max(Ai)+1,P.shape[0])))
             
         return As, S

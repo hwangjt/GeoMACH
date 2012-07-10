@@ -31,11 +31,12 @@ subroutine assembleAmtx(nA, n0, nP, nJ1, nJ2, nvert, nquad, &
   integer, intent(out) ::  Ai(nA), Aj(nA)
 
   !Working
-  integer iA, s, iP
+  integer iA, s, r, iP
   integer quad, jctn
   double precision uu, vv, Q(4,2)
   integer nu1, nu2, nv1, nv2
   double precision u1, u2, v1, v2
+  double precision Pu, Pv, Pw
 
   Aa(:) = 0.0
   Ai(:) = 1
@@ -43,45 +44,55 @@ subroutine assembleAmtx(nA, n0, nP, nJ1, nJ2, nvert, nquad, &
 
   iA = 0
   do iP=1,nP
-     call findQuaduv(nvert, nquad, P(iP,1), P(iP,2), verts, poly_vert, quad)
      do s=1,2
-        if (quad_indices(quad,s) .eq. 0) then
-           if (s .eq. 1) then
-              call findJunctionuv(quad, nvert, nquad, nJ1, &
-                   verts, poly_vert, Ju1, jctn, Q)
-              nu1 = Jn1(jctn,1)
-              nu2 = Jn1(jctn,2)
-              nv1 = Jn1(jctn,3)
-              nv2 = Jn1(jctn,4)
-              u1 = Ju1(jctn,1)
-              u2 = Ju1(jctn,2)
-              v1 = Ju1(jctn,3)
-              v2 = Ju1(jctn,4)
+        do r=1,2
+           if ((M(iP) .eq. 2) .and. (s .eq. 2)) then
+              Pu = P(iP,1)
+              Pv = 2.0 - r
+              Pw = P(iP,3)
            else
-              call findJunctionuv(quad, nvert, nquad, nJ2, &
-                   verts, poly_vert, Ju2, jctn, Q)
-              nu1 = Jn2(jctn,1)
-              nu2 = Jn2(jctn,2)
-              nv1 = Jn2(jctn,3)
-              nv2 = Jn2(jctn,4)
-              u1 = Ju2(jctn,1)
-              u2 = Ju2(jctn,2)
-              v1 = Ju2(jctn,3)
-              v2 = Ju2(jctn,4)
+              Pu = P(iP,1)
+              Pv = P(iP,2)
+              Pw = P(iP,3)
            end if
-           call invBilinearMap(P(iP,1), P(iP,2), Q, uu, vv)
-           call appendJunctionA(s, jctn, nA, n0, nquad, nJ1, nJ2, nvert, &
-                nu1, nu2, nv1, nv2, u1, u2, v1, v2, verts, quad_indices, &
-                Jn1, Jn2, P(iP,1), P(iP,2), P(iP,3), iP, iA, Aa, Ai, Aj)
-        else
-           Q(1,:) = verts(poly_vert(quad,1),:)
-           Q(2,:) = verts(poly_vert(quad,2),:)
-           Q(3,:) = verts(poly_vert(quad,3),:)
-           Q(4,:) = verts(poly_vert(quad,4),:)
-           call invBilinearMap(P(iP,1), P(iP,2), Q, uu, vv)
-           call appendQuadA(s, quad, nA, n0, nquad, nJ1, &
-                quad_indices, Jn1, uu, vv, P(iP,3), iP, iA, Aa, Ai, Aj)
-        end if
+           call findQuaduv(nvert, nquad, Pu, Pv, verts, poly_vert, quad)
+           if (quad_indices(quad,s) .eq. 0) then
+              if (s .eq. 1) then
+                 call findJunctionuv(quad, nvert, nquad, nJ1, &
+                      verts, poly_vert, Ju1, jctn, Q)
+                 nu1 = Jn1(jctn,1)
+                 nu2 = Jn1(jctn,2)
+                 nv1 = Jn1(jctn,3)
+                 nv2 = Jn1(jctn,4)
+                 u1 = Ju1(jctn,1)
+                 u2 = Ju1(jctn,2)
+                 v1 = Ju1(jctn,3)
+                 v2 = Ju1(jctn,4)
+              else
+                 call findJunctionuv(quad, nvert, nquad, nJ2, &
+                      verts, poly_vert, Ju2, jctn, Q)
+                 nu1 = Jn2(jctn,1)
+                 nu2 = Jn2(jctn,2)
+                 nv1 = Jn2(jctn,3)
+                 nv2 = Jn2(jctn,4)
+                 u1 = Ju2(jctn,1)
+                 u2 = Ju2(jctn,2)
+                 v1 = Ju2(jctn,3)
+                 v2 = Ju2(jctn,4)
+              end if
+              call appendJunctionA(s, r, M(iP), jctn, nA, n0, nquad, nJ1, nJ2, nvert, &
+                   nu1, nu2, nv1, nv2, u1, u2, v1, v2, verts, quad_indices, &
+                   Jn1, Jn2, Pu, Pv, Pw, iP, iA, Aa, Ai, Aj)
+           else
+              Q(1,:) = verts(poly_vert(quad,1),:)
+              Q(2,:) = verts(poly_vert(quad,2),:)
+              Q(3,:) = verts(poly_vert(quad,3),:)
+              Q(4,:) = verts(poly_vert(quad,4),:)
+              call invBilinearMap(Pu, Pv, Q, uu, vv)
+              call appendQuadA(s, r, M(iP), quad, nA, n0, nquad, nJ1, &
+                   quad_indices, Jn1, uu, vv, Pw, iP, iA, Aa, Ai, Aj)
+           end if
+        end do
      end do
   end do
 
@@ -94,38 +105,49 @@ end subroutine assembleAmtx
 
 
 
-subroutine countAnnz(nP, nvert, nquad, verts, poly_vert, quad_indices, P, nA)
+subroutine countAnnz(nP, nvert, nquad, verts, poly_vert, quad_indices, P, M, nA)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nP, nvert, nquad, verts, poly_vert, quad_indices, P
+  !f2py intent(in) nP, nvert, nquad, verts, poly_vert, quad_indices, P, M
   !f2py intent(out) nA
   !f2py depend(nvert) verts
   !f2py depend(nquad) poly_vert, quad_indices
-  !f2py depend(nP) P
+  !f2py depend(nP) P, M
 
   !Input
   integer, intent(in) ::  nP, nvert, nquad
   double precision, intent(in) ::  verts(nvert,2)
   integer, intent(in) ::  poly_vert(nquad,5), quad_indices(nquad,2)
   double precision, intent(in) ::  P(nP,3)
+  integer, intent(in) ::  M(nP)
 
   !Output
   integer, intent(out) ::  nA
 
   !Working
-  integer iP, quad, s
+  integer iP, quad, s, r
+  double precision Pu, Pv
 
   nA = 0
   do iP=1,nP
-     call findQuaduv(nvert, nquad, P(iP,1), P(iP,2), verts, poly_vert, quad)
      do s=1,2
-        if (quad_indices(quad,s) .eq. 0) then
-           nA = nA + 12
-        else
-           nA = nA + 4
-        end if
+        do r=1,2
+           if ((M(iP) .eq. 2) .and. (s .eq. 2)) then
+              Pu = P(iP,1)
+              Pv = 2.0 - r
+           else
+              Pu = P(iP,1)
+              Pv = P(iP,2)
+           end if
+           call findQuaduv(nvert, nquad, Pu, Pv, verts, poly_vert, quad)
+           if (quad_indices(quad,s) .eq. 0) then
+              nA = nA + 12
+           else
+              nA = nA + 4
+           end if
+        end do
      end do
   end do
 
@@ -294,14 +316,37 @@ end subroutine countInternalNodes
 
 
 
-subroutine appendJunctionA(s, jctn, nA, n0, nquad, nJ1, nJ2, nvert, &
-     nu1, nu2, nv1, nv2, u1, u2, v1, v2, verts, quad_indices, &
+subroutine writeToA(nA, a, i, j, iA, Aa, Ai, Aj)
+
+  implicit none
+
+  !Input
+  integer, intent(in) ::  nA
+  double precision, intent(in) ::  a
+  integer, intent(in) ::  i, j
+  
+  !Output
+  integer, intent(inout) ::  iA
+  double precision, intent(inout) ::  Aa(nA)
+  integer, intent(inout) ::  Ai(nA), Aj(nA)
+
+  iA = iA + 1
+  Aa(iA) = a
+  Ai(iA) = i
+  Aj(iA) = j
+
+end subroutine writeToA
+
+
+
+subroutine appendJunctionA(ss, r, domain, jctn, nA, n0, nquad, nJ1, nJ2, &
+     nvert, nu1, nu2, nv1, nv2, u1, u2, v1, v2, verts, quad_indices, &
      Jn1, Jn2, uu, vv, ww, iP, iA, Aa, Ai, Aj)
 
   implicit none
 
   !Input
-  integer, intent(in) ::  s, jctn, nA, n0, nquad, nJ1, nJ2, nvert
+  integer, intent(in) ::  ss, r, domain, jctn, nA, n0, nquad, nJ1, nJ2, nvert
   integer, intent(in) ::  nu1, nu2, nv1, nv2
   double precision, intent(in) ::  u1, u2, v1, v2
   double precision, intent(in) ::  verts(nvert,2)
@@ -317,119 +362,77 @@ subroutine appendJunctionA(s, jctn, nA, n0, nquad, nJ1, nJ2, nvert, &
 
   !Working
   double precision u, v, w, t
-  integer index, i1, i2, j1, j2
+  integer index, i1, i2, j1, j2, s
   double precision Cu1(nu1+1,2), Cu2(nu2+1,2), Cv1(nv1+1,2), Cv2(nv2+1,2)
 
   call getJunctionVerts(nvert, nu1, nu2, nv1, nv2, &
        u1, u2, v1, v2, verts, Cu1, Cu2, Cv1, Cv2)
 
-  if (s .eq. 1) then
+  s = ss
+  if (ss .eq. 1) then
      w = ww
   else
      w = 1-ww
   end if
+  w = 0.5*w
+  if ((domain .eq. 2) .and. (s .eq. 2)) then
+     s = 1
+  end if
   call nMap(uu,u1,u2,u)
   call nMap(vv,v1,v2,v)
 
-  iA = iA + 1
-  call getIndexJunction(s, jctn, 1, 1, &
-       n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = -w*(1-u)*(1-v)
-  Ai(iA) = iP
-  Aj(iA) = index
-
-  iA = iA + 1
   call getIndexJunction(s, jctn, 1, n0*nu1, &
        n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = -w*(1-u)*v
-  Ai(iA) = iP
-  Aj(iA) = index
-
-  iA = iA + 1
-  call getIndexJunction(s, jctn, 2, 1, &
-       n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = -w*u*(1-v)
-  Ai(iA) = iP
-  Aj(iA) = index
-
-  iA = iA + 1
+  call writeToA(nA, -w*(1-u)*v, iP, index, iA, Aa, Ai, Aj)
+  
   call getIndexJunction(s, jctn, 2, n0*nu2, &
        n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = -w*u*v
-  Ai(iA) = iP
-  Aj(iA) = index
-
+  call writeToA(nA, -w*u*v, iP, index, iA, Aa, Ai, Aj)
+  
+  call getIndexJunction(s, jctn, 1, 1, &
+       n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
+  call writeToA(nA, -w*(1-u)*(1-v), iP, index, iA, Aa, Ai, Aj)
+  
+  call getIndexJunction(s, jctn, 2, 1, &
+       n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
+  call writeToA(nA, -w*u*(1-v), iP, index, iA, Aa, Ai, Aj)
 
   call classifyU2(n0, nu1+1, vv, Cu1(1,1), Cu1(:,2), i1, i2, t)
-
-  iA = iA + 1
   call getIndexJunction(s, jctn, 1, i1, &
        n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = w*(1-t)*(1-u)
-  Ai(iA) = iP
-  Aj(iA) = index
-
-  iA = iA + 1
+  call writeToA(nA, w*(1-t)*(1-u), iP, index, iA, Aa, Ai, Aj)
   call getIndexJunction(s, jctn, 1, i2, &
        n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = w*t*(1-u)
-  Ai(iA) = iP
-  Aj(iA) = index
-
-
+  call writeToA(nA, w*t*(1-u), iP, index, iA, Aa, Ai, Aj)
+  
   call classifyU2(n0, nu2+1, vv, Cu2(1,1), Cu2(:,2), i1, i2, t)
-
-  iA = iA + 1
   call getIndexJunction(s, jctn, 2, i1, &
        n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = w*(1-t)*u
-  Ai(iA) = iP
-  Aj(iA) = index
-
-  iA = iA + 1
+  call writeToA(nA, w*(1-t)*u, iP, index, iA, Aa, Ai, Aj)
   call getIndexJunction(s, jctn, 2, i2, &
        n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = w*t*u
-  Ai(iA) = iP
-  Aj(iA) = index
-
-
+  call writeToA(nA, w*t*u, iP, index, iA, Aa, Ai, Aj)
+  
   call classifyU2(n0, nv1+1, uu, Cv1(1,2), Cv1(:,1), j1, j2, t)
-
-  iA = iA + 1
   call getIndexJunction(s, jctn, 3, j1, &
        n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = w*(1-t)*(1-v)
-  Ai(iA) = iP
-  Aj(iA) = index
-
-  iA = iA + 1
+  call writeToA(nA, w*(1-t)*(1-v), iP, index, iA, Aa, Ai, Aj)
+  
+  call classifyU2(n0, nv1+1, uu, Cv1(1,2), Cv1(:,1), j1, j2, t)
   call getIndexJunction(s, jctn, 3, j2, &
        n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = w*t*(1-v)
-  Ai(iA) = iP
-  Aj(iA) = index
-
-
+  call writeToA(nA, w*t*(1-v), iP, index, iA, Aa, Ai, Aj)
+  
   call classifyU2(n0, nv2+1, uu, Cv2(1,2), Cv2(:,1), j1, j2, t)
-
-  iA = iA + 1
   call getIndexJunction(s, jctn, 4, j1, &
        n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = w*(1-t)*v
-  Ai(iA) = iP
-  Aj(iA) = index
-
-  iA = iA + 1
+  call writeToA(nA, w*(1-t)*v, iP, index, iA, Aa, Ai, Aj)
+  
+  call classifyU2(n0, nv2+1, uu, Cv2(1,2), Cv2(:,1), j1, j2, t)
   call getIndexJunction(s, jctn, 4, j2, &
        n0, nquad, nJ1, nJ2, quad_indices, Jn1, Jn2, index)
-  Aa(iA) = w*t*v
-  Ai(iA) = iP
-  Aj(iA) = index
-
-  !Aa(iA-7:iA) = 0.0
-  !Aa(iA-11:iA-8) = -Aa(iA-11:iA-8)
-
+  call writeToA(nA, w*t*v, iP, index, iA, Aa, Ai, Aj)
+  
 end subroutine appendJunctionA
 
 
@@ -479,13 +482,13 @@ end subroutine classifyU2
 
 
 
-subroutine appendQuadA(s, quad, nA, n0, nquad, nJ1, &
+subroutine appendQuadA(ss, r, domain, quad, nA, n0, nquad, nJ1, &
      quad_indices, Jn1, uu, vv, ww, iP, iA, Aa, Ai, Aj)
 
   implicit none
 
   !Input
-  integer, intent(in) ::  s, quad, nA, n0, nquad, nJ1
+  integer, intent(in) ::  ss, r, domain, quad, nA, n0, nquad, nJ1
   integer, intent(in) ::  quad_indices(nquad,2), Jn1(nJ1,4)
   double precision, intent(in) ::  uu, vv, ww
   integer, intent(in) ::  iP
@@ -497,45 +500,41 @@ subroutine appendQuadA(s, quad, nA, n0, nquad, nJ1, &
 
   !Working
   double precision u1, u2, v1, v2, w
-  integer i1, i2, j1, j2
+  integer i1, i2, j1, j2, s
   integer index
 
-  call classifyU(n0, uu, i1, i2, u1, u2)
-  call classifyU(n0, vv, j1, j2, v1, v2)
-
-  if (s .eq. 1) then
+  s = ss
+  if (ss .eq. 1) then
      w = ww
   else
      w = 1-ww
   end if
+  w = 0.5*w
+  if ((domain .eq. 2) .and. (s .eq. 2)) then
+     s = 1
+  end if
+  call classifyU(n0, uu, i1, i2, u1, u2)
+  call classifyU(n0, vv, j1, j2, v1, v2)
 
-  iA = iA + 1
-  call getIndexQuad(s, quad, i1, j1, &
-       n0, nquad, nJ1, quad_indices, Jn1, index)
-  Aa(iA) = w*(u2 - uu)*(v2 - vv)*(n0-1)**2
-  Ai(iA) = iP
-  Aj(iA) = index
-
-  iA = iA + 1
-  call getIndexQuad(s, quad, i2, j1, &
-       n0, nquad, nJ1, quad_indices, Jn1, index)
-  Aa(iA) = w*(uu - u1)*(v2 - vv)*(n0-1)**2
-  Ai(iA) = iP
-  Aj(iA) = index
-
-  iA = iA + 1
   call getIndexQuad(s, quad, i1, j2, &
        n0, nquad, nJ1, quad_indices, Jn1, index)
-  Aa(iA) = w*(u2 - uu)*(vv - v1)*(n0-1)**2
-  Ai(iA) = iP
-  Aj(iA) = index
-
-  iA = iA + 1
+  call writeToA(nA, w*(u2 - uu)*(vv - v1)*(n0-1)**2, &
+       iP, index, iA, Aa, Ai, Aj)
+  
   call getIndexQuad(s, quad, i2, j2, &
        n0, nquad, nJ1, quad_indices, Jn1, index)
-  Aa(iA) = w*(uu - u1)*(vv - v1)*(n0-1)**2
-  Ai(iA) = iP
-  Aj(iA) = index
+  call writeToA(nA, w*(uu - u1)*(vv - v1)*(n0-1)**2, &
+       iP, index, iA, Aa, Ai, Aj)
+  
+  call getIndexQuad(s, quad, i1, j1, &
+       n0, nquad, nJ1, quad_indices, Jn1, index)
+  call writeToA(nA, w*(u2 - uu)*(v2 - vv)*(n0-1)**2, &
+       iP, index, iA, Aa, Ai, Aj)
+  
+  call getIndexQuad(s, quad, i2, j1, &
+       n0, nquad, nJ1, quad_indices, Jn1, index)
+  call writeToA(nA, w*(uu - u1)*(v2 - vv)*(n0-1)**2, &
+       iP, index, iA, Aa, Ai, Aj)
 
 end subroutine appendQuadA
 
@@ -617,7 +616,7 @@ subroutine getIndexJunction(s, jctn, edge, i, &
   if (s .eq. 1) then
      index = n0**2*maxval(quad_indices(:,1)) + n0*sum(Jn1(1:jctn-1,:)) &
           + n0*sum(Jn1(jctn,1:edge-1)) + i
-  else     
+  else    
      index = n0**2*(maxval(quad_indices(:,1)) + maxval(quad_indices(:,2))) &
           + n0*sum(Jn2(1:jctn-1,:)) + n0*sum(Jn2(jctn,1:edge-1)) + i
      if (Jn1(1,1) .ne. -1) then
