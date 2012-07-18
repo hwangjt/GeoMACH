@@ -39,10 +39,10 @@ class Joined(Configuration):
         c['fuse'].props['ry'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
         c['fuse'].props['rz'].set([0.1,0.5,0.5,0.1],[0,0.15,0.75,1.0],w=[0.9985,0,0,0],d=[1,0,0,0])
 
-        c['wing'].offset[:] = [3.75, 0.3, 0.5]
-        c['wing'].props['posx'].set([0,2.4,2.9,5.35],[0,0.45,0.55,1])
-        c['wing'].props['posy'].set([0,0.3,1.0,1.19],[0,0.45,0.55,1])
-        c['wing'].props['posz'].set([0,5.5,5.5,-0.45],[0,0.45,0.55,1])
+        c['wing'].offset[:] = [3.3, 0.3, 0.5]
+        c['wing'].props['posx'].set([0,2.4,2.9,5.6],[0,0.45,0.55,1])
+        c['wing'].props['posy'].set([0,0.3,1.0,1.29],[0,0.45,0.55,1])
+        c['wing'].props['posz'].set([0,5.5,5.5,-0.43],[0,0.45,0.55,1])
         c['wing'].props['prpx'].set([1,1],[0,1])
         c['wing'].props['prpy'].set([0,0],[0,1])
         c['wing'].props['chord'].set([1.4,0.5,0.5,0.8],[0,0.45,0.55,1])
@@ -67,7 +67,7 @@ class Joined(Configuration):
         c['nacelle'].props['ry'].set(e[:,1],l,e[:,2],e[:,3])
         c['nacelle'].props['rz'].set(e[:,1],l,e[:,2],e[:,3])
 
-        c['pylon'].offset[:] = [7.9, 0.6, 0.43]
+        c['pylon'].offset[:] = [7.7, 0.6, 0.43]
         c['pylon'].setAirfoil("naca0010")
         c['pylon'].props['posx'].set([0,0],[0,1])
         c['pylon'].props['posy'].set([0,0.05],[0,1])
@@ -77,7 +77,7 @@ class Joined(Configuration):
         c['pylon'].props['prpy'].set([0,0],[0,1])
         c['pylon'].props['chord'].set([0.75,0.75],[0,1])
 
-        c['fin'].offset[:] = [8.4, 0.88, 0]
+        c['fin'].offset[:] = [8.1, 0.88, 0]
         c['fin'].props['posx'].set([0,1.5],[0,1])
         c['fin'].props['posy'].set([0,1.4],[0,1])
         c['fin'].props['posz'].set([0,0],[0,1])
@@ -96,4 +96,4 @@ if __name__ == '__main__':
     aircraft.oml0.write2TecC(name+'_C')
     aircraft.oml0.write2IGES(name)
     aircraft.oml0.write2EGADS(name+'_EGADS')
-    aircraft.plot()
+    #aircraft.plot()

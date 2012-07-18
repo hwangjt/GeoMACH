@@ -68,27 +68,30 @@ class Configuration(object):
         self.computePoints()
 
     def computePoints(self):
-        t0 = time.time()
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
             comp.propagateQs()
             comp.updateQs()
         self.oml0.computePoints()
-        print 'cPts',time.time()-t0
 
-    def buildStructure(self, name):
-        Ps = []        
+    def buildStructure(self):
+        ABMs = []        
         Ss = []
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
             if not comp.keys==[]:
-                comp.buildStructure()       
-                Ps.append(comp.strP)
+                print 'Building structure for',self.keys[k]
+                comp.buildStructure()     
+                ABMs.append(comp.strABM)
                 Ss.append(comp.strS)
-        P = numpy.vstack(Ps)
-        S = numpy.vstack(Ss)
+        self.ABM = self.oml0.vstackSparse(ABMs)
+        self.S = numpy.vstack(Ss)
+        self.computePoints()
 
-        f = open(name+'.dat','w')
+    def writeStructure(self, name):
+        S = self.S
+        P = self.ABM.dot(self.oml0.Q)
+        f = open(name+'_str.dat','w')
         f.write('title = "PUBSlib output"\n')
         f.write('variables = "x", "y", "z"\n')
         iP = 0

@@ -80,7 +80,7 @@ subroutine assembleAmtx(nA, n0, nP, nJ1, nJ2, nvert, nquad, &
                  v1 = Ju2(jctn,3)
                  v2 = Ju2(jctn,4)
               end if
-              call appendJunctionA(s, r, M(iP), jctn, nA, n0, nquad, nJ1, nJ2, nvert, &
+              call appendJunctionA(s, M(iP), jctn, nA, n0, nquad, nJ1, nJ2, nvert, &
                    nu1, nu2, nv1, nv2, u1, u2, v1, v2, verts, quad_indices, &
                    Jn1, Jn2, Pu, Pv, Pw, iP, iA, Aa, Ai, Aj)
            else
@@ -89,7 +89,7 @@ subroutine assembleAmtx(nA, n0, nP, nJ1, nJ2, nvert, nquad, &
               Q(3,:) = verts(poly_vert(quad,3),:)
               Q(4,:) = verts(poly_vert(quad,4),:)
               call invBilinearMap(Pu, Pv, Q, uu, vv)
-              call appendQuadA(s, r, M(iP), quad, nA, n0, nquad, nJ1, &
+              call appendQuadA(s, M(iP), quad, nA, n0, nquad, nJ1, &
                    quad_indices, Jn1, uu, vv, Pw, iP, iA, Aa, Ai, Aj)
            end if
         end do
@@ -339,14 +339,14 @@ end subroutine writeToA
 
 
 
-subroutine appendJunctionA(ss, r, domain, jctn, nA, n0, nquad, nJ1, nJ2, &
+subroutine appendJunctionA(ss, domain, jctn, nA, n0, nquad, nJ1, nJ2, &
      nvert, nu1, nu2, nv1, nv2, u1, u2, v1, v2, verts, quad_indices, &
      Jn1, Jn2, uu, vv, ww, iP, iA, Aa, Ai, Aj)
 
   implicit none
 
   !Input
-  integer, intent(in) ::  ss, r, domain, jctn, nA, n0, nquad, nJ1, nJ2, nvert
+  integer, intent(in) ::  ss, domain, jctn, nA, n0, nquad, nJ1, nJ2, nvert
   integer, intent(in) ::  nu1, nu2, nv1, nv2
   double precision, intent(in) ::  u1, u2, v1, v2
   double precision, intent(in) ::  verts(nvert,2)
@@ -482,13 +482,13 @@ end subroutine classifyU2
 
 
 
-subroutine appendQuadA(ss, r, domain, quad, nA, n0, nquad, nJ1, &
+subroutine appendQuadA(ss, domain, quad, nA, n0, nquad, nJ1, &
      quad_indices, Jn1, uu, vv, ww, iP, iA, Aa, Ai, Aj)
 
   implicit none
 
   !Input
-  integer, intent(in) ::  ss, r, domain, quad, nA, n0, nquad, nJ1
+  integer, intent(in) ::  ss, domain, quad, nA, n0, nquad, nJ1
   integer, intent(in) ::  quad_indices(nquad,2), Jn1(nJ1,4)
   double precision, intent(in) ::  uu, vv, ww
   integer, intent(in) ::  iP

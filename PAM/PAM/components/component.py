@@ -279,7 +279,7 @@ class Component(object):
                     C11 = oml0.C[Ms[f][Js[f][k,0],Js[f][k,1]],:2]
                     C12 = oml0.C[Ms[f][Js[f][k,0],Js[f][k,3]],:2]
                     C21 = oml0.C[Ms[f][Js[f][k,2],Js[f][k,1]],:2]
-                    C22 = oml0.C[Ms[f][Js[f][k,2],Js[f][k,3]],:2]  
+                    C22 = oml0.C[Ms[f][Js[f][k,2],Js[f][k,3]],:2]
                     edges.append([C11[0],C11[1],C12[0],C12[1]])
                     edges.append([C11[0],C11[1],C21[0],C21[1]])
                     edges.append([C12[0],C12[1],C22[0],C22[1]])
@@ -412,10 +412,10 @@ class Component(object):
         Ss.append(S)
         A = oml0.vstackSparse(As)
 
-        P = A.dot(P)
+        ABM = A.dot(BM)
         S = numpy.vstack(Ss)
 
-        self.strP = P
+        self.strABM = ABM
         self.strS = S
 
     def computeStructure(self, P):

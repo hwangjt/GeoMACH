@@ -9,6 +9,11 @@ class Layout(object):
         self.n = n
         self.Lx = Lx
         self.Ly = Ly
+
+        self.nvert = 0
+        self.nedge = 0
+        self.nquad = 0
+
         self.importEdges(edges)
         self.computeIntersections()
         self.addConnectors()
@@ -100,11 +105,14 @@ class Layout(object):
             v0 -= 1
             v1 -= 1
             if self.edges[e,2]==0:
-                line = 'k:'
+                line = 'r'
             else:
                 line = 'k'
             pylab.plot([v[v0,0],v[v1,0]],[v[v0,1],v[v1,1]],line)
         pylab.plot(self.verts[:,0],self.verts[:,1],'ok')
+        frame1 = pylab.gca()
+        frame1.axes.get_xaxis().set_ticks([])
+        frame1.axes.get_yaxis().set_ticks([])
         pylab.show()
 
     def plot2(self):
@@ -119,12 +127,22 @@ class Layout(object):
 
 if __name__ == '__main__':
         
-    l = Layout()
-    #l.addMembers('Spars2', 1, 2, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.3,0.4], EP2=[0.9,0.9])
-    l.addMembers('Spars', 1, 5, SP1=[0.1,0.1], EP1=[0.8,0.2], SP2=[0.1,0.9], EP2=[1,1])
-    l.addMembers('Ribs', 1, 5, SP1=[0.1,0.1], EP1=[0,1], SP2=[1,0], EP2=[1,1])
-    #l.addMembers('Ribs', 1, 5, SP1=[0.1,0], EP1=[0,1], SP2=[1,0], EP2=[1,1])
-    #l.addMembers('Spars', 1, 5, SP1=[0,0], EP1=[1,0], SP2=[0,1], EP2=[1,1])
-    l.build()
-    l.plot()
+    edges = []
+    edges.append([0,0,0,1])
+    edges.append([0,0,1,0])
+    edges.append([1,1,0,1])
+    edges.append([1,1,1,0])
+    edges.append([0,0.2,1,0.2])
+    edges.append([0,0.4,0.2,0.2])
+    edges.append([0,0.55,0.35,0.2])
+    edges.append([0,0.7,0.5,0.2])
+    edges.append([0,0.85,0.65,0.2])
+    edges.append([0.1,0,0.1,1])
+    edges.append([0.2,0,0.2,1])
+    edges.append([0.35,0,0.35,1])
+    edges.append([0.5,0,0.5,1])
+    edges.append([0.65,0,0.65,1])
+    edges.append([0.8,0,0.8,1])
+    edges.append([0.15,0,0.25,0.9])
+    l = Layout(6,1,1,numpy.array(edges, order='F'))
     
