@@ -4,9 +4,9 @@
 */dist/*
 */temp/*
 *.so
-*.dat
 *.egg-info
 *.phy
+*.dat
 *#
 *.igs
 *.tin
