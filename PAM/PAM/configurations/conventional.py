@@ -3,14 +3,12 @@ import numpy, time
 import sys
 from PAM.components import Wing, Body, FullInterface, HalfInterface
 from PAM.configurations import Configuration
-from tecplot import Tecplot
 
 
 class Conventional(Configuration):
 
     def __init__(self):
-        self.comps = {}
-        self.keys = []
+        super(Conventional,self).__init__() 
 
         self.addComp('fuse', Body([70,10,10,20,10,10,10,50,10,25,10,10],[25,25,25,25],[15]))
         self.addComp('wing', Wing([10,10,10,50],[10,20,10,10]))
@@ -28,6 +26,8 @@ class Conventional(Configuration):
         self.addComp('finfuse', HalfInterface(self.comps, 'fin', 0, 'fuse', 1, [0,8], [0,10]))
 
         self.assembleComponents()
+
+        #return
 
         c = self.comps
         c['fuse'].setSections(sections=[2,3,4,5], t1L=0.35, t2L=0.65)
@@ -124,18 +124,10 @@ if __name__ == '__main__':
 
     name = 'conventional'
     aircraft = Conventional()
-    #aircraft.buildStructure()
-    #aircraft.writeStructure(name)
-    aircraft.oml0.write2Tec(name)
-    #aircraft.oml0.write2TecC(name+'_C')
-    #aircraft.oml0.write2IGES(name)
-    #aircraft.oml0.write2EGADS(name+'_EGADS')
-    #aircraft.plot()
-
-    t = Tecplot()
-    t.importDataSet(name)
-    t.setTransparency(False)
-    t.createMirror(1,165,3)
-    t.setRelCameraPosition(-20, 10, 20, -140)
-    t.writeImage('test0')
-    t.runTecplot()
+    aircraft.buildStructure()
+    aircraft.writeStructure(name)
+    aircraft.export.write2Tec(name)
+    #aircraft.export.write2TecC(name+'_C')
+    #aircraft.export.write2IGES(name)
+    #aircraft.export.write2EGADS(name+'_EGADS')
+    aircraft.plot()

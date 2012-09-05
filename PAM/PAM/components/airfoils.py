@@ -59,8 +59,7 @@ def fitAirfoil(wing,airfoil,rev=False):
         P = numpy.zeros((airfoil[f].shape[0],4,3))
         for i in range(4):
             P[:,i,:2] = airfoil[f][:,:]
-        oml1 = PUBS.PUBS()
-        oml1.importSurfaces([P])
+        oml1 = PUBS.PUBS([P])
         oml1.group_n[1] = n
         oml1.updateEvaluation()
         P1.append(numpy.zeros((n,2)))

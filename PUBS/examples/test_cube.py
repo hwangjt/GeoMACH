@@ -32,9 +32,7 @@ for i in range(n[0]):
         P0[4][i,j,1] = -j/(n[1]-1)
         P0[4][i,j,2] = -1
 
-oml1 = PUBS.PUBS()
-
-oml1.importSurfaces(P0)
+oml1 = PUBS.PUBS(P0)
 oml1.C[10,0] -= 0.3
 oml1.computePoints()
 oml1.edge_c1[0,0] = True

@@ -8,8 +8,7 @@ from PAM.configurations import Configuration
 class Joined(Configuration):
 
     def __init__(self):
-        self.comps = {}
-        self.keys = []
+        super(Joined,self).__init__() 
 
         self.addComp('fuse', Body([70,10,25,10,40,10,10,10,25,10,20],[25,25,25,25],[15]))
         self.addComp('wing', Wing([80],[25],opentip=True))
@@ -92,8 +91,8 @@ if __name__ == '__main__':
 
     name = 'joined'
     aircraft = Joined()
-    aircraft.oml0.write2Tec(name)
-    aircraft.oml0.write2TecC(name+'_C')
-    aircraft.oml0.write2IGES(name)
-    aircraft.oml0.write2EGADS(name+'_EGADS')
-    #aircraft.plot()
+    aircraft.export.write2Tec(name)
+    aircraft.export.write2TecC(name+'_C')
+    aircraft.export.write2IGES(name)
+    aircraft.export.write2EGADS(name+'_EGADS')
+    aircraft.plot()

@@ -8,8 +8,7 @@ from PAM.configurations import Configuration
 class Strutbraced(Configuration):
 
     def __init__(self):
-        self.comps = {}
-        self.keys = []
+        super(Strutbraced,self).__init__() 
 
         self.addComp('fuse', Body([90,10,10,10,10,10,10,45,10,10,10,40,10,10],[10,25,25,25,25],[15]))
         self.addComp('wing', Wing([30,10,10,50],[10,10,10,10]))
@@ -79,8 +78,8 @@ if __name__ == '__main__':
     name = 'strutbraced'
     aircraft = Strutbraced()
     #aircraft.buildStructure(name)
-    aircraft.oml0.write2Tec(name)
-    aircraft.oml0.write2TecC(name+'_C')
-    aircraft.oml0.write2IGES(name)
+    aircraft.export.write2Tec(name)
+    aircraft.export.write2TecC(name+'_C')
+    aircraft.export.write2IGES(name)
     #aircraft.oml0.write2EGADS(name+'_EGADS')
-    #aircraft.plot()
+    aircraft.plot()

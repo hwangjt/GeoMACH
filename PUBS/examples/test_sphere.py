@@ -61,8 +61,7 @@ for k in range(2):
             P0[k+3][i,j,1] = b*z*dy
             P0[k+3][i,j,2] = z*dz
 
-oml1 = PUBS.PUBS()
-oml1.importSurfaces(P0)
+oml1 = PUBS.PUBS(P0)
 
 oml1.computePoints()
 

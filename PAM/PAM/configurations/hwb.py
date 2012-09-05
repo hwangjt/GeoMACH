@@ -3,7 +3,6 @@ import numpy, time
 import sys
 from PAM.components import Wing, Body, FullInterface, HalfInterface
 from PAM.configurations import Configuration
-from tecplot import Tecplot
 
 class HWB(Configuration):
     
@@ -11,16 +10,16 @@ class HWB(Configuration):
         super(HWB,self).__init__() 
 
         self.addComp('wing',Wing([10,10,10,10,150],[50,10,30,10,10]))
-        self.addComp('pylon1',Wing([30],[30],half=True,opentip=True))
+        #self.addComp('pylon1',Wing([30],[30],half=True,opentip=True))
         self.addComp('pylon2',Wing([30],[30],opentip=True))
-        self.addComp('nac1',Body([50,10,30,10,50],[20],[10,10],full=False))
+        #self.addComp('nac1',Body([50,10,30,10,50],[20],[10,10],full=False))
         self.addComp('nac2',Body([50,10,30,10,50],[20],[10,10,10,10],full=True))
 
         self.separateComps()
 
         #self.addComp('wing_pylon1',HalfInterface(self.comps,'pylon1',0,'wing',0,[3,0],[1,0]))
         self.addComp('wing_pylon2',FullInterface(self.comps,'pylon2',0,'wing',0,[3,2],[1,3]))
-        self.addComp('pylon_nac1' ,HalfInterface(self.comps,'pylon1',1,'nac1',3,[1,3],[1,1]))
+        #self.addComp('pylon_nac1' ,HalfInterface(self.comps,'pylon1',1,'nac1',3,[1,3],[1,1]))
         self.addComp('pylon_nac2' ,FullInterface(self.comps,'pylon2',1,'nac2',3,[2,3],[1,1]))
 
         self.assembleComponents()
@@ -51,11 +50,11 @@ class HWB(Configuration):
         e[10,:] = [1.2, 0.03, 0, 0]
         e[:,:2] *= 0.5
         l = numpy.linspace(0,1,e.shape[0])
-        c['nac1'].offset[:] = [1.3, 0.4, 0.0]
-        c['nac1'].props['posx'].set(e[:,0],l)
-        c['nac1'].props['posy'].set([0,0],[0,1])
-        c['nac1'].props['ry'].set(e[:,1],l,e[:,2],e[:,3])
-        c['nac1'].props['rz'].set(e[:,1],l,e[:,2],e[:,3])
+        #c['nac1'].offset[:] = [1.3, 0.4, 0.0]
+        #c['nac1'].props['posx'].set(e[:,0],l)
+        #c['nac1'].props['posy'].set([0,0],[0,1])
+        #c['nac1'].props['ry'].set(e[:,1],l,e[:,2],e[:,3])
+        #c['nac1'].props['rz'].set(e[:,1],l,e[:,2],e[:,3])
 
         c['nac2'].offset[:] = [1.3, 0.4, 0.4]
         c['nac2'].props['posx'].set(e[:,0],l)
@@ -63,14 +62,14 @@ class HWB(Configuration):
         c['nac2'].props['ry'].set(e[:,1],l,e[:,2],e[:,3])
         c['nac2'].props['rz'].set(e[:,1],l,e[:,2],e[:,3])
 
-        c['pylon1'].offset[:] = [1.3, 0.1, 0.0]
-        c['pylon1'].setAirfoil("rae2822.dat")
-        c['pylon1'].props['posx'].set([0,0],[0,1.0])
-        c['pylon1'].props['posy'].set([0,0.15],[0,1])
-        c['pylon1'].props['posz'].set([0,0],[0,1])
-        c['pylon1'].props['prpx'].set([1,1],[0,1])
+        #c['pylon1'].offset[:] = [1.3, 0.1, 0.0]
+        #c['pylon1'].setAirfoil("rae2822.dat")
+        #c['pylon1'].props['posx'].set([0,0],[0,1.0])
+        #c['pylon1'].props['posy'].set([0,0.15],[0,1])
+        #c['pylon1'].props['posz'].set([0,0],[0,1])
+        #c['pylon1'].props['prpx'].set([1,1],[0,1])
 #        c['pylon1'].props['prpy'].set([0,0],[0,1])
-        c['pylon1'].props['chord'].set([0.3,0.3],[0,1.0])
+        #c['pylon1'].props['chord'].set([0.3,0.3],[0,1.0])
 
         c['pylon2'].offset[:] = [1.3, 0.1, 0.4]
         c['pylon2'].setAirfoil("rae2822.dat")
@@ -88,4 +87,4 @@ if __name__ == '__main__':
     name = 'HWB'
     aircraft = HWB()
     aircraft.plot()
-    aircraft.oml0.write2Tec(name)
+#    aircraft.oml0.write2Tec(name)

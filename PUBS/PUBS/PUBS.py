@@ -1,42 +1,93 @@
 from __future__ import division
-import PUBSlib
-import export2EGADS
+import PUBSlib, PUBSexport
 import numpy, scipy, pylab, copy, time
 import math
 import scipy.sparse, scipy.sparse.linalg
-import mpl_toolkits.mplot3d.axes3d as p3
-from mayavi import mlab
 
 
 class PUBS(object):
-    """
-    A surface model represented as a watertight union of B-spline surfaces. 
+    """ A surface model represented as a watertight union of B-spline surfaces. 
+
+    group_d: double(nD)
+        Global list of knots
+    T: double(nT)
+        Global list of parameter values
+
+    Q: double(nQ,3)
+        Vector of nQ DOFs
+    C: double(nC,3)
+        Vector of nC control points
+    P: double(nP,3)
+        Vector of nP points
+
+    J: sparse double(nP,nC)
+        Jacobian of points with respect to control points
+    M: sparse double(nC,nQ)
+        Jacobian of control points with respect to DOFs
+    JM: sparse double(nP,nQ)
+        Jacobian of points with respect to DOFs
+
+    surf_index_Q: integer(nsurf,2)
+        First-1 and last index of the interior Qs for each surface in the global list of Qs
+    edge_index_Q: integer(nedge,2)
+        First-1 and last index of the interior Qs for each edge in the global list of Qs
+    vert_index_Q: integer(nvert)
+        0 if not a DOF; otherwise, the index of the vertex Q in the global list of Qs
+    surf_index_C: integer(nsurf,2)
+        First-1 and last index of the interior Cs for each surface in the global list of Cs
+    edge_index_C: integer(nedge,2)
+        First-1 and last index of the interior Cs for each edge in the global list of Cs
+    surf_index_P: integer(nsurf,2)
+        First-1 and last index of the interior Ps for each surface in the global list of Ps
+    edge_index_P: integer(nedge,2)
+        First-1 and last index of the interior Ps for each edge in the global list of Ps
+    knot_index: integer(ngroup,2)
+        First-1 and last index of the knot vector in the global list of knots
+
+    surf_vert: integer(nsurf,2,2)
+        Mapping from surfaces to their corner vertices
+    surf_edge: integer(nsurf,2,2)
+        Mapping from surfaces to their 4 edges
+    edge_group: integer(nedge)
+        Mapping from edges to their associated group
+    vert_count: integer(nvert)
+        Number of surfaces each vertex touches
+    edge_count: integer(nedge)
+        Number of edges each vertex touches
+
     """
 
-    def importSurfaces(self, P, ratio=3.0):
+    def __init__(self, P_arrays, ratio=3.0, printInfo=True):
+        """ Create an instance by specifying a list of surfaces
+
+        * Input *
+        P_arrays: list of ndarrays (nu,nv,3)
+            Each element of the list is an nu x nv array of x-y-z coordinates
+        ratio: integer
+            Target ratio of points to control points for all edges  
+        printInfo: boolean
+            Whether to print output
+
+        """
+
+        self.printInfo = printInfo
         self.symmPlane = 2
-        self.initializeTopology(P)
-        self.initializeBsplines(ratio)
+        self.initializeTopology(P_arrays, ratio)
         self.computeQindices()
         self.computeCindices()
-        self.computeDindices()
         self.computePindices()
-        self.initializePoints(P)
+        self.computeDindices()
+        self.initializePoints(P_arrays)
         self.computeKnots()
         self.computeParameters()
         self.computeJacobian()
         self.computeControlPts()
         self.computePoints()
 
-    def importCGNSsurf(self, filename):
-        n = PUBSlib.nsurfaces2(filename)  
-        z,sizes = PUBSlib.surfacesizes2(filename, n) 
-        P0 = []
-        for i in range(n):
-            P0.append(PUBSlib.getsurface2(filename,z[i],sizes[i,0],sizes[i,1]))
-        self.importSurfaces(P0)
-
     def updateBsplines(self):
+        """ Method to call after B-spline order, number of control points, or DOFs
+            has been changed along any edge """
+
         self.computeQindices()
         self.computeCindices()
         self.computeDindices()
@@ -47,53 +98,76 @@ class PUBS(object):
         self.computePoints()
 
     def updateEvaluation(self):
+        """ Method to call after number of points has been changed along any edge """
+
         self.computePindices()
         self.computeParameters()
         self.computeJacobian()
         self.computePoints()
 
-    def initializeTopology(self, P):
-        self.nsurf = len(P)
-        print '# Surfaces =',self.nsurf
+    def initializeTopology(self, P_arrays, ratio):
+        """ Determine connectivities - mappings from surfaces to vertices and edges; from edges to groups
+            Initialize order (k), # control points (m), and # points (n) for each edge 
+
+        * Input *
+        P_arrays: list of doubles(nu,nv,3)
+            Each element of the list is an nu x nv array of x-y-z coordinates
+
+        """
+
+        self.nsurf = len(P_arrays)
         Ps = numpy.zeros((self.nsurf,3,3,3),order='F')
         for k in range(self.nsurf):
-            n = P[k].shape[0:2]
+            n = P_arrays[k].shape[0:2]
             for i in range(2):
                 for j in range(2):
-                    Ps[k,i*2,j*2] = P[k][-i,-j]
-            left = 0.5*(P[k][0,int(numpy.ceil((n[1]-1)/2.0))] + P[k][0,int(numpy.floor((n[1]-1)/2.0))])
-            right = 0.5*(P[k][-1,int(numpy.ceil((n[1]-1)/2.0))] + P[k][-1,int(numpy.floor((n[1]-1)/2.0))])
-            bottom = 0.5*(P[k][int(numpy.ceil((n[0]-1)/2.0)),0] + P[k][int(numpy.floor((n[0]-1)/2.0)),0])
-            top = 0.5*(P[k][int(numpy.ceil((n[0]-1)/2.0)),-1] + P[k][int(numpy.floor((n[0]-1)/2.0)),-1])
+                    Ps[k,i*2,j*2] = P_arrays[k][-i,-j]
+            left = 0.5*(P_arrays[k][0,int(numpy.ceil((n[1]-1)/2.0))] + P_arrays[k][0,int(numpy.floor((n[1]-1)/2.0))])
+            right = 0.5*(P_arrays[k][-1,int(numpy.ceil((n[1]-1)/2.0))] + P_arrays[k][-1,int(numpy.floor((n[1]-1)/2.0))])
+            bottom = 0.5*(P_arrays[k][int(numpy.ceil((n[0]-1)/2.0)),0] + P_arrays[k][int(numpy.floor((n[0]-1)/2.0)),0])
+            top = 0.5*(P_arrays[k][int(numpy.ceil((n[0]-1)/2.0)),-1] + P_arrays[k][int(numpy.floor((n[0]-1)/2.0)),-1])
             Ps[k,0,1] = left
             Ps[k,2,1] = right
             Ps[k,1,0] = bottom
             Ps[k,1,2] = top
-        self.ns = numpy.zeros((self.nsurf,2),order='F')
+        ns = numpy.zeros((self.nsurf,2),order='F')
         for k in range(self.nsurf):
-            self.ns[k,:] = P[k].shape[0:2]
+            ns[k,:] = P_arrays[k].shape[0:2]
+
         self.nvert,self.nedge,self.surf_vert,self.surf_edge = PUBSlib.computetopology(self.nsurf,1e-13,1e-5,Ps)
-        print '# Vertices =',self.nvert
-        print '# Edges =',self.nedge
         self.vert_count,self.edge_count = PUBSlib.countveptrs(self.nsurf,self.nvert,self.nedge,self.surf_vert,self.surf_edge)
         self.ngroup,self.edge_group = PUBSlib.computegroups(self.nsurf,self.nedge,self.surf_edge)
-        print '# Groups =',self.ngroup
         self.surf_c1 = numpy.zeros((self.nsurf,3,3),bool,order='F')
         self.edge_c1 = numpy.zeros((self.nedge,2),bool,order='F')
-
-    def initializeBsplines(self, ratio):
         k = 4
-        self.group_k, self.group_m, self.group_n = PUBSlib.getkmn(k, self.nsurf, self.nedge, self.ngroup, ratio, self.ns, self.surf_edge, self.edge_group)
+        self.group_k, self.group_m, self.group_n = PUBSlib.getkmn(k, self.nsurf, self.nedge, self.ngroup, ratio, ns, self.surf_edge, self.edge_group)
 
-    def initializePoints(self, P):
+        if self.printInfo:
+            print '# Surfaces =',self.nsurf
+            print '# Vertices =',self.nvert
+            print '# Edges =',self.nedge
+            print '# Groups =',self.ngroup
+
+    def initializePoints(self, P_arrays):
+        """ Rearrange the list of surfaces into a single vector of unique points 
+
+        * Input *
+        P_arrays: list of ndarrays (nu,nv,3)
+            Each element of the list is an nu x nv array of x-y-z coordinates
+
+        """
+
+        self.P = numpy.zeros((self.nP,3),order='F')
         for k in range(self.nsurf):
-            n1 = P[k].shape[0]
-            n2 = P[k].shape[1]
-            PUBSlib.populatep(self.nP, n1, n2, k+1, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, P[k], self.P)
+            n1 = P_arrays[k].shape[0]
+            n2 = P_arrays[k].shape[1]
+            PUBSlib.populatep(self.nP, n1, n2, k+1, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_n, self.surf_index_P, self.edge_index_P, P_arrays[k], self.P)
         PUBSlib.avgboundaries(self.nP, self.nedge, self.ngroup, self.nvert, self.edge_group, self.group_n, self.vert_count, self.edge_count, self.edge_index_P, self.P)
         self.vert_symm, self.edge_symm = PUBSlib.determinesymm(self.symmPlane+1, 1e-10, 1e-8, self.nP, self.nedge, self.ngroup, self.nvert, self.edge_group, self.group_n, self.P)
 
     def computeQindices(self):
+        """ Compute where each vertex, edge, and surface is located in the global list of Qs """
+
         self.surf_index_Q = PUBSlib.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
         self.edge_index_Q = PUBSlib.getedgeindicesq(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m, self.surf_c1)
         self.vert_index_Q = PUBSlib.getvertindicesq(self.nsurf, self.nedge, self.nvert, self.surf_vert, self.surf_edge, self.surf_c1, self.edge_c1)
@@ -101,21 +175,25 @@ class PUBS(object):
         self.nQ += max(self.vert_index_Q)
         self.nQ += max(self.edge_index_Q[:,1])
         self.nQ += self.surf_index_Q[-1,1]
-        print '# Degrees of freedom =',self.nQ
+
+        if self.printInfo:
+            print '# Degrees of freedom =',self.nQ
 
     def computeCindices(self):
+        """ Compute where each vertex, edge, and surface is located in the global list of Cs """
+
         self.surf_index_C = PUBSlib.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
         self.edge_index_C = PUBSlib.getedgeindices(self.nedge, self.ngroup, self.edge_group, self.group_m)
-        self.nD = 0
-        for i in range(self.ngroup):
-            self.nD += self.group_m[i] + self.group_k[i]
         self.nC = self.nvert
         self.nC += self.edge_index_C[-1,1]
         self.nC += self.surf_index_C[-1,1]
-        self.C = numpy.zeros((self.nC,3),order='F')
-        print '# Control points =',self.nC
+
+        if self.printInfo:
+            print '# Control points =',self.nC
 
     def computePindices(self):
+        """ Compute where each vertex, edge, and surface is located in the global list of Ps """
+
         self.surf_index_P = PUBSlib.getsurfindices(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
         self.edge_index_P = PUBSlib.getedgeindices(self.nedge, self.ngroup, self.edge_group, self.group_n)
         self.nT = 0
@@ -124,55 +202,95 @@ class PUBS(object):
         self.nP = self.nvert
         self.nP += self.edge_index_P[-1,1]
         self.nP += self.surf_index_P[-1,1]
-        self.P = numpy.zeros((self.nP,3),order='F')
-        print '# Points =',self.nP
+
+        if self.printInfo:
+            print '# Points =',self.nP
 
     def computeDindices(self):
+        """ Compute where each knot vector is located in the global list of knots """
+
+        self.nD = 0
+        for i in range(self.ngroup):
+            self.nD += self.group_m[i] + self.group_k[i]
         self.knot_index = PUBSlib.getknotindices(self.ngroup, self.group_k, self.group_m)
 
     def computeKnots(self):
+        """ Compute the global list of knots """
+
         self.group_d = PUBSlib.getd(self.ngroup,self.nD,self.group_k,self.group_m)
 
     def computeParameters(self):
+        """ Compute the global list of parameter values """
+
         self.T = PUBSlib.initializet(self.nT, self.nD, self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_n, self.group_d, self.knot_index)
         
     def computeJacobian(self):
+        """ Compute the global Jacobian """
+
         self.nJ = PUBSlib.getjnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_k,self.group_n,self.edge_count)
         Ja, Ji, Jj = PUBSlib.getjacobian(self.nJ, self.nT, self.nD, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_n, self.group_d, self.surf_index_P, self.edge_index_P, self.surf_index_C, self.edge_index_C, self.knot_index, self.edge_count, self.T)
         self.J = scipy.sparse.csc_matrix((Ja,(Ji,Jj)))
-        print '# Jacobian non-zeros =',self.J.nnz
 
         self.nM = PUBSlib.getmnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C, self.edge_index_Q, self.vert_index_Q, self.edge_count, self.surf_c1, self.edge_c1)
         Ma, Mi, Mj = PUBSlib.getdofmapping(self.nM,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C,self.edge_index_C,self.edge_index_Q,self.vert_index_Q, self.edge_count,self.surf_c1,self.edge_c1)
         self.M = scipy.sparse.csc_matrix((Ma,(Mi,Mj)))
         self.JM = self.J.dot(self.M)
 
-    def computeControlPts(self):  
+        if self.printInfo:
+            print '# Jacobian non-zeros =',self.JM.nnz
+
+    def computeControlPts(self):
+        """ Perform fit to compute DOFs """
+        
         AT = self.JM.transpose()
         ATA = AT.dot(self.JM)
         ATB = AT.dot(self.P)
 
         self.Q = numpy.zeros((self.JM.shape[1],3),order='F')
-        for i in range(3):
-            self.Q[:,i] = scipy.sparse.linalg.gmres(ATA,ATB[:,i])[0]
+        
+        GMRES = True
+        if GMRES:
+            for i in range(3):
+                self.Q[:,i] = scipy.sparse.linalg.gmres(ATA,ATB[:,i])[0]
+        else:
+            solve = scipy.sparse.linalg.dsolve.factorized(ATA)
+            for i in range(3):
+                self.Q[:,i] = solve(ATB[:,i])
         self.C = self.M.dot(self.Q)
 
-        #self.Q = numpy.zeros((self.JM.shape[1],3),order='F')
-        #solve = scipy.sparse.linalg.dsolve.factorized(ATA)
-        #for i in range(3):
-        #    self.Q[:,i] = solve(ATB[:,i])
-        #self.C = self.M.dot(self.Q)
-
     def computePoints(self):
+        """ Compute matrix-vector product to find P from Q """
+
+        self.P = numpy.zeros((self.nP,3),order='F')
         for i in range(3):
             self.P[:,i] = self.JM.dot(self.Q[:,i])
         self.C = self.M.dot(self.Q)
 
     def computePointsC(self):
+        """ Compute matrix-vector product to find P from C """
+
         for i in range(3):
             self.P[:,i] = self.J.dot(self.C[:,i])
 
     def computeIndex(self, surf, u, v, quantity):
+        """ Return the index of a Q, C, or P entry in the global list 
+
+        * Input *
+        surf: integer
+            0-based surface index
+        u: double
+            Parametric coordinate [0,1]
+        v: double
+            Parametric coordinate [0,1]
+        quantity: integer
+            0 for P; 1 for C; 2 for Q
+
+        * Output *
+        return: integer
+            0-based index in the Q, C, or P vector corresponding to (surf,u,v)
+
+        """
+
         ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
         vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
         if quantity==0:
@@ -203,6 +321,26 @@ class PUBS(object):
             return PUBSlib.computeindex(surf+1,u+1,v+1,mu,mv,self.nsurf,self.nedge,nvert,self.surf_vert,self.surf_edge,surf_index,edge_index) - 1
 
     def computePt(self,surf,u,v,uder=0,vder=0):
+        """ Return point or 1st or 2nd parametric derivative 
+
+        * Input *
+        surf: integer
+            0-based surface index
+        u: double
+            Parametric coordinate [0,1]
+        v: double
+            Parametric coordinate [0,1]
+        uder: integer
+            Order of the desired derivative in the u direction
+        vder: integer
+            Order of the desired derivative in the v direction
+
+        * Output *
+        return: double(3)
+            x-y-z values of the point or derivative requested
+
+        """
+
         ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
         vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
         ku = self.group_k[ugroup-1]
@@ -213,24 +351,74 @@ class PUBS(object):
         P = PUBSlib.computept(surf+1,uder,vder,ku,kv,mu,mv,nB,self.nD,self.nC,self.nsurf,self.nedge,self.ngroup,self.nvert,u,v,self.surf_vert,self.surf_edge,self.edge_group,self.group_d,self.surf_index_C,self.edge_index_C,self.knot_index,self.C)
         return P
 
-    def computeBases(self, s, u, v):
-        nB = PUBSlib.computebnnz(s.shape[0], self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_k, s)
-        Ba, Bi, Bj = PUBSlib.computebases(0, 0, s.shape[0], nB, self.nD, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_d, self.surf_index_C, self.edge_index_C, self.knot_index, s, u, v)
-        B = scipy.sparse.csc_matrix((Ba,(Bi,Bj)),shape=(s.shape[0],self.C.shape[0]))
+    def computeBases(self, surf, u, v):
+        """ Return matrix that multiples with C to give n points corresponding to (s,u,v)
+
+        * Input *
+        surf: integer(n)
+            0-based surface index
+        u: double(n)
+            Parametric coordinate [0,1]
+        v: double(n)
+            Parametric coordinate [0,1]
+
+        * Output *
+        B: double(n,nC)
+            Matrix whose rows correspond to the requested points
+
+        """
+
+        nB = PUBSlib.computebnnz(surf.shape[0], self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_k, surf)
+        Ba, Bi, Bj = PUBSlib.computebases(0, 0, surf.shape[0], nB, self.nD, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_d, self.surf_index_C, self.edge_index_C, self.knot_index, surf+1, u, v)
+        B = scipy.sparse.csc_matrix((Ba,(Bi,Bj)),shape=(surf.shape[0],self.C.shape[0]))
         return B
 
     def computeProjection(self, P0, surfs=None, Q=None):
+        """ Computes projections from P0 to the supplied list of surfaces
+            and returns the parametric coordinates of the closest point
+
+        * Input *
+        P0: double(n,3)
+            List of n points to project onto the B-spline surface model
+        surfs: integer(n)
+            List of surfaces (0-based) to check
+        Q: double(n,3)
+            Optional list of directions along which to compute projection
+
+        * Output *
+        surf: integer(n)
+            0-based list of surfaces of the projected points
+        u: double(n)
+            List of parametric coordinates in u of the projected points
+        v: double(n)
+            List of parametric coordinates in v of the projected points
+
+        """
+
         if surfs==None:
             surfs = numpy.linspace(1,self.nsurf,self.nsurf)
         else:
             surfs = numpy.array(surfs) + 1
         if Q==None:
-            s,u,v = PUBSlib.computeprojection(P0.shape[0],surfs.shape[0],self.nD,self.nT,self.nC,self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,surfs,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.knot_index,self.T,self.C,self.P,P0)
+            surf,u,v = PUBSlib.computeprojection(P0.shape[0],surfs.shape[0],self.nD,self.nT,self.nC,self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,surfs,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.knot_index,self.T,self.C,self.P,P0)
         else:
-            s,u,v = PUBSlib.computepjtnalongq(P0.shape[0],surfs.shape[0],self.nD,self.nT,self.nC,self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,surfs,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.knot_index,self.T,self.C,self.P,P0,Q)
-        return s,u,v
+            surf,u,v = PUBSlib.computepjtnalongq(P0.shape[0],surfs.shape[0],self.nD,self.nT,self.nC,self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,surfs,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.knot_index,self.T,self.C,self.P,P0,Q)
+        surf -= 1
+        return surf,u,v
 
     def vstackSparse(self, Bs):
+        """ Vertically stack a list of sparse matrices
+
+        * Input *
+        Bs: list of sparse doubles(mi,n)
+            List of sparse matrices that all have n columns
+        
+        * Output *
+        return: sparse double(m,n)
+            Sparse matrix where m = sum(mi)
+        
+        """
+
         n0 = 0
         n1 = Bs[0].shape[1]
         data = []
@@ -251,155 +439,8 @@ class PUBS(object):
         indptr = numpy.hstack(indptr)
         return scipy.sparse.csr_matrix((data, indices, indptr), shape=(n0, n1))
 
-    def write2Tec(self,filename):
-        f = open(filename+'.dat','w')
-        f.write('title = "PUBSlib output"\n')
-        f.write('variables = "x", "y", "z"\n')
-        for surf in range(self.nsurf):
-            ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
-            vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
-            nu = self.group_n[ugroup-1]
-            nv = self.group_n[vgroup-1]      
-            f.write('zone i='+str(nu)+', j='+str(nv)+', DATAPACKING=POINT\n')
-            P = PUBSlib.getsurfacep(surf+1, self.nP, nu, nv, self.nsurf, self.nedge, self.nvert, self.surf_vert, self.surf_edge, self.surf_index_P, self.edge_index_P, self.P)
-            for v in range(nv):
-                for u in range(nu):
-                    f.write(str(P[u,v,0]) + ' ' + str(P[u,v,1]) + ' ' + str(P[u,v,2]) + '\n')
-        f.close()
-
-    def write2TecC(self,filename):
-        f = open(filename+'.dat','w')
-        f.write('title = "PUBSlib output"\n')
-        f.write('variables = "x", "y", "z"\n')        
-        f.write('zone i='+str(self.nC)+', DATAPACKING=POINT\n')
-        for i in range(self.nC):
-            f.write(str(self.C[i,0]) + ' ' + str(self.C[i,1]) + ' ' + str(self.C[i,2]) + '\n')
-        f.close()
-
-    def write2EGADS(self,filename):
-        Ps = []
-        for surf in range(self.nsurf):
-            ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
-            vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
-            nu = self.group_n[ugroup-1]
-            nv = self.group_n[vgroup-1]      
-            P = PUBSlib.getsurfacep(surf+1, self.nP, nu, nv, self.nsurf, self.nedge, self.nvert, self.surf_vert, self.surf_edge, self.surf_index_P, self.edge_index_P, self.P)
-            Ps.append(P[:,:,:])
-            Ps.append(copy.copy(P[::-1,:,:]))
-            Ps[-1][:,:,2] *= -1
-        export2EGADS.export(Ps, filename)
-
-    def write2IGES(self, filename):
-        def getProps(surf):
-            ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
-            vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
-            ku = self.group_k[ugroup-1]
-            kv = self.group_k[vgroup-1]      
-            mu = self.group_m[ugroup-1]
-            mv = self.group_m[vgroup-1]      
-            du = self.group_d[self.knot_index[ugroup-1,0]:self.knot_index[ugroup-1,1]]
-            dv = self.group_d[self.knot_index[vgroup-1,0]:self.knot_index[vgroup-1,1]]
-            return ku,kv,mu,mv,du,dv            
-
-        def write(f, val, dirID, parID, field, last=False):
-            if last:
-                f.write('%20.12e;' %(val.real))
-            else:
-                f.write('%20.12e,' %(val.real))
-            field += 1
-            if field==3:
-                field = 0
-                f.write('%9i' %(dirID))
-                f.write('P')
-                f.write('%7i\n' %(parID))
-                parID += 1
-            return parID, field
-
-        f = open(filename+'.igs','w')
-        f.write('                                                                        S      1\n')
-        f.write('1H,,1H;,4HSLOT,37H$1$DUA2:[IGESLIB.BDRAFT.B2I]SLOT.IGS;,                G      1\n')
-        f.write('17HBravo3 BravoDRAFT,31HBravo3->IGES V3.002 (02-Oct-87),32,38,6,38,15,  G      2\n')
-        f.write('4HSLOT,1.,1,4HINCH,8,0.08,13H871006.192927,1.E-06,6.,                   G      3\n')
-        f.write('31HD. A. Harrod, Tel. 313/995-6333,24HAPPLICON - Ann Arbor, MI,4,0;     G      4\n')
-
-        dirID = 1
-        parID = 1    
-        for surf in range(self.nsurf):
-            ku,kv,mu,mv,du,dv = getProps(surf)
-            numFields = 4 + du.shape[0] + dv.shape[0] + 4*mu*mv
-            numLines = 2 + numpy.ceil(numFields/3.0)
-            for val in [128, parID, 0, 0, 1, 0, 0, 0]:
-                f.write('%8i' %(val))
-            f.write('00000001')
-            f.write('D')
-            f.write('%7i\n' %(dirID))
-            dirID += 1
-            for val in [128, 0, 2, numLines, 0]:
-                f.write('%8i' %(val))
-            f.write('%32i' %(0))
-            f.write('D')
-            f.write('%7i\n' %(dirID))
-            dirID += 1
-            parID += numLines
-        nDir = dirID - 1
-
-        dirID = 1    
-        parID = 1
-        for surf in range(self.nsurf):
-            ku,kv,mu,mv,du,dv = getProps(surf)
-
-            for val in [128, mu-1, mv-1, ku-1, kv-1]:
-                f.write('%12i,' %(val))
-            f.write('%7i' %(dirID))   
-            f.write('P')
-            f.write('%7i\n' %(parID))
-            parID += 1
-
-            for val in [0, 0, 1, 0, 0]:
-                f.write('%12i,' %(val))
-            f.write('%7i' %(dirID))   
-            f.write('P')
-            f.write('%7i\n' %(parID))
-            parID += 1
-
-            field = 0
-            for i in range(du.shape[0]):
-                parID,field = write(f, du[i], dirID, parID, field)
-            for i in range(dv.shape[0]):
-                parID,field = write(f, dv[i], dirID, parID, field)
-            for i in range(mu*mv):
-                parID,field = write(f, 1.0, dirID, parID, field)
-            for j in range(mv):
-                for i in range(mu):
-                    C = self.C[self.computeIndex(surf,i,j,1)]
-                    for k in range(3):
-                        parID,field = write(f, C[k].real, dirID, parID, field)
-            parID,field = write(f, 0, dirID, parID, field)
-            parID,field = write(f, 1, dirID, parID, field)
-            parID,field = write(f, 0, dirID, parID, field)
-            parID,field = write(f, 1, dirID, parID, field, last=True)
-            if not field==0:
-                for i in range(3-field):
-                    f.write('%21s' %(' '))
-                f.write('%9i' %(dirID))
-                f.write('P')
-                f.write('%7i\n' %(parID))
-                parID += 1
-
-            dirID += 2
-
-        nPar = parID - 1
-
-        f.write('S%7i' %(1))   
-        f.write('G%7i' %(4))   
-        f.write('D%7i' %(nDir))   
-        f.write('P%7i' %(nPar))   
-        f.write('%40s' %(' '))   
-        f.write('T')
-        f.write('%7i\n' %(1))       
-        f.close()
-
     def plotm(self,fig,mirror=True):
+        from mayavi import mlab
         mlab.figure(fig,bgcolor=(1,1,1))
         m = PUBSlib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
         n = PUBSlib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
@@ -411,6 +452,7 @@ class PUBS(object):
                     mlab.mesh(P[:,:,0],P[:,:,1],-P[:,:,2],color=(65/256,105/256,225/256))
 
     def plot(self,fig,mirror=True):
+        import mpl_toolkits.mplot3d.axes3d as p3
         ax = p3.Axes3D(fig)
         m = PUBSlib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_m)
         n = PUBSlib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)

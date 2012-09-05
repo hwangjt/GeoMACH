@@ -8,8 +8,7 @@ from PAM.configurations import Configuration
 class DoubleBubble(Configuration):
 
     def __init__(self):
-        self.comps = {}
-        self.keys = []
+        super(DoubleBubble,self).__init__() 
 
         self.addComp('fuse', Body([10,60,10,20,10,40,10,15,10],[20,10,10,10],[20]))
         self.addComp('wing', Wing([40],[20]))
@@ -94,8 +93,8 @@ if __name__ == '__main__':
     name = 'd8'
     aircraft = DoubleBubble()
     #aircraft.buildStructure(name)
-    aircraft.oml0.write2Tec(name)
-    aircraft.oml0.write2TecC(name+'_C')
-    aircraft.oml0.write2IGES(name)
+    aircraft.export.write2Tec(name)
+    aircraft.export.write2TecC(name+'_C')
+    aircraft.export.write2IGES(name)
     #aircraft.oml0.write2EGADS(name+'_EGADS')
-    #aircraft.plot()
+    aircraft.plot()

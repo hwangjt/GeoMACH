@@ -2,6 +2,7 @@
 *~
 */build/*
 */dist/*
+*/temp/*
 *.so
 *.dat
 *.egg-info
@@ -9,3 +10,4 @@
 *#
 *.igs
 *.tin
+*.jpg

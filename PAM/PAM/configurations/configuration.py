@@ -7,7 +7,7 @@ from mayavi import mlab
 
 class Configuration(object):
     
-    def __init__(self): 
+    def __init__(self):
         self.comps = {}
         self.keys = []
 
@@ -34,8 +34,8 @@ class Configuration(object):
             Ps.extend(comp.Ps)
             comp.Ps = []
 
-        self.oml0 = PUBS.PUBS()
-        self.oml0.importSurfaces(Ps)
+        self.oml0 = PUBS.PUBS(Ps)
+        self.export = PUBS.PUBSexport(self.oml0)
 
         #self.oml0.plotm(mlab.figure())
         #self.oml0.write2Tec('test')

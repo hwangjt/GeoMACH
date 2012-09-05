@@ -22,7 +22,7 @@ SRC_FILES = PUBS/src/bspline/basis.f90 \
 	PUBS/src/patchwork/plotSurfaces.f90
 
 default:	
-	f2py --fcompiler=intelem -I$(CGNS_INCLUDE) -c ${SRC_FILES} -m PUBSlib ${LIB_CGNS}
+	f2py --fcompiler=gnu95 -I$(CGNS_INCLUDE) -c ${SRC_FILES} -m PUBSlib ${LIB_CGNS}
 	-mv PUBSlib.so ./PUBS/
 
 g95:	

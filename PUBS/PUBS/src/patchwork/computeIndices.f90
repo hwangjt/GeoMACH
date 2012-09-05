@@ -212,7 +212,7 @@ subroutine getKnotIndices(ngroup, group_k, group_m, knot_index)
   integer, intent(in) ::  group_k(ngroup), group_m(ngroup)
 
   !Output
-  double precision, intent(out) ::  knot_index(ngroup,2)
+  integer, intent(out) ::  knot_index(ngroup,2)
 
   !Working
   integer group, i
