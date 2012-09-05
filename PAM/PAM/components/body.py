@@ -1,5 +1,5 @@
 from __future__ import division
-from PAM.components import Component, Property, body_sections
+from PAM.components import Component, Property
 import numpy, pylab, time
 import PAM.PAMlib as PAMlib
 import mpl_toolkits.mplot3d.axes3d as p3
