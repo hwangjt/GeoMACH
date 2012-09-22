@@ -57,7 +57,7 @@ class PUBS(object):
 
     """
 
-    def __init__(self, P_arrays, ratio=3.0, printInfo=True):
+    def __init__(self, P_arrays, ratio=3.0, printInfo=False):
         """ Create an instance by specifying a list of surfaces
 
         * Input *
@@ -248,8 +248,11 @@ class PUBS(object):
 
         self.Q = numpy.zeros((self.JM.shape[1],3),order='F')
         
-        GMRES = True
-        if GMRES:
+        solver = 1
+        if solver==1:
+            for i in range(3):
+                self.Q[:,i] = scipy.sparse.linalg.cg(ATA,ATB[:,i])[0]
+        elif solver==2:
             for i in range(3):
                 self.Q[:,i] = scipy.sparse.linalg.gmres(ATA,ATB[:,i])[0]
         else:

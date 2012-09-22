@@ -124,8 +124,8 @@ if __name__ == '__main__':
 
     name = 'conventional'
     aircraft = Conventional()
-    aircraft.buildStructure()
-    aircraft.writeStructure(name)
+    #aircraft.buildStructure()
+    #aircraft.writeStructure(name)
     aircraft.export.write2Tec(name)
     #aircraft.export.write2TecC(name+'_C')
     #aircraft.export.write2IGES(name)
