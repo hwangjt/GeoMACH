@@ -127,6 +127,7 @@ if __name__ == '__main__':
     #aircraft.buildStructure()
     #aircraft.writeStructure(name)
     aircraft.export.write2Tec(name)
+    aircraft.export.write2STL(name)
     #aircraft.export.write2TecC(name+'_C')
     #aircraft.export.write2IGES(name)
     #aircraft.export.write2EGADS(name+'_EGADS')

@@ -8,7 +8,7 @@ class PUBSexport(object):
     def __init__(self, model):
         self.model = model
 
-    def write2Tec(self,filename):
+    def write2Tec(self, filename):
         model = self.model
         f = open(filename+'.dat','w')
         f.write('title = "PUBSlib output"\n')
@@ -25,7 +25,7 @@ class PUBSexport(object):
                     f.write(str(P[u,v,0]) + ' ' + str(P[u,v,1]) + ' ' + str(P[u,v,2]) + '\n')
         f.close()
 
-    def write2TecC(self,filename):
+    def write2TecC(self, filename):
         model = self.model
         f = open(filename+'.dat','w')
         f.write('title = "PUBSlib output"\n')
@@ -33,6 +33,43 @@ class PUBSexport(object):
         f.write('zone i='+str(model.nC)+', DATAPACKING=POINT\n')
         for i in range(model.nC):
             f.write(str(model.C[i,0]) + ' ' + str(model.C[i,1]) + ' ' + str(model.C[i,2]) + '\n')
+        f.close()
+
+    def write2STL(self, filename):
+        def writeline(f, label, data):
+            f.write(label)
+            for k in range(3):
+                f.write(' '+str(data[k]))
+            f.write('\n')
+
+        model = self.model
+        f = open(filename+'.stl','w')
+        f.write('solid model\n')
+        n = PUBSlib.getsurfacesizes(model.nsurf, model.nedge, model.ngroup, model.surf_edge, model.edge_group, model.group_n)
+        for s in range(model.nsurf):
+            P = PUBSlib.getsurfacep(s+1, model.nP, n[s,0], n[s,1], model.nsurf, model.nedge, model.nvert, model.surf_vert, model.surf_edge, model.surf_index_P, model.edge_index_P, model.P)
+            for i in range(P.shape[0]-1):
+                for j in range(P.shape[1]-1):
+                    P00 = P[i,j,:]
+                    P01 = P[i,j+1,:]
+                    P10 = P[i+1,j,:]
+                    P11 = P[i+1,j+1,:]
+                    n1 = numpy.cross(P10-P00,P01-P00)
+                    n2 = numpy.cross(P01-P11,P10-P11)
+                    writeline(f, 'facet normal', n1)
+                    f.write('outer loop\n')
+                    writeline(f, 'vertex', P01)
+                    writeline(f, 'vertex', P00)
+                    writeline(f, 'vertex', P10)
+                    f.write('endloop\n')
+                    f.write('endfacet\n')
+                    writeline(f, 'facet normal', n2)
+                    f.write('outer loop\n')
+                    writeline(f, 'vertex', P01)
+                    writeline(f, 'vertex', P11)
+                    writeline(f, 'vertex', P10)
+                    f.write('endloop\n')
+                    f.write('endfacet\n')
         f.close()
 
     def write2IGES(self, filename):
