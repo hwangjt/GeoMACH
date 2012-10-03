@@ -266,12 +266,11 @@ subroutine computeBodySections(ni, nj, t1, t2, noseL, posx, posy, rz, ry, t1U, t
 
   !Working
   integer j
-  double precision z(ni), y(ni), zero
+  double precision z(ni), y(ni)
 
-  zero = 0.0
   do j=1,nj
      call computeRoundedSection(ni, rz(j), ry(j), t1U(j), t2U(j), t1L(j), t2L(j), t1, t2, z, y)
-     Q(:,j,1) = zero + posx(j) - posx(2) + noseL
+     Q(:,j,1) = posx(j) + noseL - posx(2)
      Q(:,j,2) = y + posy(j)
      Q(:,j,3) = z
   end do

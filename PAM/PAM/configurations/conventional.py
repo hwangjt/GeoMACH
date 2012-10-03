@@ -13,7 +13,7 @@ class Conventional(Configuration):
         self.addComp('fuse', Body([70,10,10,20,10,10,10,50,10,25,10,10],[25,25,25,25],[15]))
         self.addComp('wing', Wing([10,10,10,50],[10,20,10,10]))
         self.addComp('tail', Wing([30],[25]))
-        self.addComp('nacelle', Body([50,10,20,30],[31],[20,10,10,20],full=True))
+        self.addComp('nacelle', Body([50,10,20,30],[15,15],[20,10,10,20],full=True))
         self.addComp('pylon', Wing([30],[20],opentip=True))
         self.addComp('fin', Wing([30],[25],half=True))
 
@@ -41,7 +41,7 @@ class Conventional(Configuration):
         c['wing'].props['posx'].set([0,3.2,4],[0,0.8,1],w=[0.4,1,0])
         c['wing'].props['posy'].set([0,0.9,2.1],[0,0.8,1],w=[0.5,1,0])
         c['wing'].props['posz'].set([0,4.5,5],[0,0.8,1],w=[0,1,0])
-        c['wing'].props['prpx'].set([1,1],[0,1])
+        c['wing'].props['prpx'].set([0,1],[0,1])
         c['wing'].props['prpy'].set([0,0],[0,1])
         c['wing'].props['chord'].set([2,0.25],[0,1])
 
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     #aircraft.writeStructure(name)
     aircraft.export.write2Tec(name)
     aircraft.export.write2STL(name)
-    #aircraft.export.write2TecC(name+'_C')
+    aircraft.export.write2TecC(name+'_C')
     #aircraft.export.write2IGES(name)
     #aircraft.export.write2EGADS(name+'_EGADS')
     aircraft.plot()

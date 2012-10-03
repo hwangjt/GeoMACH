@@ -16,6 +16,7 @@ sources = [
     'PAM/src/component/shapeTypes.f90',
     'PAM/src/component/bodysections.f90',
     'PAM/src/component/wingsections.f90',
+    'PAM/src/component/interpolation.f90',
     ]
 
 config = Configuration(name='PAM')

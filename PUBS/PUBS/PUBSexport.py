@@ -56,6 +56,7 @@ class PUBSexport(object):
                     P11 = P[i+1,j+1,:]
                     n1 = numpy.cross(P10-P00,P01-P00)
                     n2 = numpy.cross(P01-P11,P10-P11)
+
                     writeline(f, 'facet normal', n1)
                     f.write('outer loop\n')
                     writeline(f, 'vertex', P01)
@@ -63,6 +64,7 @@ class PUBSexport(object):
                     writeline(f, 'vertex', P10)
                     f.write('endloop\n')
                     f.write('endfacet\n')
+
                     writeline(f, 'facet normal', n2)
                     f.write('outer loop\n')
                     writeline(f, 'vertex', P01)
