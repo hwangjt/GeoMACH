@@ -6,28 +6,219 @@ import PAM.PAMlib as PAMlib
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
-class Component(object):      
+class Component(object):
+    """ Base class for Wing, Body, and Junction components. """
+
+    def __init__(self):
+        self.Ps = []
+        self.Ks = []   
+        self.oml0 = []
+        self.faces = []
         
-    def createSurfaces(self, Ks, nu, nv, du, dv, d):
-        Ps = []
-        for j in range(len(nv)):
-            for i in range(len(nu)):
-                u1 = (sum(nu[:i])-i)/(sum(nu)-len(nu))
-                u2 = (sum(nu[:i+1])-i-1)/(sum(nu)-len(nu))
-                v1 = (sum(nv[:j])-j)/(sum(nv)-len(nv))
-                v2 = (sum(nv[:j+1])-j-1)/(sum(nv)-len(nv))
-                P = PAMlib.createsurfaces(nu[i],nv[j],du,dv,d,u1,u2,v1,v2)
+    def addFace(self, du, dv, d, x0, x1, z0, z1):
+        """ Creates a set of rectangular surfaces, their IDs, and face dims.
+        nu,nv: number of surfaces in the u and v directions
+        du,dv: {1,2,3} maps to {x,y,z}; negative sign means reverse order
+        d: position of the surfaces in the remaining coordinate axis
+        x0,x1,z0,z1: set y to zero if x or z is 0 or 1, respectively
+
+        Adds to self.Ps and self.Ks
+        """
+        self.faces.append([du,dv])
+
+        n = 10
+        nu = self.ms[abs(du)-1].shape[0]
+        nv = self.ms[abs(dv)-1].shape[0]
+        Ps = self.Ps
+        Ks = self.Ks
+        for j in range(nv):
+            for i in range(nu):
+                u1 = i/nu
+                u2 = (i+1)/nu
+                v1 = j/nv
+                v2 = (j+1)/nv
+                P = PAMlib.createsurfaces(n,du,dv,x0,x1,z0,z1,d,u1,u2,v1,v2)
                 Ps.append(P)  
 
-        K = numpy.zeros((len(nu),len(nv)),int)
+        K = numpy.zeros((nu,nv),int)
         counter = 0
         if len(Ks) > 0:
             counter = numpy.max(Ks[-1]) + 1
-        for j in range(len(nv)):
-            for i in range(len(nu)):
+        for j in range(nv):
+            for i in range(nu):
                 K[i,j] = counter
-                counter += 1            
-        return Ps, K
+                counter += 1
+        Ks.append(K)
+
+    def setC1(self, t, f, i=None, j=None, u=None, v=None, d=None, val=True):
+        """ Set C1 continuity 
+        t: {string} surface or edge C1
+        f: face index
+        i,j: surface index
+            both given: only consider [i,j] surface
+            one given: loop through and apply to all of the other index
+            none given: apply to all surfaces
+        u,v: edge/vert index (for surfC1)
+            both given: only consider [u,v] corner/side
+            one given: loop through and apply to all of the other index
+            none given: apply to all corners/sides
+        u,v,d: side index (for edgeC1)
+        """
+
+        def setSurfC1(f, i, j, u, v, d, val):
+            oml0 = self.oml0
+            surf = self.Ks[f][i,j]
+            if not surf==-1:
+                if u==None and v==None:
+                    oml0.surf_c1[surf,:,:] = val                    
+                elif u==None:
+                    oml0.surf_c1[surf,:,v] = val
+                elif v==None:
+                    oml0.surf_c1[surf,u,:] = val
+                else:
+                    oml0.surf_c1[surf,u,v] = val
+
+
+        def setEdgeC1(f, i, j, u, v, d, val):
+            oml0 = self.oml0
+            surf = self.Ks[f][i,j]
+            if not surf==-1:
+                if u==None:
+                    edge = oml0.surf_edge[surf,0,v]
+                else:
+                    edge = oml0.surf_edge[surf,1,u]
+                if d==None:
+                    oml0.edge_c1[abs(edge)-1,:] = val
+                elif edge>0:
+                    oml0.edge_c1[abs(edge)-1,d] = val
+                else:
+                    oml0.edge_c1[abs(edge)-1,1-abs(d)] = val
+
+        if t=='surf':
+            func = setSurfC1
+        elif t=='edge':
+            func = setEdgeC1
+        if (not i==None) and (not j==None):
+            func(f, i, j, u, v, d, val)
+        elif not i==None:
+            for j in range(self.Ks[f].shape[1]):
+                func(f, i, j, u, v, d, val)
+        elif not j==None:
+            for i in range(self.Ks[f].shape[0]):
+                func(f, i, j, u, v, d, val)
+        else:
+            for j in range(self.Ks[f].shape[1]):
+                for i in range(self.Ks[f].shape[0]):
+                    func(f, i, j, u, v, d, val)
+
+    def setCornerC1(self, f, i=0, j=0, val=True):
+        self.setC1('edge', f, i=i, j=j, u=i, d=j, val=val)
+        self.setC1('edge', f, i=i, j=j, v=j, d=i, val=val)
+
+    def computems(self):
+        oml0 = self.oml0
+        Ks = self.Ks
+        for f in range(len(Ks)):
+            for i in range(Ks[f].shape[0]):
+                for j in range(Ks[f].shape[1]):
+                    surf = Ks[f][i,j]
+                    if not surf==-1:
+                        for k in range(2):
+                            edge = oml0.surf_edge[surf,k,0]
+                            group = oml0.edge_group[abs(edge)-1] - 1
+                            m = oml0.group_m[group] - 1
+                            if k==0:
+                                self.getms(f,k)[i] = int(m)
+                            else:
+                                self.getms(f,k)[j] = int(m)
+
+    def getms(self, f, d):
+        dim = self.faces[f][d]
+        if dim > 0:
+            return self.ms[abs(dim)-1]
+        else:
+            return self.ms[abs(dim)-1][::-1]
+
+    def initializeDOFmappings(self):
+        def classify(i, n):
+            if i==0:
+                return 0
+            elif i==n-1:
+                return 2
+            else:
+                return 1
+
+        def getC1(surf, u=None, v=None, d=0):
+            if u==None:
+                edge = self.oml0.surf_edge[surf,0,v]
+            else:
+                edge = self.oml0.surf_edge[surf,1,u]
+            if edge > 0:
+                return self.oml0.edge_c1[abs(edge)-1,d]
+            else:
+                return self.oml0.edge_c1[abs(edge)-1,1-abs(d)]
+
+        oml0 = self.oml0
+        Ks = self.Ks
+        surf_c1 = oml0.surf_c1
+        edge_c1 = oml0.edge_c1
+
+        Qs = []
+        Ns = []
+
+        for f in range(len(Ks)):
+            ni = self.getms(f,0)
+            nj = self.getms(f,1)
+            Qs.append(numpy.zeros((sum(ni)+1,sum(nj)+1,3)))
+            Ns.append(numpy.zeros((sum(ni)+1,sum(nj)+1,5),int))
+            Ns[f][:,:,:] = -1
+            for j in range(Ks[f].shape[1]):
+                for i in range(Ks[f].shape[0]):
+                    surf = Ks[f][i,j]
+                    if surf != -1:
+                        mu,mv = oml0.getEdgeProperty(surf,1)
+                        for v in range(mv):
+                            jj = sum(nj[:j]) + v
+                            vType = classify(v,mv)
+                            for u in range(mu):
+                                ii = sum(ni[:i]) + u
+                                uType = classify(u,mu)
+                                DOF = True
+                                if uType==0 or uType==2 or vType==0 or vType==2:
+                                    DOF = DOF and not surf_c1[surf,uType,vType]
+                                    if (not uType==1) and (not vType==1):
+                                        DOF = DOF and not getC1(surf,u=int(uType/2),d=int(vType/2))
+                                        DOF = DOF and not getC1(surf,v=int(vType/2),d=int(uType/2))
+                                if DOF:
+                                    Ns[f][ii,jj,0] = oml0.computeIndex(surf,u,v,2)
+                                    Ns[f][ii,jj,1] = i
+                                    Ns[f][ii,jj,2] = u
+                                    Ns[f][ii,jj,3] = j
+                                    Ns[f][ii,jj,4] = v
+        self.Qs = Qs
+        self.Ns = Ns
+
+    def updateQs(self):
+        Qs = self.Qs
+        Ns = self.Ns
+        oml0 = self.oml0
+        for f in range(len(Ns)):
+            PAMlib.updateqs(oml0.nQ, Ns[f].shape[0], Ns[f].shape[1], Ns[f], Qs[f], oml0.Q)
+
+    def translatePoints(self, dx, dy, dz):
+        for k in range(len(self.Ps)):
+            self.Ps[k][:,:,0] += dx
+            self.Ps[k][:,:,1] += dy
+            self.Ps[k][:,:,2] += dz
+
+
+class Component2(object):
+    """ Base class for Wing, Body, and Junction components. """
+
+    def __init__(self):
+        self.Ps = []
+        self.Ks = []   
+        self.oml0 = []  
 
     def createInterface(self, n, edge1, edge2, swap=False):
         P = PAMlib.createinterface(n, edge1.shape[0], edge1, edge2)
@@ -133,6 +324,20 @@ class Component(object):
             return self.dims[d][::-1]
 
     def setC1(self, t, f, i=None, j=None, u=None, v=None, d=None, val=True):
+        """ Set C1 continuity 
+        t: {string} surface or edge C1
+        f: face index
+        i,j: surface index
+            both given: only consider [i,j] surface
+            one given: loop through and apply to all of the other index
+            none given: apply to all surfaces
+        u,v: edge/vert index (for surfC1)
+            both given: only consider [u,v] corner/side
+            one given: loop through and apply to all of the other index
+            none given: apply to all corners/sides
+        u,v,d: side index (for edgeC1)
+        """
+
         if t=='surf':
             func = self.setSurfC1
         elif t=='edge':

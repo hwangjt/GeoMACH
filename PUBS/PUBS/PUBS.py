@@ -408,6 +408,22 @@ class PUBS(object):
             surf,u,v = PUBSlib.computepjtnalongq(P0.shape[0],surfs.shape[0],self.nD,self.nT,self.nC,self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,surfs,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.knot_index,self.T,self.C,self.P,P0,Q)
         surf -= 1
         return surf,u,v
+    
+    def getEdgeProperty(self, surf, prop):
+        """ Get the edge property for the u and v edges
+        prop: (integer)
+          0: k
+          1: m
+          2: n
+        """
+        ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
+        vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
+        if prop==0:
+            return self.group_k[ugroup-1], self.group_k[vgroup-1]
+        elif prop==1:
+            return self.group_m[ugroup-1], self.group_m[vgroup-1]
+        elif prop==2:
+            return self.group_n[ugroup-1], self.group_n[vgroup-1]
 
     def vstackSparse(self, Bs):
         """ Vertically stack a list of sparse matrices

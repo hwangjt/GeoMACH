@@ -6,6 +6,77 @@ import PAM.PAMlib as PAMlib
 
 
 class Wing(Component):
+    """ A component used to model lifting surfaces. """
+
+    def __init__(self, nx=1, nz=1, left=2, right=2):
+        """ Initialization method
+        nx: integer
+            Number of surfaces in x (chord-wise) direction
+        nz: integer
+            Number of surfaces in z (span-wise) direction
+        left, right: integer
+            The v[0] and v[-1] sections of the wing
+            0: open tip, C0
+            1: open tip, C1
+            2: closed tip
+        """ 
+
+        super(Wing,self).__init__() 
+
+        self.ms = []
+        self.ms.append(numpy.zeros(nx,int))
+        self.ms.append(None)
+        self.ms.append(numpy.zeros(nz,int))
+
+        self.addFace(-1, 3, 1, 1, 1, left==2, right==2)
+        self.addFace( 1, 3,-1, 1, 1, left==2, right==2)
+
+        self.left = left
+        self.right = right
+
+    def setDOFs(self):
+        left = self.left
+        right = self.right
+
+        for f in range(2):
+            self.setC1('surf', f, val=True) #C1 Everywhere
+            self.setC1('surf', f, i=-f, u=-f, val=False) #C0 trailing edge
+            self.setC1('edge', f, i=-f, u=-f, val=True) #C0 trailing edge
+            if left==0:                
+                self.setC1('surf', f, j=0, v=0, val=False) #C0 left edge
+                self.setC1('edge', f, j=0, v=0, val=True) #C0 left edge
+                self.setCornerC1(f, i=-f, j=0, val=False) #C0 left TE corner
+            if right==0:
+                self.setC1('surf', f, j=-1, v=-1, val=False) #C0 right edge
+                self.setC1('edge', f, j=-1, v=-1, val=True) #C0 right edge
+                self.setCornerC1(f, i=-f, j=-1, val=False) #C0 right TE corner
+
+if __name__ == '__main__':
+    w = Wing(nx=2,nz=2)
+    import PUBS
+    from mayavi import mlab
+    w.oml0 = PUBS.PUBS(w.Ps)
+    w.setDOFs()
+    w.computems()
+    w.oml0.updateBsplines()
+    w.initializeDOFmappings()
+    for i in range(w.Qs[0].shape[0]):
+        w.Qs[0][i,:,2] = numpy.linspace(0,1,w.Qs[0].shape[1])
+        w.Qs[1][i,:,2] = numpy.linspace(0,1,w.Qs[0].shape[1])
+    for i in range(w.Qs[0].shape[1]):
+        w.Qs[0][::-1,i,0] = numpy.linspace(0,1,w.Qs[0].shape[0])
+        w.Qs[1][:,i,0] = numpy.linspace(0,1,w.Qs[0].shape[0])
+    w.Qs[0][:,:,1] = 0.1
+    w.Qs[1][:,:,1] = -0.1
+    w.Qs[0][0,:,1] = 0.0
+    w.Qs[1][-1,:,1] = 0.0
+    w.updateQs()
+    w.oml0.computePoints()
+    w.oml0.plot(pylab.figure(),False)
+    pylab.show()
+
+
+class Wing2(Component):
 
     def __init__(self, nb, nc, half=False, opentip=False):
         if half:
