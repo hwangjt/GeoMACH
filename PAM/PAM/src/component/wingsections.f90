@@ -1,10 +1,10 @@
-subroutine computeWingRotations(nj, posx, posy, posz, rot0)
+subroutine computeWingRotations(nj, pos, rot0)
 
   implicit none
 
   !Input
   integer, intent(in) ::  nj
-  double precision, intent(in) ::  posx(nj), posy(nj), posz(nj)
+  double precision, intent(in) ::  pos(nj,3)
 
   !Output
   double precision, intent(out) ::  rot0(nj,3)
@@ -18,20 +18,12 @@ subroutine computeWingRotations(nj, posx, posy, posz, rot0)
   one = 1.0
   do j=1,nj
      if (j .eq. 1) then
-        t(1) = posx(j+1) - posx(j)
-        t(2) = posy(j+1) - posy(j)
-        t(3) = posz(j+1) - posz(j)
+        t = pos(j+1,:) - pos(j,:)
      else if (j .eq. nj) then
-        t(1) = posx(j) - posx(j-1)
-        t(2) = posy(j) - posy(j-1)
-        t(3) = posz(j) - posz(j-1)
+        t = pos(j,:) - pos(j-1,:)
      else
-        t1(1) = posx(j) - posx(j-1)
-        t1(2) = posy(j) - posy(j-1)
-        t1(3) = posz(j) - posz(j-1)
-        t2(1) = posx(j+1) - posx(j)
-        t2(2) = posy(j+1) - posy(j)
-        t2(3) = posz(j+1) - posz(j)
+        t1 = pos(j,:) - pos(j-1,:)
+        t2 = pos(j+1,:) - pos(j,:)
         t = t1/dot_product(t1,t1)**0.5 + t2/dot_product(t2,t2)**0.5
      end if
      v = (/t(3),t(2)/)
@@ -46,25 +38,21 @@ end subroutine computeWingRotations
 
 
 
-subroutine computeWingSections(ni, nj, rx, ry, posx, posy, posz, &
-     rotx, roty, rotz, prpx, prpy, chord, shape0, Q)
+subroutine computeWingSections(ni, nj, r, offset, chord, &
+     pos, rot, nor, shape0, Q)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) ni, nj, rx, ry, posx, posy, posz, rotx, roty, rotz, prpx, prpy, chord, shape0
+  !f2py intent(in) ni, nj, r, offset, chord, pos, rot, nor, shape0
   !f2py intent(out) Q
-  !f2py depend(nj) posx, posy, posz, rotx, roty, rotz, prpx, prpy, chord
-  !f2py depend(ni,nj) shape0
-  !f2py depend(ni,nj) Q
+  !f2py depend(nj) chord, pos, rot, nor
+  !f2py depend(ni,nj) shape0, Q
 
   !Input
   integer, intent(in) ::  ni, nj
-  double precision, intent(in) ::  rx, ry
-  double precision, intent(in) ::  posx(nj), posy(nj), posz(nj)
-  double precision, intent(in) ::  rotx(nj), roty(nj), rotz(nj)
-  double precision, intent(in) ::  prpx(nj), prpy(nj)
-  double precision, intent(in) ::  chord(nj)
+  double precision, intent(in) ::  r(3), offset(3)
+  double precision, intent(in) ::  chord(nj), pos(nj,3), rot(nj,3), nor(nj,3)
   double precision, intent(in) ::  shape0(ni,nj,3)
 
   !Output
@@ -72,27 +60,15 @@ subroutine computeWingSections(ni, nj, rx, ry, posx, posy, posz, &
 
   !Working
   integer i, j
-  double precision T(3,3), rotj(3), shapej(ni,3), rot0(nj,3)
+  double precision T(3,3), rot0(nj,3)
 
-  call computeWingRotations(nj, posx, posy, posz, rot0)
+  call computeWingRotations(nj, pos, rot0)
 
   do j=1,nj
-     rotj(1) = rotx(j) + rot0(j,1)*prpx(j)
-     rotj(2) = roty(j) + rot0(j,2)*prpy(j)
-     rotj(3) = rotz(j)
-     call computeRtnMtx(rotj, T)
-     shapej(:,1) = shape0(:,j,1) - rx
-     shapej(:,2) = shape0(:,j,2) - ry
-     shapej(:,3) = shape0(:,j,3)
-     do i=1,ni        
-        Q(i,j,:) = matmul(T,shapej(i,:))
-        Q(i,j,1) = Q(i,j,1) + rx
-        Q(i,j,2) = Q(i,j,2) + ry
-        Q(i,j,:) = Q(i,j,:)*chord(j)
+     call computeRtnMtx(rot(j,:) + rot0(j,:)*nor(j,:), T)
+     do i=1,ni
+        Q(i,j,:) = (matmul(T,shape0(i,j,:)-r) + r)*chord(j) + pos(j,:) + offset
      end do
-     Q(:,j,1) = Q(:,j,1) + posx(j)
-     Q(:,j,2) = Q(:,j,2) + posy(j)
-     Q(:,j,3) = Q(:,j,3) + posz(j)
   end do
 
 end subroutine computeWingSections
