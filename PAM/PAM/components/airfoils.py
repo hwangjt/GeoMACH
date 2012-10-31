@@ -41,77 +41,56 @@ def getAirfoil(filename):
             lower = data[mark+1:,:]
     return [upper, lower]
 
-def fitAirfoil(wing,airfoil,rev=False):
+def getP(nP, airfoil):
+    P = numpy.zeros((airfoil.shape[0],4,3))
+    for i in range(4):
+        P[:,i,:2] = airfoil[:,:]
+    oml0 = PUBS.PUBS([P])
+    oml0.group_n[1] = nP
+    oml0.updateEvaluation()
+    P = numpy.zeros((nP,2))
+    for i in range(nP):
+        P[i,:] = oml0.P[oml0.computeIndex(0,i,0,0),:2]
+    return P
+
+def getQ(ms, ns, P0):
+    Ps = []
+    for i in range(ns.shape[0]):
+        P = numpy.zeros((4,ns[i]+1,3))
+        for j in range(4):
+            P[j,:,:2] = P0[sum(ns[:i]):sum(ns[:i+1])+1,:]
+        Ps.append(P)
+    oml0 = PUBS.PUBS(Ps)
+    for i in range(ms.shape[0]):
+        oml0.group_m[1+i] = ms[i]+1
+    oml0.updateBsplines()
+    Q = numpy.zeros((sum(ms) + 1,2))
+    for i in range(ns.shape[0]):
+        for j in range(ms[i]+1):
+            Q[sum(ms[:i])+j] = oml0.Q[oml0.computeIndex(i,0,j,2),:2]
+    return Q
+    
+
+def fitAirfoil(wing,filename):
+    airfoil = getAirfoil(filename)
     oml0 = wing.oml0
-    P1 = []
-    P2 = []
-    for f in range(len(wing.Ks)):
-        ms = []
-        ns = []
-        for i in range(wing.Ks[f].shape[0]):
-            edge = oml0.surf_edge[wing.Ks[f][i,0],0,0]
-            edge = abs(edge) - 1
+    Qs = []
+    for f in range(2):
+        nsurf = wing.Ks[f].shape[0]
+        ms = numpy.zeros(nsurf,int)
+        ns = numpy.zeros(nsurf,int)
+        for i in range(nsurf):
+            surf = wing.Ks[f][i,0]
+            edge = abs(oml0.surf_edge[surf,0,0]) - 1
             group = oml0.edge_group[edge] - 1
-            ms.append(oml0.group_m[group])
-            ns.append(oml0.group_n[group])
-        n = sum(ns) - len(ns) + 1
+            ms[i] = oml0.group_m[group] - 1
+            ns[i] = oml0.group_n[group] - 1
+        nP = sum(ns) + 1
 
-        P = numpy.zeros((airfoil[f].shape[0],4,3))
-        for i in range(4):
-            P[:,i,:2] = airfoil[f][:,:]
-        oml1 = PUBS.PUBS([P])
-        oml1.group_n[1] = n
-        oml1.updateEvaluation()
-        P1.append(numpy.zeros((n,2)))
-        for i in range(n):
-            P1[-1][i,:] = oml1.P[oml1.computeIndex(0,i,0,0),:2]
+        P = getP(nP, airfoil[f])
+        Q = getQ(ms, ns, P)
+        Qs.append(Q)
 
-        jQ = numpy.zeros(sum(ms)-2*len(ms)+1,int)
-        counter = 0
-        for i in range(wing.Ks[f].shape[0]):
-            for u in range(ms[i]-2):
-                jQ[counter] = oml0.computeIndex(wing.Ks[f][i,0],u+1,0,2)
-                counter += 1
-        if rev:
-            jQ[counter] = oml0.computeIndex(wing.Ks[f][-1,0],-1,0,2)
-        else:
-            jQ[counter] = oml0.computeIndex(wing.Ks[f][-f,0],-f,0,2)
-        iP = numpy.zeros(sum(ns)-len(ns)-1,int)
-        counter = 0
-        for i in range(wing.Ks[f].shape[0]):
-            for u in range(ns[i]-1):
-                if not (i==0 and u==0):
-                    iP[counter] = oml0.computeIndex(wing.Ks[f][i,0],u,0,0)
-                    counter += 1
-
-        B = numpy.zeros((iP.shape[0],jQ.shape[0]))
-        for j in range(jQ.shape[0]):
-            for i in range(iP.shape[0]):
-                B[i,j] = oml0.JM[iP[i],jQ[j]]
-
-        R = P1[-1][1:-1]
-        dR = B[:,-1]
-        B = numpy.delete(B,-1,1)
-        R[:,0] -= dR 
-        BTB = numpy.dot(B.T,B)
-        BTR = numpy.dot(B.T,R)
-        sol = numpy.linalg.solve(BTB,BTR)
-        sol = numpy.insert(sol, 0, 0, axis=0)
-        for i in range(wing.Ks[f].shape[0]):
-            ii = sum(ms[:i+1])-(i+1)
-            sol = numpy.insert(sol, ii, 0, axis=0)
-            if not i==wing.Ks[f].shape[0]-1:
-                sol[ii] = 0.5*sol[ii-1] + 0.5*sol[ii+1]
-        if rev:
-            sol[-1,0] = 1
-        else:
-            sol[-f,0] = 1
-        P2.append(sol)
-#        Ps = numpy.dot(B,sol)
-#        Ps[:,0] += dR
-#        pylab.plot(Ps[:,0],Ps[:,1])
-#    pylab.show()
-
-    return P2
+    return Qs
 
 
