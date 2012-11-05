@@ -66,10 +66,10 @@ subroutine computeWingSections(ni, nj, r, offset, chord, &
 
   !Working
   integer i, j
-  double precision T(3,3)
+  double precision T(3,3), dT_drot(3,3,3)
 
   do j=1,nj
-     call computeRtnMtx(rot(j,:), T)
+     call computeRtnMtx(rot(j,:), T, dT_drot)
      do i=1,ni
         Q(i,j,:) = (matmul(T,shape0(i,j,:)-r) + r)*chord(j) + pos(j,:) + offset
      end do
@@ -79,82 +79,99 @@ end subroutine computeWingSections
 
 
 
-subroutine computeRtnMtx(rot, T)
+subroutine computeRtnMtx(rot, T, dT_drot)
 
   implicit none
 
   !Fortran-python interface directives
   !f2py intent(in) rot
-  !f2py intent(out) T
+  !f2py intent(out) T, dT_drot
 
   !Input
   double precision, intent(in) ::  rot(3)
 
   !Output
-  double precision, intent(out) ::  T(3,3)
+  double precision, intent(out) ::  T(3,3), dT_drot(3,3,3)
 
   !Working
-  double precision p, q, r, T0(3,3)
-  integer k
+  double precision p, q, r
+  double precision Tp(3,3), Tq(3,3), Tr(3,3)
+  double precision dTp(3,3), dTq(3,3), dTr(3,3)
+
+  dTp(:,:) = 0.0
+  dTq(:,:) = 0.0
+  dTr(:,:) = 0.0
 
   p = rot(1)
   q = rot(2)
   r = rot(3)
 
-  T(:,:) = 0.0
-  do k=1,3
-     T(k,k) = 1.0
-  end do
+  Tp(:,:) = 0.0
+  Tp(1,1) = 1.0
+  Tp(2,2) = cos(p)
+  Tp(2,3) = sin(p)
+  Tp(3,2) = -sin(p)
+  Tp(3,3) = cos(p)
 
-  T0(:,:) = 0.0
-  T0(1,1) = 1.0
-  T0(2,2) = cos(p)
-  T0(2,3) = sin(p)
-  T0(3,2) = -sin(p)
-  T0(3,3) = cos(p)
-  T = matmul(T0, T)
+  Tq(:,:) = 0.0
+  Tq(2,2) = 1.0
+  Tq(1,1) = cos(q)
+  Tq(1,3) = sin(q)
+  Tq(3,1) = -sin(q)
+  Tq(3,3) = cos(q)
 
-  T0(:,:) = 0.0
-  T0(2,2) = 1.0
-  T0(1,1) = cos(q)
-  T0(1,3) = sin(q)
-  T0(3,1) = -sin(q)
-  T0(3,3) = cos(q)
-  T = matmul(T0, T)
+  Tr(:,:) = 0.0
+  Tr(3,3) = 1.0
+  Tr(1,1) = cos(r)
+  Tr(1,2) = sin(r)
+  Tr(2,1) = -sin(r)
+  Tr(2,2) = cos(r)
 
-  T0(:,:) = 0.0
-  T0(3,3) = 1.0
-  T0(1,1) = cos(r)
-  T0(1,2) = sin(r)
-  T0(2,1) = -sin(r)
-  T0(2,2) = cos(r)
-  T = matmul(T0, T)
+  dTp(2,2) = -sin(p)
+  dTp(2,3) = cos(p)
+  dTp(3,2) = -cos(p)
+  dTp(3,3) = -sin(p)
+
+  dTq(1,1) = -sin(q)
+  dTq(1,3) = cos(q)
+  dTq(3,1) = -cos(q)
+  dTq(3,3) = -sin(q)
+
+  dTr(1,1) = -sin(r)
+  dTr(1,2) = cos(r)
+  dTr(2,1) = -cos(r)
+  dTr(2,2) = -sin(r)
+
+  T = matmul(matmul(Tr,Tq),Tp)
+  dT_drot(:,:,1) = matmul(matmul(Tr,Tq),dTp)
+  dT_drot(:,:,2) = matmul(matmul(Tr,dTq),Tp)
+  dT_drot(:,:,3) = matmul(matmul(dTr,Tq),Tp)
 
 end subroutine computeRtnMtx
 
 
 
-subroutine arc_tan(P, Lx, Ly, t)
+subroutine arctan2pi(P, t, dt_dP)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) P, Lx, Ly
-  !f2py intent(out) t
+  !f2py intent(in) P
+  !f2py intent(out) t, dt_dP
 
   !Input
-  double precision, intent(in) ::  P(2), Lx, Ly
+  double precision, intent(in) ::  P(2)
 
   !Output
-  double precision, intent(out) ::  t
+  double precision, intent(out) ::  t, dt_dP(2)
 
   !Working
   double precision x, y, pi
 
   pi = 2*acos(0.0)
 
-  x = Lx*P(1)
-  y = Ly*P(2)
+  x = P(1)
+  y = P(2)
 
   if (x .eq. 0) then
      if (y .gt. 0) then
@@ -178,6 +195,7 @@ subroutine arc_tan(P, Lx, Ly, t)
      t = 0
   end if
 
-  return
+  dt_dP(1) = -y/(x**2+y**2)
+  dt_dP(2) = x/(x**2+y**2)
 
-end subroutine arc_tan
+end subroutine arctan2pi

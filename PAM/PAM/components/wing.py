@@ -83,6 +83,29 @@ class Wing(Component):
 
 
 if __name__ == '__main__':
+    h = 1e-5
+    P = numpy.array([0.1,0.2])
+    t0,dt_dP = PAMlib.arctan2pi(P)
+    for k in range(2):
+        P[k] += h
+        t,dt_dP0 = PAMlib.arctan2pi(P)
+        P[k] -= h
+        print (t-t0)/h
+        print dt_dP[k]
+        print '-------'
+
+    rot = numpy.array([0.1,0.2,0.3])
+    T0,dT_drot = PAMlib.computertnmtx(rot)
+    for k in range(3):
+        rot[k] += h
+        T,dT_drot0 = PAMlib.computertnmtx(rot)
+        rot[k] -= h
+        print (T-T0)/h
+        print dT_drot[:,:,k]
+        print (T-T0)/h - dT_drot[:,:,k]
+        print '------'
+    exit()
+
     w = Wing(nx=2,nz=2)#,left=0)
     import PUBS
     from mayavi import mlab

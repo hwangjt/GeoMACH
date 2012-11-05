@@ -152,3 +152,51 @@ subroutine countConnectors(nvert, nedge, Lx, Ly, verts, edges, count, quadrants)
   end do
 
 end subroutine countConnectors
+
+
+
+subroutine arc_tan(P, Lx, Ly, t)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) P, Lx, Ly
+  !f2py intent(out) t
+
+  !Input
+  double precision, intent(in) ::  P(2), Lx, Ly
+
+  !Output
+  double precision, intent(out) ::  t
+
+  !Working
+  double precision x, y, pi
+
+  pi = 2*acos(0.0)
+
+  x = Lx*P(1)
+  y = Ly*P(2)
+
+  if (x .eq. 0) then
+     if (y .gt. 0) then
+        t = pi/2.0
+     else if (y .lt. 0) then
+        t = 3*pi/2.0
+     end if
+  else if (y .eq. 0) then
+     if (x .gt. 0) then
+        t = 0
+     else if (x .lt. 0) then
+        t = pi
+     end if
+  else if (x .lt. 0) then
+     t = atan(y/x) + pi   
+  else if (y .lt. 0) then
+     t = atan(y/x) + 2*pi    
+  else if (y .gt. 0) then
+     t = atan(y/x)
+  else
+     t = 0
+  end if
+
+end subroutine arc_tan
