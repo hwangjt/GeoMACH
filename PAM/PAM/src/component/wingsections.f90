@@ -2,6 +2,11 @@ subroutine computeWingRotations(nj, pos, rot0)
 
   implicit none
 
+  !Fortran-python interface directives
+  !f2py intent(in) nj, pos
+  !f2py intent(out) rot0
+  !f2py depend(nj) pos, rot0
+
   !Input
   integer, intent(in) ::  nj
   double precision, intent(in) ::  pos(nj,3)
@@ -11,7 +16,7 @@ subroutine computeWingRotations(nj, pos, rot0)
 
   !Working
   integer j
-  double precision t(3), t1(3), t2(3), z, one, p, q, v(2), pi
+  double precision pi, t(3), t1(3), t2(3), z, one, p, q, v(2)
 
   pi = 2*acos(0.0)
   z = 0.0
@@ -28,9 +33,10 @@ subroutine computeWingRotations(nj, pos, rot0)
      end if
      v = (/t(3),t(2)/)
      call arc_tan(v, one, one, p)
-     call arc_tan(dot_product(v,v)**0.5, one, one, q)
-     rot0(j,1) = p*180.0/pi
-     rot0(j,2) = q*180.0/pi
+     v = (/(t(2)**2+t(3)**2)**0.5,t(1)/)
+     call arc_tan(v, one, one, q)
+     rot0(j,1) = p
+     rot0(j,2) = q
      rot0(j,3) = z
   end do
 
@@ -39,20 +45,20 @@ end subroutine computeWingRotations
 
 
 subroutine computeWingSections(ni, nj, r, offset, chord, &
-     pos, rot, nor, shape0, Q)
+     pos, rot, shape0, Q)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) ni, nj, r, offset, chord, pos, rot, nor, shape0
+  !f2py intent(in) ni, nj, r, offset, chord, pos, rot, shape0
   !f2py intent(out) Q
-  !f2py depend(nj) chord, pos, rot, nor
+  !f2py depend(nj) chord, pos, rot
   !f2py depend(ni,nj) shape0, Q
 
   !Input
   integer, intent(in) ::  ni, nj
   double precision, intent(in) ::  r(3), offset(3)
-  double precision, intent(in) ::  chord(nj), pos(nj,3), rot(nj,3), nor(nj,3)
+  double precision, intent(in) ::  chord(nj), pos(nj,3), rot(nj,3)
   double precision, intent(in) ::  shape0(ni,nj,3)
 
   !Output
@@ -60,12 +66,10 @@ subroutine computeWingSections(ni, nj, r, offset, chord, &
 
   !Working
   integer i, j
-  double precision T(3,3), rot0(nj,3)
-
-  call computeWingRotations(nj, pos, rot0)
+  double precision T(3,3)
 
   do j=1,nj
-     call computeRtnMtx(rot(j,:) + rot0(j,:)*nor(j,:), T)
+     call computeRtnMtx(rot(j,:), T)
      do i=1,ni
         Q(i,j,:) = (matmul(T,shape0(i,j,:)-r) + r)*chord(j) + pos(j,:) + offset
      end do
@@ -90,14 +94,12 @@ subroutine computeRtnMtx(rot, T)
   double precision, intent(out) ::  T(3,3)
 
   !Working
-  double precision p, q, r, T0(3,3), pi
+  double precision p, q, r, T0(3,3)
   integer k
 
-  pi = 2*acos(0.0)
-
-  p = rot(1)*pi/180.0
-  q = rot(2)*pi/180.0
-  r = rot(3)*pi/180.0
+  p = rot(1)
+  q = rot(2)
+  r = rot(3)
 
   T(:,:) = 0.0
   do k=1,3
@@ -129,3 +131,53 @@ subroutine computeRtnMtx(rot, T)
   T = matmul(T0, T)
 
 end subroutine computeRtnMtx
+
+
+
+subroutine arc_tan(P, Lx, Ly, t)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) P, Lx, Ly
+  !f2py intent(out) t
+
+  !Input
+  double precision, intent(in) ::  P(2), Lx, Ly
+
+  !Output
+  double precision, intent(out) ::  t
+
+  !Working
+  double precision x, y, pi
+
+  pi = 2*acos(0.0)
+
+  x = Lx*P(1)
+  y = Ly*P(2)
+
+  if (x .eq. 0) then
+     if (y .gt. 0) then
+        t = pi/2.0
+     else if (y .lt. 0) then
+        t = 3*pi/2.0
+     end if
+  else if (y .eq. 0) then
+     if (x .gt. 0) then
+        t = 0
+     else if (x .lt. 0) then
+        t = pi
+     end if
+  else if (x .lt. 0) then
+     t = atan(y/x) + pi   
+  else if (y .lt. 0) then
+     t = atan(y/x) + 2*pi    
+  else if (y .gt. 0) then
+     t = atan(y/x)
+  else
+     t = 0
+  end if
+
+  return
+
+end subroutine arc_tan

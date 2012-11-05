@@ -218,7 +218,28 @@ class Component2(object):
     def __init__(self):
         self.Ps = []
         self.Ks = []   
-        self.oml0 = []  
+        self.oml0 = []      
+        
+    def createSurfaces(self, Ks, nu, nv, du, dv, d):
+        Ps = []
+        for j in range(len(nv)):
+            for i in range(len(nu)):
+                u1 = (sum(nu[:i])-i)/(sum(nu)-len(nu))
+                u2 = (sum(nu[:i+1])-i-1)/(sum(nu)-len(nu))
+                v1 = (sum(nv[:j])-j)/(sum(nv)-len(nv))
+                v2 = (sum(nv[:j+1])-j-1)/(sum(nv)-len(nv))
+                P = PAMlib.createsurfaces(nu[i],nv[j],du,dv,d,u1,u2,v1,v2)
+                Ps.append(P)  
+
+        K = numpy.zeros((len(nu),len(nv)),int)
+        counter = 0
+        if len(Ks) > 0:
+            counter = numpy.max(Ks[-1]) + 1
+        for j in range(len(nv)):
+            for i in range(len(nu)):
+                K[i,j] = counter
+                counter += 1            
+        return Ps, K
 
     def createInterface(self, n, edge1, edge2, swap=False):
         P = PAMlib.createinterface(n, edge1.shape[0], edge1, edge2)
