@@ -1,44 +1,142 @@
-subroutine computeWingRotations(nj, pos, rot0)
+subroutine eye(n, A)
+
+  implicit none
+
+  !Input
+  integer, intent(in) ::  n
+ 
+  !Output
+  double precision, intent(out) ::  A(n,n)
+
+  !Working
+  integer i
+
+  A(:,:) = 0.0
+  do i=1,n
+     A(i,i) = 1.0
+  end do
+
+end subroutine eye
+
+
+
+subroutine outer(n, x, y, A)
+
+  implicit none
+
+  !Input
+  integer, intent(in) ::  n
+  double precision, intent(in) ::  x(n), y(n)
+
+  !Output
+  double precision, intent(out) ::  A(n,n)
+
+  !Working
+  integer i, j
+
+  do i=1,n
+     do j=1,n
+        A(i,j) = x(i)*y(j)
+     end do
+  end do
+
+end subroutine outer
+
+
+
+subroutine computeWingRotations(nj, nD, pos, rot0, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nj, pos
-  !f2py intent(out) rot0
+  !f2py intent(in) nj, nD, pos
+  !f2py intent(out) rot0, Da, Di, Dj
   !f2py depend(nj) pos, rot0
+  !f2py depend(nD) Da, Di, Dj
 
   !Input
-  integer, intent(in) ::  nj
+  integer, intent(in) ::  nj, nD
   double precision, intent(in) ::  pos(nj,3)
 
   !Output
   double precision, intent(out) ::  rot0(nj,3)
+  double precision, intent(out) ::  Da(nD)
+  integer, intent(out) ::  Di(nD), Dj(nD)
 
   !Working
-  integer j
-  double precision pi, t(3), t1(3), t2(3), z, one, p, q, v(2)
+  integer j, k, l, iD
+  double precision z, one, pi, t(3), ta(3), tb(3), ra2, rb2, p, q, v(2), w(2)
+  double precision dt_dpos_jp1(3,3), dt_dpos_j(3,3), dt_dpos_jm1(3,3)
+  double precision dp_dv(2), dq_dw(2), I(3,3), A(3,3), B(3,3)
+  double precision drotj_dt(3,3), dv_dt(2,3), dw_dt(2,3)
 
   pi = 2*acos(0.0)
+  call eye(3,I)
+  iD = 1
   z = 0.0
   one = 1.0
   do j=1,nj
+     dt_dpos_jm1(:,:) = 0.0
+     dt_dpos_j(:,:) = 0.0
+     dt_dpos_jp1(:,:) = 0.0
      if (j .eq. 1) then
         t = pos(j+1,:) - pos(j,:)
+        dt_dpos_jp1(:,:) = I
+        dt_dpos_j(:,:) = -I
      else if (j .eq. nj) then
         t = pos(j,:) - pos(j-1,:)
+        dt_dpos_j(:,:) = I
+        dt_dpos_jm1(:,:) = -I
      else
-        t1 = pos(j,:) - pos(j-1,:)
-        t2 = pos(j+1,:) - pos(j,:)
-        t = t1/dot_product(t1,t1)**0.5 + t2/dot_product(t2,t2)**0.5
+        ta = pos(j,:) - pos(j-1,:)
+        tb = pos(j+1,:) - pos(j,:)
+        ra2 = dot_product(ta,ta)
+        rb2 = dot_product(tb,tb)
+        t = ta/ra2**0.5 + tb/rb2**0.5
+        call outer(3,ta,ta,A)
+        call outer(3,tb,tb,B)
+        dt_dpos_jm1(:,:) = -(ra2*I - A)/ra2**1.5
+        dt_dpos_j(:,:) = (ra2*I - A)/ra2**1.5 - (rb2*I - B)/rb2**1.5
+        dt_dpos_jp1(:,:) = (rb2*I - B)/rb2**1.5
      end if
      v = (/t(3),t(2)/)
-     call arc_tan(v, one, one, p)
-     v = (/(t(2)**2+t(3)**2)**0.5,t(1)/)
-     call arc_tan(v, one, one, q)
+     w = (/(t(2)**2+t(3)**2)**0.5,t(1)/)
+     call arctan2pi(v, p, dp_dv)
+     call arctan2pi(w, q, dq_dw)
      rot0(j,1) = p
      rot0(j,2) = q
-     rot0(j,3) = z
+     rot0(j,3) = 0.0
+     dv_dt(1,:) = (/ z, z, one /)
+     dv_dt(2,:) = (/ z, one, z /)
+     dw_dt(1,:) = (/ z, t(2)/(t(2)**2+t(3)**2)**0.5, t(3)/(t(2)**2+t(3)**2)**0.5 /)
+     dw_dt(2,:) = (/ one, z, z /)
+     drotj_dt(1,:) = matmul(dp_dv, dv_dt)
+     drotj_dt(2,:) = matmul(dq_dw, dw_dt)
+     drotj_dt(3,:) = 0.0
+     do k=1,3
+        do l=1,3
+           if (j .ne. 1) then
+              Da(iD) = dot_product(drotj_dt(k,:),dt_dpos_jm1(:,l))
+              Di(iD) = (k-1)*nj + j
+              Dj(iD) = (l-1)*nj + j-1
+              iD = iD + 1
+           end if
+           Da(iD) = dot_product(drotj_dt(k,:),dt_dpos_j(:,l))
+           Di(iD) = (k-1)*nj + j
+           Dj(iD) = (l-1)*nj + j
+           iD = iD + 1
+           if (j .ne. nj) then
+              Da(iD) = dot_product(drotj_dt(k,:),dt_dpos_jp1(:,l))
+              Di(iD) = (k-1)*nj + j
+              Dj(iD) = (l-1)*nj + j+1
+              iD = iD + 1
+           end if
+        end do
+     end do
   end do
+
+  Di(:) = Di(:) - 1
+  Dj(:) = Dj(:) - 1
 
 end subroutine computeWingRotations  
 

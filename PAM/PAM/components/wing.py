@@ -1,6 +1,6 @@
 from __future__ import division
 from PAM.components import Component, Property, airfoils
-import numpy, pylab, time
+import numpy, pylab, time, scipy.sparse
 import mpl_toolkits.mplot3d.axes3d as p3
 import PAM.PAMlib as PAMlib
 
@@ -71,9 +71,26 @@ class Wing(Component):
         nj = self.Qs[0].shape[1]
         v = self.variables
         for f in range(2):
-            rot0 = PAMlib.computewingrotations(nj, v['pos'])
+            rot0, Da, Di, Dj = PAMlib.computewingrotations(nj, 9*(nj*3-2), v['pos'])
+            drot0_dpos = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
+
+            h = 1e-5
+            for i in range(nj):
+                for j in range(3):
+                    v['pos'][i,j] += h
+                    rot, Da, Di, Dj = PAMlib.computewingrotations(nj, 9*(nj*3-2), v['pos'])
+                    v['pos'][i,j] -= h
+                    print (rot[:,0]-rot0[:,0]).flatten('F')/h
+                    print (rot[:,1]-rot0[:,1]).flatten('F')/h
+                    print (rot[:,2]-rot0[:,2]).flatten('F')/h
+                    print drot0_dpos[:nj,j*nj+i].todense()[:,0].flatten()
+                    print drot0_dpos[nj:2*nj,j*nj+i].todense()[:,0].flatten()
+                    print drot0_dpos[2*nj:3*nj,j*nj+i].todense()[:,0].flatten()
+                    print '-----------'
+
             rot = v['rot']*numpy.pi/180.0 + rot0*v['nor']
             self.Qs[f][:,:,:] = PAMlib.computewingsections(ni, nj, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:])
+        exit()
 
     def setAirfoil(self,filename):
         Ps = airfoils.fitAirfoil(self,filename)
@@ -104,7 +121,7 @@ if __name__ == '__main__':
         print dT_drot[:,:,k]
         print (T-T0)/h - dT_drot[:,:,k]
         print '------'
-    exit()
+    #exit()
 
     w = Wing(nx=2,nz=2)#,left=0)
     import PUBS
@@ -119,7 +136,8 @@ if __name__ == '__main__':
     for j in range(w.Qs[0].shape[1]):
         w.variables['shape'][0,:,j,0] = 1 - numpy.linspace(0,1,w.Qs[0].shape[0])
         w.variables['shape'][1,:,j,0] = numpy.linspace(0,1,w.Qs[0].shape[0])
-    #w.variables['pos'][:,1] = numpy.linspace(0,1,w.Qs[0].shape[1])
+    w.variables['pos'][:,0] = numpy.linspace(0,1,w.Qs[0].shape[1])
+    w.variables['pos'][:,1] = numpy.linspace(0,1,w.Qs[0].shape[1])
     #w.variables['rot'][:,2] = 20
     w.variables['nor'][:,:] = 1.0
     w.setAirfoil("naca0012.dat")
