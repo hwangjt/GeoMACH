@@ -8,11 +8,14 @@ class PUBSexport(object):
     def __init__(self, model):
         self.model = model
 
-    def write2Tec(self, filename):
+    def write2Tec(self, filename, names=[], data=[]):
         model = self.model
         f = open(filename+'.dat','w')
         f.write('title = "PUBSlib output"\n')
-        f.write('variables = "x", "y", "z"\n')
+        f.write('variables = "x", "y", "z"')
+        for i in range(len(data)):
+            f.write(', "' + names[i] + '"')
+        f.write('\n')
         for surf in range(model.nsurf):
             ugroup = model.edge_group[abs(model.surf_edge[surf,0,0])-1]
             vgroup = model.edge_group[abs(model.surf_edge[surf,1,0])-1]
@@ -22,7 +25,11 @@ class PUBSexport(object):
             P = PUBSlib.getsurfacep(surf+1, model.nP, nu, nv, model.nsurf, model.nedge, model.nvert, model.surf_vert, model.surf_edge, model.surf_index_P, model.edge_index_P, model.P)
             for v in range(nv):
                 for u in range(nu):
-                    f.write(str(P[u,v,0]) + ' ' + str(P[u,v,1]) + ' ' + str(P[u,v,2]) + '\n')
+                    f.write(str(P[u,v,0]) + ' ' + str(P[u,v,1]) + ' ' + str(P[u,v,2]))
+                    for i in range(len(data)):
+                        index = model.computeIndex(surf,u,v,0)
+                        f.write(' ' + str(data[i][index,0]))
+                    f.write('\n')
         f.close()
 
     def write2TecC(self, filename):

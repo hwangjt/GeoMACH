@@ -4,6 +4,8 @@ import numpy, pylab, time, scipy.sparse
 import mpl_toolkits.mplot3d.axes3d as p3
 import PAM.PAMlib as PAMlib
 
+import PUBS
+
 
 class Wing(Component):
     """ A component used to model lifting surfaces. """
@@ -70,27 +72,54 @@ class Wing(Component):
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
         v = self.variables
+        nQ = self.oml0.nQ
+        dQ_dv = scipy.sparse.csr_matrix((nQ*3,nj*(5+6*ni)))
         for f in range(2):
             rot0, Da, Di, Dj = PAMlib.computewingrotations(nj, 9*(nj*3-2), v['pos'])
             drot0_dpos = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
-
-            h = 1e-5
-            for i in range(nj):
-                for j in range(3):
-                    v['pos'][i,j] += h
-                    rot, Da, Di, Dj = PAMlib.computewingrotations(nj, 9*(nj*3-2), v['pos'])
-                    v['pos'][i,j] -= h
-                    print (rot[:,0]-rot0[:,0]).flatten('F')/h
-                    print (rot[:,1]-rot0[:,1]).flatten('F')/h
-                    print (rot[:,2]-rot0[:,2]).flatten('F')/h
-                    print drot0_dpos[:nj,j*nj+i].todense()[:,0].flatten()
-                    print drot0_dpos[nj:2*nj,j*nj+i].todense()[:,0].flatten()
-                    print drot0_dpos[2*nj:3*nj,j*nj+i].todense()[:,0].flatten()
-                    print '-----------'
-
             rot = v['rot']*numpy.pi/180.0 + rot0*v['nor']
-            self.Qs[f][:,:,:] = PAMlib.computewingsections(ni, nj, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:])
-        exit()
+            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computewingsections(f, ni, nj, ni*nj*24, nQ, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:], self.Ns[f][:,:,:])
+            dQ_dv = dQ_dv + scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nQ*3,nj*(5+6*ni)))
+
+        dPdc0 = self.oml0.JM.dot(dQ_dv[:nQ,4*nj+2])
+        dPdc1 = self.oml0.JM.dot(dQ_dv[nQ:2*nQ,4*nj+2])
+        dPdc2 = self.oml0.JM.dot(dQ_dv[2*nQ:,4*nj+2])
+        
+        self.updateQs()
+        self.oml0.computePoints()
+        export = PUBS.PUBSexport(self.oml0)
+        export.write2Tec('derTest',['chord0','chord1','chord2'],[dPdc0,dPdc1,dPdc2])
+            
+        if 1:
+            #k = 5
+            #k = nj+5
+            k = 4*nj+5
+            h = 1e-5
+            Q0 = numpy.zeros((nQ,3))
+            Q = numpy.zeros((nQ,3))
+            for f in range(2):
+                Qf, Da, Di, Dj = PAMlib.computewingsections(f, ni, nj, ni*nj*24, nQ, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:], self.Ns[f][:,:,:])
+                for i in range(ni):
+                    for j in range(nj):
+                        if self.Ns[f][i,j,0] != -1:
+                            Q0[self.Ns[f][i,j,0],:] = Qf[i,j,:]
+            #v['chord'][k] += h
+            #v['pos'][5,0] += h
+            rot[5,0] += h
+            for f in range(2):
+                Qf, Da, Di, Dj = PAMlib.computewingsections(f, ni, nj, ni*nj*24, nQ, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:], self.Ns[f][:,:,:])
+                for i in range(ni):
+                    for j in range(nj):
+                        if self.Ns[f][i,j,0] != -1:
+                            Q[self.Ns[f][i,j,0],:] = Qf[i,j,:]
+            #v['chord'][k] -= h
+            #v['pos'][5,0] -= h
+            rot[5,0] -= h
+            print (Q-Q0)[:,0]/h
+            print dQ_dv[:nQ,k].todense().T
+            print numpy.linalg.norm((Q-Q0)[:,0]/h - dQ_dv[:nQ,k].todense().T)
+            exit()
+                        
 
     def setAirfoil(self,filename):
         Ps = airfoils.fitAirfoil(self,filename)

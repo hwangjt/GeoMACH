@@ -12,7 +12,7 @@ subroutine updateQs(nQ, ni, nj, Nf, Qf, Q)
   !Input
   integer, intent(in) ::  nQ, ni, nj
   integer, intent(in) ::  Nf(ni, nj, 5)
-  complex*16, intent(in) ::  Qf(ni, nj, 3)
+  double precision, intent(in) ::  Qf(ni, nj, 3)
 
   !Output
   double precision, intent(inout) ::  Q(nQ,3)
@@ -24,7 +24,7 @@ subroutine updateQs(nQ, ni, nj, Nf, Qf, Q)
      do i=1,ni
         if (Nf(i,j,1) .ne. -1) then
            do k=1,3
-              Q(Nf(i,j,1)+1,k) = realpart(Qf(i,j,k))
+              Q(Nf(i,j,1)+1,k) = Qf(i,j,k)
            end do
         end if
      end do
