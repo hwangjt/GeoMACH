@@ -142,24 +142,23 @@ end subroutine computeWingRotations
 
 
 
-subroutine computeWingSections(f, ni, nj, nD, nQ, r, offset, chord, &
-     pos, rot, shape0, N, Q, Da, Di, Dj)
+subroutine computeWingSections(f, ni, nj, nD, r, offset, chord, &
+     pos, rot, shape0, Q, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) f, ni, nj, nD, nQ, r, offset, chord, pos, rot, shape0, N
+  !f2py intent(in) f, ni, nj, nD, r, offset, chord, pos, rot, shape0
   !f2py intent(out) Q, Da, Di, Dj
   !f2py depend(nj) chord, pos, rot
-  !f2py depend(ni,nj) shape0, N, Q
+  !f2py depend(ni,nj) shape0, Q
   !f2py depend(nD) Da, Di, Dj
 
   !Input
-  integer, intent(in) ::  f, ni, nj, nD, nQ
+  integer, intent(in) ::  f, ni, nj, nD
   double precision, intent(in) ::  r(3), offset(3)
   double precision, intent(in) ::  chord(nj), pos(nj,3), rot(nj,3)
   double precision, intent(in) ::  shape0(ni,nj,3)
-  integer, intent(in) ::  N(ni,nj,5)
 
   !Output
   double precision, intent(out) ::  Q(ni,nj,3), Da(nD)
@@ -180,39 +179,30 @@ subroutine computeWingSections(f, ni, nj, nD, nQ, r, offset, chord, &
   do j=1,nj
      call computeRtnMtx(rot(j,:), T, dT_drot)
      do i=1,ni
-        if (N(i,j,1) .ne. -1) then
-           do k=1,3
-              Da(iD) = dot_product(T(k,:),shape0(i,j,:)-r) + r(k)
-              Di(iD) = N(i,j,1) + nQ*(k-1) + 1
-              Dj(iD) = j
+        do k=1,3
+           Da(iD) = dot_product(T(k,:),shape0(i,j,:)-r) + r(k)
+           Di(iD) = ni*nj*(k-1) + ni*(j-1) + i
+           Dj(iD) = j
+           iD = iD + 1
+           Da(iD) = 1.0
+           Di(iD) = ni*nj*(k-1) + ni*(j-1) + i
+           Dj(iD) = nj + nj*(k-1) + j
+           iD = iD + 1
+           do l=1,3
+              Da(iD) = dot_product(dT_drot(k,:,l),shape0(i,j,:)-r)*chord(j)
+              Di(iD) = ni*nj*(k-1) + ni*(j-1) + i
+              Dj(iD) = 4*nj + nj*(l-1) + j
               iD = iD + 1
-              Da(iD) = 1.0
-              Di(iD) = N(i,j,1) + nQ*(k-1) + 1
-              Dj(iD) = nj + nj*(k-1) + j
-              iD = iD + 1
-              do l=1,3
-                 Da(iD) = dot_product(dT_drot(k,:,l),shape0(i,j,:)-r)*chord(j)
-                 Di(iD) = N(i,j,1) + nQ*(k-1) + 1
-                 Dj(iD) = 4*nj + nj*(l-1) + j
-                 iD = iD + 1
-                 Da(iD) = T(k,l)*chord(j)
-                 Di(iD) = N(i,j,1) + nQ*(k-1) + 1
-                 Dj(iD) = 5*nj + f*3*ni*nj + ni*nj*(l-1) + ni*(j-1) + i
-                 iD = iD + 1
-              end do
-           end do
-           if ((i .eq. 1) .and. (f .eq. 0)) then
-              Da(iD-25:iD-1) = Da(iD-25:iD-1)/2.0
-           else if ((i .eq. ni) .and. (f .eq. 1)) then
-              Da(iD-25:iD-1) = Da(iD-25:iD-1)/2.0
-           end if
-        else
-           do k=1,24
-              Da(iD) = 0.0
-              Di(iD) = 1
-              Dj(iD) = 1
+              Da(iD) = T(k,l)*chord(j)
+              Di(iD) = ni*nj*(k-1) + ni*(j-1) + i
+              Dj(iD) = 5*nj + f*3*ni*nj + ni*nj*(l-1) + ni*(j-1) + i
               iD = iD + 1
            end do
+        end do
+        if ((i .eq. 1) .and. (f .eq. 0)) then
+           Da(iD-24:iD-1) = Da(iD-24:iD-1)/2.0
+        else if ((i .eq. ni) .and. (f .eq. 1)) then
+           Da(iD-24:iD-1) = Da(iD-24:iD-1)/2.0
         end if
      end do
   end do

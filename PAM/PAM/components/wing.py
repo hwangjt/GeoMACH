@@ -73,53 +73,13 @@ class Wing(Component):
         nj = self.Qs[0].shape[1]
         v = self.variables
         nQ = self.oml0.nQ
-        dQ_dv = scipy.sparse.csr_matrix((nQ*3,nj*(5+6*ni)))
+        self.dQs_dv = []
         for f in range(2):
             rot0, Da, Di, Dj = PAMlib.computewingrotations(nj, 9*(nj*3-2), v['pos'])
             drot0_dpos = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
             rot = v['rot']*numpy.pi/180.0 + rot0*v['nor']
-            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computewingsections(f, ni, nj, ni*nj*24, nQ, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:], self.Ns[f][:,:,:])
-            dQ_dv = dQ_dv + scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nQ*3,nj*(5+6*ni)))
-
-        dPdc0 = self.oml0.JM.dot(dQ_dv[:nQ,4*nj+2])
-        dPdc1 = self.oml0.JM.dot(dQ_dv[nQ:2*nQ,4*nj+2])
-        dPdc2 = self.oml0.JM.dot(dQ_dv[2*nQ:,4*nj+2])
-        
-        self.updateQs()
-        self.oml0.computePoints()
-        export = PUBS.PUBSexport(self.oml0)
-        export.write2Tec('derTest',['chord0','chord1','chord2'],[dPdc0,dPdc1,dPdc2])
-            
-        if 1:
-            #k = 5
-            #k = nj+5
-            k = 4*nj+5
-            h = 1e-5
-            Q0 = numpy.zeros((nQ,3))
-            Q = numpy.zeros((nQ,3))
-            for f in range(2):
-                Qf, Da, Di, Dj = PAMlib.computewingsections(f, ni, nj, ni*nj*24, nQ, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:], self.Ns[f][:,:,:])
-                for i in range(ni):
-                    for j in range(nj):
-                        if self.Ns[f][i,j,0] != -1:
-                            Q0[self.Ns[f][i,j,0],:] = Qf[i,j,:]
-            #v['chord'][k] += h
-            #v['pos'][5,0] += h
-            rot[5,0] += h
-            for f in range(2):
-                Qf, Da, Di, Dj = PAMlib.computewingsections(f, ni, nj, ni*nj*24, nQ, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:], self.Ns[f][:,:,:])
-                for i in range(ni):
-                    for j in range(nj):
-                        if self.Ns[f][i,j,0] != -1:
-                            Q[self.Ns[f][i,j,0],:] = Qf[i,j,:]
-            #v['chord'][k] -= h
-            #v['pos'][5,0] -= h
-            rot[5,0] -= h
-            print (Q-Q0)[:,0]/h
-            print dQ_dv[:nQ,k].todense().T
-            print numpy.linalg.norm((Q-Q0)[:,0]/h - dQ_dv[:nQ,k].todense().T)
-            exit()
-                        
+            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computewingsections(f, ni, nj, ni*nj*24, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:])
+            self.dQs_dv.append(scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nj*(5+6*ni))))
 
     def setAirfoil(self,filename):
         Ps = airfoils.fitAirfoil(self,filename)
@@ -129,29 +89,6 @@ class Wing(Component):
 
 
 if __name__ == '__main__':
-    h = 1e-5
-    P = numpy.array([0.1,0.2])
-    t0,dt_dP = PAMlib.arctan2pi(P)
-    for k in range(2):
-        P[k] += h
-        t,dt_dP0 = PAMlib.arctan2pi(P)
-        P[k] -= h
-        print (t-t0)/h
-        print dt_dP[k]
-        print '-------'
-
-    rot = numpy.array([0.1,0.2,0.3])
-    T0,dT_drot = PAMlib.computertnmtx(rot)
-    for k in range(3):
-        rot[k] += h
-        T,dT_drot0 = PAMlib.computertnmtx(rot)
-        rot[k] -= h
-        print (T-T0)/h
-        print dT_drot[:,:,k]
-        print (T-T0)/h - dT_drot[:,:,k]
-        print '------'
-    #exit()
-
     w = Wing(nx=2,nz=2)#,left=0)
     import PUBS
     from mayavi import mlab
