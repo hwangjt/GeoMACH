@@ -1,6 +1,6 @@
 from __future__ import division
 from layout import Layout
-import numpy, pylab, time
+import numpy, pylab, time, copy
 import scipy.sparse
 import PAM.PAMlib as PAMlib
 import mpl_toolkits.mplot3d.axes3d as p3
@@ -15,12 +15,12 @@ class Component(object):
         self.oml0 = []
         self.faces = []
         
-    def addFace(self, du, dv, d, x0, x1, z0, z1):
+    def addFace(self, du, dv, d, ru=0.4, rv=0.4):
         """ Creates a set of rectangular surfaces, their IDs, and face dims.
         nu,nv: number of surfaces in the u and v directions
         du,dv: {1,2,3} maps to {x,y,z}; negative sign means reverse order
         d: position of the surfaces in the remaining coordinate axis
-        x0,x1,z0,z1: set y to zero if x or z is 0 or 1, respectively
+        ru,rv: surfaces span -ru to +ru in u dir. and -rv to +rv in v dir.
 
         Adds to self.Ps and self.Ks
         """
@@ -33,11 +33,11 @@ class Component(object):
         Ks = self.Ks
         for j in range(nv):
             for i in range(nu):
-                u1 = i/nu
-                u2 = (i+1)/nu
-                v1 = j/nv
-                v2 = (j+1)/nv
-                P = PAMlib.createsurfaces(n,du,dv,x0,x1,z0,z1,d,u1,u2,v1,v2)
+                u1 = ru*(-1+2*i/nu)
+                u2 = ru*(-1+2*(i+1)/nu)
+                v1 = rv*(-1+2*j/nv)
+                v2 = rv*(-1+2*(j+1)/nv)
+                P = PAMlib.createsurfaces(n,du,dv,d,u1,u2,v1,v2)
                 Ps.append(P)  
 
         K = numpy.zeros((nu,nv),int)
@@ -49,6 +49,33 @@ class Component(object):
                 K[i,j] = counter
                 counter += 1
         Ks.append(K)
+
+    def connectEdges(self, f1=0, u1=None, v1=None, f2=0, u2=None, v2=None):
+        def edge(f, u, v, kk, P0=None):
+            Ks = self.Ks
+            Ps = self.Ps
+            d = 0 if u==None else 1
+            r = self.faces[f][d]
+            k = kk if r > 0 else -1-kk
+            surf = Ks[f][k,v] if d==0 else Ks[f][u,k]
+            if not (P0==None):
+                if d == 0:
+                    if r > 0:
+                        Ps[surf][:,v] = P0
+                    else:
+                        Ps[surf][::-1,v] = P0
+                else:
+                    if r > 0:
+                        Ps[surf][u,:] = P0
+                    else:
+                        Ps[surf][u,::-1] = P0
+            P = Ps[surf][:,v] if d==0 else Ps[surf][u,:]
+            return P[::-1] if r==-1 else P                
+            
+        for k in range(self.Ks[f1].shape[v1==None]):
+            avg = 0.5*edge(f1,u1,v1,k) + 0.5*edge(f2,u2,v2,k)
+            edge(f1,u1,v1,k,P0=avg)
+            edge(f2,u2,v2,k,P0=avg)  
 
     def setC1(self, t, f, i=None, j=None, u=None, v=None, d=None, val=True):
         """ Set C1 continuity 

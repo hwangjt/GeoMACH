@@ -6,8 +6,32 @@ import mpl_toolkits.mplot3d.axes3d as p3
 
 
 class Body(Component):
+    """ A component used to model blunt bodies. """
 
     def __init__(self, nx, ny, nz, full=False):
+        """ Initialization method
+        nx: integer
+            Number of surfaces in x direction
+        ny: integer
+            Number of surfaces in y direction
+        nz: integer
+            Number of surfaces in z direction
+        left, right: integer
+            The v[0] and v[-1] sections of the wing
+            0: open tip, C0
+            1: open tip, C1
+            2: closed tip
+        """ 
+
+        super(Wing,self).__init__() 
+
+        self.ms = []
+        self.ms.append(numpy.zeros(nx,int))
+        self.ms.append(numpy.zeros(ny,int))
+        self.ms.append(numpy.zeros(nz,int))
+
+        self.addFace(-1, 3, 1, 1, 1, left==2, right==2)
+
         if full:
             self.faces = numpy.zeros((6,2),int)
         else:
