@@ -15,7 +15,7 @@ class Component(object):
         self.oml0 = []
         self.faces = []
         
-    def addFace(self, du, dv, d, ru=0.4, rv=0.4):
+    def addFace(self, du, dv, d, ru=0.5, rv=0.5):
         """ Creates a set of rectangular surfaces, their IDs, and face dims.
         nu,nv: number of surfaces in the u and v directions
         du,dv: {1,2,3} maps to {x,y,z}; negative sign means reverse order
@@ -33,10 +33,18 @@ class Component(object):
         Ks = self.Ks
         for j in range(nv):
             for i in range(nu):
-                u1 = ru*(-1+2*i/nu)
-                u2 = ru*(-1+2*(i+1)/nu)
-                v1 = rv*(-1+2*j/nv)
-                v2 = rv*(-1+2*(j+1)/nv)
+                if du > 0:
+                    u1 = ru*(-1+2*i/nu)
+                    u2 = ru*(-1+2*(i+1)/nu)
+                else:
+                    u1 = ru*(1-2*i/nu)
+                    u2 = ru*(1-2*(i+1)/nu)
+                if dv > 0:
+                    v1 = rv*(-1+2*j/nv)
+                    v2 = rv*(-1+2*(j+1)/nv)
+                else:
+                    v1 = rv*(1-2*j/nv)
+                    v2 = rv*(1-2*(j+1)/nv)
                 P = PAMlib.createsurfaces(n,du,dv,d,u1,u2,v1,v2)
                 Ps.append(P)  
 

@@ -33,13 +33,6 @@ subroutine createSurfaces(n, du, dv, d, u1, u2, v1, v2, P)
      end do
   end do
 
-  if (du .lt. 0) then
-     P(:,:,abs(du)) = 1 - P(:,:,abs(du))
-  end if
-  if (dv .lt. 0) then
-     P(:,:,abs(dv)) = 1 - P(:,:,abs(dv))
-  end if
-
 end subroutine createSurfaces
 
 
