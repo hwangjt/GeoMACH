@@ -71,8 +71,9 @@ class Wing(Component):
             'nor':zeros((nj,3),order='F'),
             'shape':zeros((2,ni,nj,3),order='F')
             }
+        self.setAirfoil()
 
-    def setAirfoil(self,filename):
+    def setAirfoil(self,filename="naca0012"):
         Ps = airfoils.fitAirfoil(self,filename)
         for f in range(len(self.Ks)):
             for j in range(self.Ns[f].shape[1]):
@@ -83,14 +84,15 @@ class Wing(Component):
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
         v = self.variables
-        nQ = self.oml0.nQ
-        self.dQs_dv = []
+
+        rot0, Da, Di, Dj = PAMlib.computerotations(nj, 9*(nj*3-2), v['pos'])
+        drot0_dpos = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
+        rot = v['rot']*numpy.pi/180.0 + rot0*v['nor']
+
+        self.dQs_dv = range(2)
         for f in range(2):
-            rot0, Da, Di, Dj = PAMlib.computewingrotations(nj, 9*(nj*3-2), v['pos'])
-            drot0_dpos = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
-            rot = v['rot']*numpy.pi/180.0 + rot0*v['nor']
-            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computewingsections(f, ni, nj, ni*nj*24, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:])
-            self.dQs_dv.append(scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nj*(5+6*ni))))
+            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(f, ni, nj, ni*nj*24, f*3*ni*nj, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:])
+            self.dQs_dv[f] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nj*(7+6*ni)))
 
 
 if __name__ == '__main__':

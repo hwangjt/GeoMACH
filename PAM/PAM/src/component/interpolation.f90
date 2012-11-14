@@ -1,3 +1,64 @@
+subroutine quad2Dcurve(k, P1, P2, n1, n2, B)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) k, P1, P2, n1, n2
+  !f2py intent(out) B
+
+  !Input
+  integer, intent(in) ::  k
+  double precision, intent(in) ::  P1(3), P2(3), n1(3), n2(3)
+
+  !Output
+  double precision, intent(out) ::  B(3)
+
+  !Working
+  integer i, j
+  double precision det, R1, R2
+
+  i = k + 1
+  j = k + 2
+  if (i .gt. 3) then
+     i = i - 3
+  end if
+  if (j .gt. 3) then
+     j = j - 3
+  end if
+
+  call cross_ij(i,j,n1,n2,det)
+  call cross_ij(i,j,P1,n1,R1)
+  call cross_ij(i,j,P2,n2,R2)
+
+  if (abs(det) .gt. 1e-14) then
+     B(i) = (-n2(i)*R1 + n1(i)*R2)/det
+     B(j) = (-n2(j)*R1 + n1(j)*R2)/det
+     B(k) = 0.5*P1(k) + 0.5*P2(k)
+  else
+     B(:) = 0.0
+  end if
+
+end subroutine quad2Dcurve
+
+
+
+subroutine cross_ij(i, j, u, v, res)
+  
+  implicit none
+
+  !Input
+  integer, intent(in) ::  i, j
+  double precision, intent(in) ::  u(3), v(3)
+
+  !Output
+  double precision, intent(out) ::  res
+
+  res = u(i)*v(j) - u(j)*v(i)
+
+end subroutine cross_ij
+
+
+
 subroutine bezierCurve(n, A, B, S, T, P)
 
   implicit none

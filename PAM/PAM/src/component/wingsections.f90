@@ -44,7 +44,7 @@ end subroutine outer
 
 
 
-subroutine computeWingRotations(nj, nD, pos, rot0, Da, Di, Dj)
+subroutine computeRotations(nj, nD, pos, rot0, Da, Di, Dj)
 
   implicit none
 
@@ -138,24 +138,24 @@ subroutine computeWingRotations(nj, nD, pos, rot0, Da, Di, Dj)
   Di(:) = Di(:) - 1
   Dj(:) = Dj(:) - 1
 
-end subroutine computeWingRotations
+end subroutine computeRotations
 
 
 
-subroutine computeWingSections(f, ni, nj, nD, r, offset, chord, &
+subroutine computeSections(f, ni, nj, nD, ishape, r, offset, chord, &
      pos, rot, shape0, Q, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) f, ni, nj, nD, r, offset, chord, pos, rot, shape0
+  !f2py intent(in) f, ni, nj, nD, ishape, r, offset, chord, pos, rot, shape0
   !f2py intent(out) Q, Da, Di, Dj
   !f2py depend(nj) chord, pos, rot
   !f2py depend(ni,nj) shape0, Q
   !f2py depend(nD) Da, Di, Dj
 
   !Input
-  integer, intent(in) ::  f, ni, nj, nD
+  integer, intent(in) ::  f, ni, nj, nD, ishape
   double precision, intent(in) ::  r(3), offset(3)
   double precision, intent(in) ::  chord(nj), pos(nj,3), rot(nj,3)
   double precision, intent(in) ::  shape0(ni,nj,3)
@@ -165,37 +165,32 @@ subroutine computeWingSections(f, ni, nj, nD, r, offset, chord, &
   integer, intent(out) ::  Di(nD), Dj(nD)
 
   !Working
-  integer i, j, k, l, iD
+  integer i, j, k, l, iD, index
   double precision T(3,3), dT_drot(3,3,3)
-
-  do j=1,nj
-     call computeRtnMtx(rot(j,:), T, dT_drot)
-     do i=1,ni
-        Q(i,j,:) = (matmul(T,shape0(i,j,:)-r) + r)*chord(j) + pos(j,:) + offset
-     end do
-  end do
 
   iD = 1
   do j=1,nj
      call computeRtnMtx(rot(j,:), T, dT_drot)
      do i=1,ni
+        Q(i,j,:) = (matmul(T,shape0(i,j,:)-r) + r)*chord(j) + pos(j,:) + offset
         do k=1,3
+           index = ni*nj*(k-1) + ni*(j-1) + i
            Da(iD) = dot_product(T(k,:),shape0(i,j,:)-r) + r(k)
-           Di(iD) = ni*nj*(k-1) + ni*(j-1) + i
+           Di(iD) = index
            Dj(iD) = j
            iD = iD + 1
            Da(iD) = 1.0
-           Di(iD) = ni*nj*(k-1) + ni*(j-1) + i
+           Di(iD) = index
            Dj(iD) = nj + nj*(k-1) + j
            iD = iD + 1
            do l=1,3
               Da(iD) = dot_product(dT_drot(k,:,l),shape0(i,j,:)-r)*chord(j)
-              Di(iD) = ni*nj*(k-1) + ni*(j-1) + i
+              Di(iD) = index
               Dj(iD) = 4*nj + nj*(l-1) + j
               iD = iD + 1
               Da(iD) = T(k,l)*chord(j)
-              Di(iD) = ni*nj*(k-1) + ni*(j-1) + i
-              Dj(iD) = 5*nj + f*3*ni*nj + ni*nj*(l-1) + ni*(j-1) + i
+              Di(iD) = index
+              Dj(iD) = 7*nj + ishape + ni*nj*(l-1) + ni*(j-1) + i
               iD = iD + 1
            end do
         end do
@@ -210,7 +205,7 @@ subroutine computeWingSections(f, ni, nj, nD, r, offset, chord, &
   Di(:) = Di(:) - 1
   Dj(:) = Dj(:) - 1
 
-end subroutine computeWingSections
+end subroutine computeSections
 
 
 

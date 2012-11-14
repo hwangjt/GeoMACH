@@ -1,3 +1,135 @@
+subroutine computeShape(ni, nj, t1, t2, radii, fillet, shape0, Q)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) ni, nj, t1, t2, radii, fillet, shape0
+  !f2py intent(out) Q
+  !f2py depend(nj) radii, fillet
+  !f2py depend(ni,nj) shape0, Q
+
+  !Input
+  integer, intent(in) ::  ni, nj
+  double precision, intent(in) ::  t1, t2
+  double precision, intent(in) ::  radii(nj,3), fillet(nj,4)
+  double precision, intent(in) ::  shape0(ni,nj)
+
+  !Output
+  double precision, intent(out) ::  Q(ni,nj,3)
+
+  !Working
+  integer i, j
+  double precision pi, ta1, tb1, ta2, tb2, t, tt, val, rx, ry
+  double precision z, x, y, x1, y1, x2, y2, sx1, sy1, sx2, sy2, nx, ny, norm
+
+  pi = 2*acos(0.0)
+  tt = (t2 - t1)/(ni - 1)
+  z = 0.0
+
+  Q(:,:,:) = 0.0
+  do j=1,nj
+     rx = radii(j,1)
+     ry = radii(j,2)
+
+     ta1 = fillet(j,1)/2.0
+     tb1 = fillet(j,2)/2.0
+     ta2 = fillet(j,3)/2.0
+     tb2 = fillet(j,4)/2.0
+
+     x1 = ry*tan((0.5-tb1)*pi)
+     y1 = rx*tan(ta1*pi)     
+     x2 = ry*tan((0.5-tb2)*pi)
+     y2 = rx*tan(ta2*pi)
+
+     sx1 = rx - x1
+     sy1 = ry - y1
+     sx2 = rx - x2
+     sy2 = ry - y2
+
+     do i=1,ni
+        t = t1 + (i-1)*tt
+        if (t .lt. 0) then
+           t = t + 2.0
+        end if
+        if (t .le. ta1) then
+           x = rx
+           y = rx*tan(t*pi)
+           nx = 1.0
+           ny = 0.0
+        else if (t .le. tb1) then
+           call nMap(t, ta1, tb1, val)
+           t = val/2.0
+           x = x1 + sx1*cos(t*pi)
+           y = y1 + sy1*sin(t*pi)
+           nx = sy1*cos(t*pi)
+           ny = sx1*sin(t*pi)
+        else if (t .le. 1-tb1) then
+           x = ry*tan((0.5-t)*pi)
+           y = ry
+           nx = 0.0
+           ny = 1.0
+        else if (t .le. 1-ta1) then
+           call nMap(t, 1-tb1, 1-ta1, val)
+           t = val/2.0 + 0.5
+           x = -x1 + sx1*cos(t*pi)
+           y =  y1 + sy1*sin(t*pi)
+           nx = sy1*cos(t*pi)
+           ny = sx1*sin(t*pi)
+        else if (t .le. 1+ta2) then
+           x = -rx
+           y = rx*tan((1-t)*pi)
+           nx = -1.0
+           ny =  0.0
+        else if (t .le. 1+tb2) then
+           call nMap(t, 1+ta2, 1+tb2, val)
+           t = val/2.0 + 1.0
+           x = -x2 + sx2*cos(t*pi)
+           y = -y2 + sy2*sin(t*pi)
+           nx = sy2*cos(t*pi)
+           ny = sx2*sin(t*pi)
+        else if (t .le. 2-tb2) then
+           x = -ry*tan((1.5-t)*pi)
+           y = -ry
+           nx =  0.0
+           ny = -1.0
+        else if (t .le. 2-ta2) then
+           call nMap(t, 2-tb2, 2-ta2, val)
+           t = val/2.0 + 1.5
+           x =  x2 + sx2*cos(t*pi)
+           y = -y2 + sy2*sin(t*pi)
+           nx = sy2*cos(t*pi)
+           ny = sx2*sin(t*pi)
+        else
+           x = rx
+           y = rx*tan(t*pi)  
+           nx = 1.0
+           ny = 0.0
+        end if
+        norm = (nx**2 + ny**2)**0.5
+        Q(i,j,1) = x + nx/norm*shape0(i,j)
+        Q(i,j,2) = y + ny/norm*shape0(i,j)
+     end do
+  end do
+     
+end subroutine computeShape
+
+
+
+subroutine nMap(t, t1, t2, val)
+  
+  !Input
+  double precision, intent(in) ::  t, t1, t2
+
+  !Output
+  double precision, intent(out) ::  val
+
+  val = (t - t1)/(t2 - t1)
+
+end subroutine nMap
+
+
+
+
 subroutine computeCone(full, ni, nj, L, y0, y1, y2, ry1, ry2, rz1, rz2, dx, Q)
 
   implicit none
@@ -366,17 +498,3 @@ subroutine computeRoundedSection(n, rz, ry, ta1, tb1, ta2, tb2, t1, t2, z, y)
   end do
 
 end subroutine computeRoundedSection
-
-
-
-subroutine nMap(t, t1, t2, val)
-  
-  !Input
-  double precision, intent(in) ::  t, t1, t2
-
-  !Output
-  double precision, intent(out) ::  val
-
-  val = (t - t1)/(t2 - t1)
-
-end subroutine nMap
