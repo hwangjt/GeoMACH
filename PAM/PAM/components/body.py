@@ -102,8 +102,8 @@ class Body(Component):
         v = self.variables
         b = self.bottom==2
 
-        Ns = self.Ns
-        Qs = self.Qs
+        v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
+        v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
 
         rot0, Da, Di, Dj = PAMlib.computerotations(nx, 9*(nx*3-2), v['pos'])
         drot0_dpos = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nx*3,nx*3))
@@ -125,41 +125,29 @@ class Body(Component):
         self.Qs[4][:,:,:], Da, Di, Dj = PAMlib.computesections(-1, ny, nx, nx*ny*24, 3*nx*(ny+nz), r, v['offset'], chord, v['pos'], rot, shapeL)
         self.dQs_dv[4] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*nx*ny,nx*(9+6*ny+6*nz)))
 
-        if b:
+        if self.bottom==2:
             self.Qs[5][:,:,:], Da, Di, Dj = PAMlib.computesections(-1, nz, nx, nx*nz*24, 3*nx*(2*ny+nz), r, v['offset'], chord, v['pos'], rot, shapeB)
             self.dQs_dv[5] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*nx*nz,nx*(9+6*ny+6*nz)))
 
-        #Qs[f][:,:,:] = PAMlib.computecone(self.bottom, ny, nz, L, p['posy'].data[i0], p['posy'].data[i1], p['posy'].data[i2], p['ry'].data[i1], p['ry'].data[i2], p['rz'].data[i1], p['rz'].data[i2], dx)
-        
+        if self.bottom==2:
+            nu = int(numpy.ceil(ny/2.0))
+            nv = int(numpy.ceil(nz/2.0))
+        else:
+            nu = ny
+            nv = int(numpy.ceil(nz/2.0))
+        r = numpy.array([0.0,0.0,0.0])
+        dx = numpy.linalg.norm(v['pos'][2,:]-v['pos'][1,:])
+        Q = PAMlib.computecone1(True, self.bottom==2, nu, nv, nz, ny, -v['noseL'], dx, shapeR[:,1:3,:], shapeT[:,1:3,:], shapeL[:,1:3,:], shapeB[:,1:3,:])
+        self.Qs[0][:,:,:], dQ_drot = PAMlib.computecone2(ny, nz, 3*ny*nz, r, v['offset'], v['pos'][1,:], rot[1,:], Q)
 
-        for f in []:#range(len(Ns)):
-            if f==0 or f==4:
-                if f==0:
-                    L = self.props['noseL']
-                    i0 = 0
-                    i1 = 1
-                    i2 = 2
-                else:
-                    L = self.props['tailL']
-                    i0 = -1
-                    i1 = -2
-                    i2 = -3
-                p = self.props
-                dx = abs(self.props['posx'].data[i2] - self.props['posx'].data[i1])  
-                Qs[f][:,:,:] = PAMlib.computecone(self.full, Ns[f].shape[0], Ns[f].shape[1], L, p['posy'].data[i0], p['posy'].data[i1], p['posy'].data[i2], p['ry'].data[i1], p['ry'].data[i2], p['rz'].data[i1], p['rz'].data[i2], dx)
-                if f==4:
-                    Qs[f][:,:,0] *= -1
-                    Qs[f][:,:,0] += self.props['noseL']
-                    Qs[f][:,:,0] += self.props['posx'].data[-2] - self.props['posx'].data[1]
-                    Qs[f][:,:,0] += self.props['tailL']
-                    Qs[f][:,:,:] = Qs[f][:,::-1,:]
-                Qs[f][:,:,0] += self.offset[0]
-                Qs[f][:,:,1] += self.offset[1]
-                Qs[f][:,:,2] += self.offset[2]
+        dx = numpy.linalg.norm(v['pos'][-3,:]-v['pos'][-2,:])
+        Q = PAMlib.computecone1(False, self.bottom==2, nu, nv, nz, ny, v['tailL'], dx, shapeR[:,-3:-1,:], shapeT[:,-3:-1,:], shapeL[:,-3:-1,:], shapeB[:,-3:-1,:])
+        self.Qs[1][:,:,:], dQ_drot = PAMlib.computecone2(ny, nz, 3*ny*nz, r, v['offset'], v['pos'][-2,:], rot[-2,:], Q)
+
 
 if __name__ == '__main__':
     #b = Body(nx=2,ny=2,nz=2,bottom=0)
-    b = Body(nx=4,ny=2,nz=2,bottom=2)
+    b = Body(nx=4,ny=4,nz=4,bottom=0)
     import PUBS
     from mayavi import mlab
     b.oml0 = PUBS.PUBS(b.Ps)
@@ -171,6 +159,10 @@ if __name__ == '__main__':
     b.variables['pos'][:,0] = numpy.linspace(0,1,b.Qs[2].shape[1])
     #b.variables['shapeL'][:,:] = 0.5
     #b.variables['shapeR'][:,:] = 0.5
+    b.variables['fillet'][:,0] = 0.6
+    b.variables['fillet'][:,1] = 0.8
+    b.variables['noseL'] = 0.5
+    b.variables['tailL'] = 0.5
     b.propagateQs()
     b.updateQs()
     b.oml0.computePoints()

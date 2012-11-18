@@ -1,21 +1,22 @@
-subroutine quad2Dcurve(k, P1, P2, n1, n2, B)
+subroutine quad2Dcurve(k, n, P1, P2, n1, n2, P)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) k, P1, P2, n1, n2
-  !f2py intent(out) B
+  !f2py intent(in) k, n, P1, P2, n1, n2
+  !f2py intent(out) P
+  !f2py depend(n) P
 
   !Input
-  integer, intent(in) ::  k
+  integer, intent(in) ::  k, n
   double precision, intent(in) ::  P1(3), P2(3), n1(3), n2(3)
 
   !Output
-  double precision, intent(out) ::  B(3)
+  double precision, intent(out) ::  P(n,3)
 
   !Working
-  integer i, j
-  double precision det, R1, R2
+  integer i, j, iP
+  double precision det, R1, R2, B(3), t, den
 
   i = k + 1
   j = k + 2
@@ -37,6 +38,12 @@ subroutine quad2Dcurve(k, P1, P2, n1, n2, B)
   else
      B(:) = 0.0
   end if
+
+  den = 1.0/(n-1)
+  do iP=1,n
+     t = (iP-1)*den
+     P(iP,:) = (1-t)**2*P1 + 2*t*(1-t)*B + t**2*P2
+  end do
 
 end subroutine quad2Dcurve
 

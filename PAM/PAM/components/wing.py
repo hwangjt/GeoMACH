@@ -85,6 +85,10 @@ class Wing(Component):
         nj = self.Qs[0].shape[1]
         v = self.variables
 
+        if self.left==2:
+            v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
+        if self.right==2:
+            v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
         rot0, Da, Di, Dj = PAMlib.computerotations(nj, 9*(nj*3-2), v['pos'])
         drot0_dpos = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
         rot = v['rot']*numpy.pi/180.0 + rot0*v['nor']
