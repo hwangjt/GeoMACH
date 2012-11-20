@@ -156,11 +156,11 @@ if __name__ == '__main__':
     b.computems()
     b.initializeDOFmappings()
     b.initializeVariables()
-    b.variables['pos'][:,0] = numpy.linspace(0,1,b.Qs[2].shape[1])
+    b.variables['pos'][:,0] = numpy.linspace(0,4,b.Qs[2].shape[1])
     #b.variables['shapeL'][:,:] = 0.5
     #b.variables['shapeR'][:,:] = 0.5
-    b.variables['fillet'][:,0] = 0.6
-    b.variables['fillet'][:,1] = 0.8
+    b.variables['fillet'][:,0] = 0.4
+    b.variables['fillet'][:,1] = 0.6
     b.variables['noseL'] = 0.5
     b.variables['tailL'] = 0.5
     b.propagateQs()

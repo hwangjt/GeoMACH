@@ -41,7 +41,10 @@ subroutine getShapeHole(n, n0, n1, n2, u0, v0)
   !Working
   integer index, i,j
   double precision x0(n0), y0(n0), x1(n1), y1(n1)
-  double precision rz, ry, ta, tb, t1, t2
+  double precision rz, ry, ta, tb, t1, t2, shape0(n0), shape1(n1)
+
+  shape0(:) = 0.0
+  shape1(:) = 0.0
 
   rz = 0.25
   ry = 0.25
@@ -56,7 +59,7 @@ subroutine getShapeHole(n, n0, n1, n2, u0, v0)
 
   t1 = -0.25
   t2 = 0.25
-  call computeRoundedSection(n1, rz, ry, ta, tb, ta, tb, t1, t2, x1, y1)
+  call computeRoundedSection(n1, rz, ry, ta, tb, ta, tb, t1, t2, shape1, x1, y1)
   x1(:) = x1(:) + 0.5
   y1(:) = y1(:) + 0.5
   do j=1,n2
@@ -69,7 +72,7 @@ subroutine getShapeHole(n, n0, n1, n2, u0, v0)
 
   t1 = 0.25
   t2 = 0.75
-  call computeRoundedSection(n0, rz, ry, ta, tb, ta, tb, t1, t2, x0, y0)
+  call computeRoundedSection(n0, rz, ry, ta, tb, ta, tb, t1, t2, shape0, x0, y0)
   x0(:) = x0(:) + 0.5
   y0(:) = y0(:) + 0.5
   do j=1,n2
@@ -82,7 +85,7 @@ subroutine getShapeHole(n, n0, n1, n2, u0, v0)
 
   t1 = 0.75
   t2 = 1.25
-  call computeRoundedSection(n1, rz, ry, ta, tb, ta, tb, t1, t2, x1, y1)
+  call computeRoundedSection(n1, rz, ry, ta, tb, ta, tb, t1, t2, shape1, x1, y1)
   x1(:) = x1(:) + 0.5
   y1(:) = y1(:) + 0.5
   do j=1,n2
@@ -95,7 +98,7 @@ subroutine getShapeHole(n, n0, n1, n2, u0, v0)
 
   t1 = 1.25
   t2 = 1.75
-  call computeRoundedSection(n0, rz, ry, ta, tb, ta, tb, t1, t2, x0, y0)
+  call computeRoundedSection(n0, rz, ry, ta, tb, ta, tb, t1, t2, shape0, x0, y0)
   x0(:) = x0(:) + 0.5
   y0(:) = y0(:) + 0.5
   do j=1,n2

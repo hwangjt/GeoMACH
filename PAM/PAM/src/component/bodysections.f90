@@ -180,13 +180,9 @@ subroutine computeShape(ni, nj, t1, t2, radii, fillet, shape0, Q)
   double precision, intent(out) ::  Q(ni,nj,3)
 
   !Working
-  integer i, j
-  double precision pi, taU, tbU, taL, tbL, t, tt, val, rx, ry
-  double precision z, x, y, xU, yU, xL, yL, sxU, syU, sxL, syL, nx, ny, norm
-
-  pi = 2*acos(0.0)
-  tt = (t2 - t1)/(ni - 1)
-  z = 0.0
+  integer j
+  double precision rx, ry, taU, tbU, taL, tbL
+  double precision x(ni), y(ni)
 
   Q(:,:,:) = 0.0
   do j=1,nj
@@ -198,79 +194,9 @@ subroutine computeShape(ni, nj, t1, t2, radii, fillet, shape0, Q)
      taL = fillet(j,3)/2.0
      tbL = fillet(j,4)/2.0
 
-     xU = ry*tan((0.5-tbU)*pi)
-     yU = rx*tan(taU*pi)     
-     xL = ry*tan((0.5-tbL)*pi)
-     yL = rx*tan(taL*pi)
-
-     sxU = rx - xU
-     syU = ry - yU
-     sxL = rx - xL
-     syL = ry - yL
-
-     do i=1,ni
-        t = t1 + (i-1)*tt
-        if (t .lt. 0) then
-           t = t + 2.0
-        end if
-        if (t .le. taU) then
-           x = rx
-           y = rx*tan(t*pi)
-           nx = 1.0
-           ny = 0.0
-        else if (t .le. tbU) then
-           call nMap(t, taU, tbU, val)
-           t = val/2.0
-           x = xU + sxU*cos(t*pi)
-           y = yU + syU*sin(t*pi)
-           nx = syU*cos(t*pi)
-           ny = sxU*sin(t*pi)
-        else if (t .le. 1-tbU) then
-           x = ry*tan((0.5-t)*pi)
-           y = ry
-           nx = 0.0
-           ny = 1.0
-        else if (t .le. 1-taU) then
-           call nMap(t, 1-tbU, 1-taU, val)
-           t = val/2.0 + 0.5
-           x = -xU + sxU*cos(t*pi)
-           y =  yU + syU*sin(t*pi)
-           nx = syU*cos(t*pi)
-           ny = sxU*sin(t*pi)
-        else if (t .le. 1+taL) then
-           x = -rx
-           y = rx*tan((1-t)*pi)
-           nx = -1.0
-           ny =  0.0
-        else if (t .le. 1+tbL) then
-           call nMap(t, 1+taL, 1+tbL, val)
-           t = val/2.0 + 1.0
-           x = -xL + sxL*cos(t*pi)
-           y = -yL + syL*sin(t*pi)
-           nx = syL*cos(t*pi)
-           ny = sxL*sin(t*pi)
-        else if (t .le. 2-tbL) then
-           x = -ry*tan((1.5-t)*pi)
-           y = -ry
-           nx =  0.0
-           ny = -1.0
-        else if (t .le. 2-taL) then
-           call nMap(t, 2-tbL, 2-taL, val)
-           t = val/2.0 + 1.5
-           x =  xL + sxL*cos(t*pi)
-           y = -yL + syL*sin(t*pi)
-           nx = syL*cos(t*pi)
-           ny = sxL*sin(t*pi)
-        else
-           x = rx
-           y = rx*tan(t*pi)  
-           nx = 1.0
-           ny = 0.0
-        end if
-        norm = (nx**2 + ny**2)**0.5
-        Q(i,j,1) = x + nx/norm*shape0(i,j)
-        Q(i,j,2) = y + ny/norm*shape0(i,j)
-     end do
+     call computeRoundedSection(ni, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0(:,j), x, y)
+     Q(:,j,1) = x
+     Q(:,j,2) = y
   end do
      
 end subroutine computeShape
@@ -291,90 +217,102 @@ end subroutine nMap
 
 
 
-subroutine computeRoundedSection(n, rz, ry, ta1, tb1, ta2, tb2, t1, t2, z, y)
+subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, x, y)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) n, rz, ry, ta1, tb1, ta2, tb2, t1, t2
-  !f2py intent(out) z, y
-  !f2py depend(n) z, y
+  !f2py intent(in) n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0
+  !f2py intent(out) x, y
+  !f2py depend(n) shape0, x, y
 
   !Input
   integer, intent(in) ::  n
-  double precision, intent(in) ::  rz, ry, ta1, tb1, ta2, tb2, t1, t2
+  double precision, intent(in) ::  rx, ry, taU, tbU, taL, tbL, t1, t2, shape0(n)
 
   !Output
-  double precision, intent(out) ::  z(n), y(n)
+  double precision, intent(out) ::  x(n), y(n)
 
   !Working
-  double precision pi, ta, tb, t, tt, val
-  double precision z0, y0, sz, sy, z1, y1, z2, y2
   integer i
+  double precision xU, yU, xL, yL, sxU, syU, sxL, syL
+  double precision pi, t, tt, val, nx, ny, norm
 
   pi = 2*acos(0.0)
-
-  z1 = ry*tan((0.5-tb1/2.0)*pi)
-  y1 = rz*tan(ta1*pi/2.0)
-
-  z2 = ry*tan((0.5-tb2/2.0)*pi)
-  y2 = rz*tan(ta2*pi/2.0)
-
   tt = (t2 - t1)/(n - 1)
+
+  xU = ry*tan((0.5-tbU)*pi)
+  yU = rx*tan(taU*pi)     
+  xL = ry*tan((0.5-tbL)*pi)
+  yL = rx*tan(taL*pi)
+  
+  sxU = rx - xU
+  syU = ry - yU
+  sxL = rx - xL
+  syL = ry - yL
+  
   do i=1,n
      t = t1 + (i-1)*tt
      if (t .lt. 0) then
         t = t + 2.0
      end if
-     if (t .le. 1) then
-        ta = ta1/2.0
-        tb = tb1/2.0
-        z0 = z1
-        y0 = y1
-     else
-        ta = ta2/2.0
-        tb = tb2/2.0
-        z0 = z2
-        y0 = y2
-     end if
-     sz = rz - z0
-     sy = ry - y0
-     if ((0 .le. t) .and. (t .le. ta)) then
-        z(i) = rz
-        y(i) = rz*tan(t*pi)
-     else if ((ta .le. t) .and. (t .le. tb)) then
-        call nMap(t, ta, tb, val)
+     if (t .le. taU) then
+        x(i) = rx
+        y(i) = rx*tan(t*pi)
+        nx = 1.0
+        ny = 0.0
+     else if (t .le. tbU) then
+        call nMap(t, taU, tbU, val)
         t = val/2.0
-        z(i) = z0 + sz*cos(t*pi)
-        y(i) = y0 + sy*sin(t*pi)
-     else if ((tb .le. t) .and. (t .le. 1-tb)) then
-        z(i) = ry*tan((0.5-t)*pi)
+        x(i) = xU + sxU*cos(t*pi)
+        y(i) = yU + syU*sin(t*pi)
+        nx = syU*cos(t*pi)
+        ny = sxU*sin(t*pi)
+     else if (t .le. 1-tbU) then
+        x(i) = ry*tan((0.5-t)*pi)
         y(i) = ry
-     else if ((1-tb .le. t) .and. (t .le. 1-ta)) then
-        call nMap(t, 1-tb, 1-ta, val)
+        nx = 0.0
+        ny = 1.0
+     else if (t .le. 1-taU) then
+        call nMap(t, 1-tbU, 1-taU, val)
         t = val/2.0 + 0.5
-        z(i) = -z0 + sz*cos(t*pi)
-        y(i) = y0 + sy*sin(t*pi)
-     else if ((1-ta .le. t) .and. (t .le. 1+ta)) then
-        z(i) = -rz
-        y(i) = rz*tan((1-t)*pi)
-     else if ((1+ta .le. t) .and. (t .le. 1+tb)) then
-        call nMap(t, 1+ta, 1+tb, val)
+        x(i) = -xU + sxU*cos(t*pi)
+        y(i) =  yU + syU*sin(t*pi)
+        nx = syU*cos(t*pi)
+        ny = sxU*sin(t*pi)
+     else if (t .le. 1+taL) then
+        x(i) = -rx
+        y(i) = rx*tan((1-t)*pi)
+        nx = -1.0
+        ny =  0.0
+     else if (t .le. 1+tbL) then
+        call nMap(t, 1+taL, 1+tbL, val)
         t = val/2.0 + 1.0
-        z(i) = -z0 + sz*cos(t*pi)
-        y(i) = -y0 + sy*sin(t*pi)
-     else if ((1+tb .le. t) .and. (t .le. 2-tb)) then
-        z(i) = -ry*tan((1.5-t)*pi)
+        x(i) = -xL + sxL*cos(t*pi)
+        y(i) = -yL + syL*sin(t*pi)
+        nx = syL*cos(t*pi)
+        ny = sxL*sin(t*pi)
+     else if (t .le. 2-tbL) then
+        x(i) = -ry*tan((1.5-t)*pi)
         y(i) = -ry
-     else if ((2-tb .le. t) .and. (t .le. 2-ta)) then
-        call nMap(t, 2-tb, 2-ta, val)
+        nx =  0.0
+        ny = -1.0
+     else if (t .le. 2-taL) then
+        call nMap(t, 2-tbL, 2-taL, val)
         t = val/2.0 + 1.5
-        z(i) = z0 + sz*cos(t*pi)
-        y(i) = -y0 + sy*sin(t*pi)
-     else if ((2-ta .le. t) .and. (t .le. 2)) then
-        z(i) = rz
-        y(i) = rz*tan(t*pi)  
+        x(i) =  xL + sxL*cos(t*pi)
+        y(i) = -yL + syL*sin(t*pi)
+        nx = syL*cos(t*pi)
+        ny = sxL*sin(t*pi)
+     else
+        x(i) = rx
+        y(i) = rx*tan(t*pi)  
+        nx = 1.0
+        ny = 0.0
      end if
+     norm = (nx**2 + ny**2)**0.5
+     x(i) = x(i) + nx/norm*shape0(i)
+     y(i) = y(i) + ny/norm*shape0(i)
   end do
 
 end subroutine computeRoundedSection
