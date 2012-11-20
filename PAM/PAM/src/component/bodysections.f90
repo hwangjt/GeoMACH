@@ -23,11 +23,9 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dz, &
   !Working
   double precision left(ny,2,3), right(ny,2,3), top(nz,2,3), bottom(nz,2,3)
   double precision hCurves(3,2,nv,3), vCurves(2,3,nu,3)
-  double precision tempu(nu,3), tempv(nv,3)
   double precision pC(3), pL(2,3), pR(2,3), pT(2,3), pB(2,3)
   double precision nL(3), nR(3), nT(3), nB(3)
   double precision e1(3), e2(3), e3(3), pz(3)
-  double precision tempQ(nu,nv,3)
 
   e1(:) = 0.0
   e2(:) = 0.0
@@ -72,28 +70,20 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dz, &
   nT = pT(2,:) - pT(1,:) + pz
   nB = pB(2,:) - pB(1,:) + pz
 
-  call quad2Dcurve(2, nv, pL(1,:), pC, nL, e1, tempv)
-  hCurves(2,1,:,:) = tempv
-  call quad2Dcurve(2, nv, pC, pR(1,:), e1, nR, tempv)
-  hCurves(2,2,:,:) = tempv
-  call quad2Dcurve(1, nu, pT(1,:), pC, nT, e2, tempu)
-  vCurves(1,2,:,:) = tempu
-  call quad2Dcurve(1, nu, pC, pB(1,:), e2, nB, tempu)
-  vCurves(2,2,:,:) = tempu
+  call quad2Dcurve(2, nv, pL(1,:), pC, nL, e1, hCurves(2,1,:,:))
+  call quad2Dcurve(2, nv, pC, pR(1,:), e1, nR, hCurves(2,2,:,:))
+  call quad2Dcurve(1, nu, pT(1,:), pC, nT, e2, vCurves(1,2,:,:))
+  call quad2Dcurve(1, nu, pC, pB(1,:), e2, nB, vCurves(2,2,:,:))
 
   call coonsPatch(nu, nv, hCurves(1,1,:,:), hCurves(2,1,:,:), &
-       vCurves(1,1,:,:), vCurves(1,2,:,:), tempQ)
-  Q(1:nu,1:nv,:) = tempQ
+       vCurves(1,1,:,:), vCurves(1,2,:,:), Q(1:nu,1:nv,:))
   call coonsPatch(nu, nv, hCurves(1,2,:,:), hCurves(2,2,:,:), &
-       vCurves(1,2,:,:), vCurves(1,3,:,:), tempQ)
-  Q(1:nu,nz-nv+1:nz,:) = tempQ
+       vCurves(1,2,:,:), vCurves(1,3,:,:), Q(1:nu,nz-nv+1:nz,:))
   if (bot) then
      call coonsPatch(nu, nv, hCurves(2,1,:,:), hCurves(3,1,:,:), &
-          vCurves(2,1,:,:), vCurves(2,2,:,:), tempQ)
-     Q(ny-nu+1:ny,1:nv,:) = tempQ
+          vCurves(2,1,:,:), vCurves(2,2,:,:), Q(ny-nu+1:ny,1:nv,:))
      call coonsPatch(nu, nv, hCurves(2,2,:,:), hCurves(3,2,:,:), &
-          vCurves(2,2,:,:), vCurves(2,3,:,:), tempQ)
-     Q(ny-nu+1:ny,nz-nv+1:nz,:) = tempQ
+          vCurves(2,2,:,:), vCurves(2,3,:,:), Q(ny-nu+1:ny,nz-nv+1:nz,:))
   end if
 
 end subroutine computeCone1
@@ -116,7 +106,7 @@ subroutine computeCone2(nu, nv, nQ, r, offset, pos, rot, Q0, Q, dQ_drot)
   double precision, intent(in) ::  Q0(nu,nv,3)
 
   !Output
-  double precision, intent(out) ::  Q(nu,nv,3), dQ_drot(nQ,3)
+  double precision, intent(out) ::  Q(nu,nv,3), dQ_drot(nQ,3,3)
 
   !Working
   integer u, v, k
@@ -128,8 +118,7 @@ subroutine computeCone2(nu, nv, nQ, r, offset, pos, rot, Q0, Q, dQ_drot)
      do v=1,nv
         Q(u,v,:) = matmul(T,Q0(u,v,:)-r) + r + offset + pos
         do k=1,3
-           dQ_drot((k-1)*nu*nv+(v-1)*nu+u,k) = r(k) + offset(k) + pos(k) + &
-                dot_product(T(k,:),Q0(u,v,:)-r) 
+           dQ_drot((k-1)*nu*nv+(v-1)*nu+u,:,k) = matmul(dT_drot(:,:,k),Q0(u,v,:)-r)
         end do
      end do
   end do
@@ -182,7 +171,6 @@ subroutine computeShape(ni, nj, t1, t2, radii, fillet, shape0, Q)
   !Working
   integer j
   double precision rx, ry, taU, tbU, taL, tbL
-  double precision x(ni), y(ni)
 
   Q(:,:,:) = 0.0
   do j=1,nj
@@ -194,38 +182,23 @@ subroutine computeShape(ni, nj, t1, t2, radii, fillet, shape0, Q)
      taL = fillet(j,3)/2.0
      tbL = fillet(j,4)/2.0
 
-     call computeRoundedSection(ni, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0(:,j), x, y)
-     Q(:,j,1) = x
-     Q(:,j,2) = y
+     call computeRoundedSection(ni, rx, ry, taU, tbU, taL, tbL, &
+          t1, t2, shape0(:,j), Q(:,j,1), Q(:,j,2))
   end do
      
 end subroutine computeShape
 
 
 
-function nMap2(t, t1, t2)
+function nMap(t, t1, t2)
 
   implicit none
   double precision, intent(in) ::  t, t1, t2
-  double precision ::  nMap2
+  double precision ::  nMap
 
-  nMap2 = (t - t1)/(t2 - t1)
+  nMap = (t - t1)/(t2 - t1)
 
-end function nMap2
-
-
-
-subroutine nMap(t, t1, t2, val)
-  
-  !Input
-  double precision, intent(in) ::  t, t1, t2
-
-  !Output
-  double precision, intent(out) ::  val
-
-  val = (t - t1)/(t2 - t1)
-
-end subroutine nMap
+end function nMap
 
 
 
@@ -248,7 +221,7 @@ subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
   !Working
   integer i
   double precision xU, yU, xL, yL, sxU, syU, sxL, syL
-  double precision pi, t, tt, val, nx, ny, norm, nMap2
+  double precision pi, t, tt, nx, ny, norm, nMap
 
   pi = 2*acos(0.0)
   tt = (t2 - t1)/(n - 1)
@@ -274,8 +247,7 @@ subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
         nx = 1.0
         ny = 0.0
      else if (t .le. tbU) then
-        call nMap(t, taU, tbU, val)
-        t = val/2.0
+        t = nMap(t, taU, tbU)/2.0
         x(i) = xU + sxU*cos(t*pi)
         y(i) = yU + syU*sin(t*pi)
         nx = syU*cos(t*pi)
@@ -286,8 +258,7 @@ subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
         nx = 0.0
         ny = 1.0
      else if (t .le. 1-taU) then
-        call nMap(t, 1-tbU, 1-taU, val)
-        t = val/2.0 + 0.5
+        t = nMap(t, 1-tbU, 1-taU)/2.0 + 0.5
         x(i) = -xU + sxU*cos(t*pi)
         y(i) =  yU + syU*sin(t*pi)
         nx = syU*cos(t*pi)
@@ -298,9 +269,7 @@ subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
         nx = -1.0
         ny =  0.0
      else if (t .le. 1+tbL) then
-        !call nMap(t, 1+taL, 1+tbL, val)
-        val = nMap2(t, 1+taL, 1+tbL)
-        t = val/2.0 + 1.0
+        t = nMap(t, 1+taL, 1+tbL)/2.0 + 1.0
         x(i) = -xL + sxL*cos(t*pi)
         y(i) = -yL + syL*sin(t*pi)
         nx = syL*cos(t*pi)
@@ -311,9 +280,7 @@ subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
         nx =  0.0
         ny = -1.0
      else if (t .le. 2-taL) then
-        !call nMap(t, 2-tbL, 2-taL, val)
-        val = nMap2(t, 2-tbL, 2-taL)
-        t = val/2.0 + 1.5
+        t = nMap(t, 2-tbL, 2-taL)/2.0 + 1.5
         x(i) =  xL + sxL*cos(t*pi)
         y(i) = -yL + syL*sin(t*pi)
         nx = syL*cos(t*pi)

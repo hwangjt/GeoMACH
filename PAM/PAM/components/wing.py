@@ -1,10 +1,7 @@
 from __future__ import division
 from PAM.components import Component, Property, airfoils
 import numpy, pylab, time, scipy.sparse
-import mpl_toolkits.mplot3d.axes3d as p3
 import PAM.PAMlib as PAMlib
-
-import PUBS
 
 
 class Wing(Component):

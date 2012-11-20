@@ -3,7 +3,6 @@ from layout import Layout
 import numpy, pylab, time, copy
 import scipy.sparse
 import PAM.PAMlib as PAMlib
-import mpl_toolkits.mplot3d.axes3d as p3
 
 
 class Component(object):
@@ -77,8 +76,8 @@ class Component(object):
                         Ps[surf][u,:] = P0
                     else:
                         Ps[surf][u,::-1] = P0
-            P = Ps[surf][:,v] if d==0 else Ps[surf][u,:]
-            return P[::-1] if r==-1 else P                
+            P = Ps[surf][:,v] if d == 0 else Ps[surf][u,:]
+            return P[::-1] if r < 0 else P                
             
         for k in range(self.Ks[f1].shape[v1==None]):
             avg = 0.5*edge(f1,u1,v1,k) + 0.5*edge(f2,u2,v2,k)

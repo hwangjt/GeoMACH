@@ -16,7 +16,7 @@ subroutine quad2Dcurve(k, n, P1, P2, n1, n2, P)
 
   !Working
   integer i, j, iP
-  double precision det, R1, R2, B(3), t, den
+  double precision det, R1, R2, B(3), t, den, cross_ij
 
   i = k + 1
   j = k + 2
@@ -27,9 +27,9 @@ subroutine quad2Dcurve(k, n, P1, P2, n1, n2, P)
      j = j - 3
   end if
 
-  call cross_ij(i,j,n1,n2,det)
-  call cross_ij(i,j,P1,n1,R1)
-  call cross_ij(i,j,P2,n2,R2)
+  det = cross_ij(i,j,n1,n2)
+  R1 = cross_ij(i,j,P1,n1)
+  R2 = cross_ij(i,j,P2,n2)
 
   if (abs(det) .gt. 1e-14) then
      B(i) = (-n2(i)*R1 + n1(i)*R2)/det
@@ -49,20 +49,17 @@ end subroutine quad2Dcurve
 
 
 
-subroutine cross_ij(i, j, u, v, res)
+function cross_ij(i, j, u, v)
   
   implicit none
 
-  !Input
   integer, intent(in) ::  i, j
   double precision, intent(in) ::  u(3), v(3)
+  double precision ::  cross_ij
 
-  !Output
-  double precision, intent(out) ::  res
+  cross_ij = u(i)*v(j) - u(j)*v(i)
 
-  res = u(i)*v(j) - u(j)*v(i)
-
-end subroutine cross_ij
+end function cross_ij
 
 
 

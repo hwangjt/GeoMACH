@@ -303,7 +303,9 @@ subroutine arctan2pi(P, t, dt_dP)
   x = P(1)
   y = P(2)
 
-  if (x .eq. 0) then
+  if (dot_product(P,P)**0.5 .lt. 1e-10) then
+     t = 0
+  else if (x .eq. 0) then
      if (y .gt. 0) then
         t = pi/2.0
      else if (y .lt. 0) then
@@ -325,7 +327,11 @@ subroutine arctan2pi(P, t, dt_dP)
      t = 0
   end if
 
-  dt_dP(1) = -y/(x**2+y**2)
-  dt_dP(2) = x/(x**2+y**2)
+  if (dot_product(P,P)**0.5 .lt. 1e-10) then
+     dt_dP(:) = 0.0
+  else
+     dt_dP(1) = -y/(x**2+y**2)
+     dt_dP(2) = x/(x**2+y**2)
+  end if
 
 end subroutine arctan2pi

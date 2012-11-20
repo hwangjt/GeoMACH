@@ -2,7 +2,6 @@ from __future__ import division
 from PAM.components import Component, Property
 import numpy, pylab, time, scipy.sparse
 import PAM.PAMlib as PAMlib
-import mpl_toolkits.mplot3d.axes3d as p3
 
 
 class Body(Component):
@@ -114,20 +113,24 @@ class Body(Component):
         shapeB = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, v['radii'], v['fillet'], v['shapeB'])
         chord = numpy.ones(nx)
 
+        if self.bottom==2:
+            nQ = nx*(9+6*ny+6*nz)
+        else:
+            nQ = nx*(9+6*ny+3*nz)
         self.dQs_dv = range(len(self.Qs))
 
         self.Qs[2][:,:,:], Da, Di, Dj = PAMlib.computesections(-1, ny, nx, nx*ny*24, 0, r, v['offset'], chord, v['pos'], rot, shapeR)
-        self.dQs_dv[2] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*nx*ny,nx*(9+6*ny+6*nz)))
+        self.dQs_dv[2] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*nx*ny,nQ))
 
         self.Qs[3][:,:,:], Da, Di, Dj = PAMlib.computesections(-1, nz, nx, nx*nz*24, 3*nx*ny, r, v['offset'], chord, v['pos'], rot, shapeT)
-        self.dQs_dv[3] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*nx*nz,nx*(9+6*ny+6*nz)))
+        self.dQs_dv[3] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*nx*nz,nQ))
 
         self.Qs[4][:,:,:], Da, Di, Dj = PAMlib.computesections(-1, ny, nx, nx*ny*24, 3*nx*(ny+nz), r, v['offset'], chord, v['pos'], rot, shapeL)
-        self.dQs_dv[4] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*nx*ny,nx*(9+6*ny+6*nz)))
+        self.dQs_dv[4] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*nx*ny,nQ))
 
         if self.bottom==2:
             self.Qs[5][:,:,:], Da, Di, Dj = PAMlib.computesections(-1, nz, nx, nx*nz*24, 3*nx*(2*ny+nz), r, v['offset'], chord, v['pos'], rot, shapeB)
-            self.dQs_dv[5] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*nx*nz,nx*(9+6*ny+6*nz)))
+            self.dQs_dv[5] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*nx*nz,nQ))
 
         if self.bottom==2:
             nu = int(numpy.ceil(ny/2.0))
@@ -141,13 +144,12 @@ class Body(Component):
         self.Qs[0][:,:,:], dQ_drot = PAMlib.computecone2(ny, nz, 3*ny*nz, r, v['offset'], v['pos'][1,:], rot[1,:], Q)
 
         dx = numpy.linalg.norm(v['pos'][-3,:]-v['pos'][-2,:])
-        Q = PAMlib.computecone1(False, self.bottom==2, nu, nv, nz, ny, v['tailL'], dx, shapeR[:,-3:-1,:], shapeT[:,-3:-1,:], shapeL[:,-3:-1,:], shapeB[:,-3:-1,:])
+        Q = PAMlib.computecone1(False, self.bottom==2, nu, nv, nz, ny, v['tailL'], dx, shapeR[:,-2:-4:-1,:], shapeT[:,-2:-4:-1,:], shapeL[:,-2:-4:-1,:], shapeB[:,-2:-4:-1,:])
         self.Qs[1][:,:,:], dQ_drot = PAMlib.computecone2(ny, nz, 3*ny*nz, r, v['offset'], v['pos'][-2,:], rot[-2,:], Q)
 
 
 if __name__ == '__main__':
-    #b = Body(nx=2,ny=2,nz=2,bottom=0)
-    b = Body(nx=4,ny=4,nz=4,bottom=0)
+    b = Body(nx=8,ny=4,nz=4,bottom=0)
     import PUBS
     from mayavi import mlab
     b.oml0 = PUBS.PUBS(b.Ps)
@@ -163,6 +165,8 @@ if __name__ == '__main__':
     b.variables['fillet'][:,1] = 0.6
     b.variables['noseL'] = 0.5
     b.variables['tailL'] = 0.5
+    b.variables['shapeR'][:10,3:-3] = -0.5
+    b.variables['shapeL'][-10:,3:-3] = -0.5
     b.propagateQs()
     b.updateQs()
     b.oml0.computePoints()
