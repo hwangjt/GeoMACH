@@ -203,6 +203,18 @@ end subroutine computeShape
 
 
 
+function nMap2(t, t1, t2)
+
+  implicit none
+  double precision, intent(in) ::  t, t1, t2
+  double precision ::  nMap2
+
+  nMap2 = (t - t1)/(t2 - t1)
+
+end function nMap2
+
+
+
 subroutine nMap(t, t1, t2, val)
   
   !Input
@@ -236,7 +248,7 @@ subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
   !Working
   integer i
   double precision xU, yU, xL, yL, sxU, syU, sxL, syL
-  double precision pi, t, tt, val, nx, ny, norm
+  double precision pi, t, tt, val, nx, ny, norm, nMap2
 
   pi = 2*acos(0.0)
   tt = (t2 - t1)/(n - 1)
@@ -286,7 +298,8 @@ subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
         nx = -1.0
         ny =  0.0
      else if (t .le. 1+tbL) then
-        call nMap(t, 1+taL, 1+tbL, val)
+        !call nMap(t, 1+taL, 1+tbL, val)
+        val = nMap2(t, 1+taL, 1+tbL)
         t = val/2.0 + 1.0
         x(i) = -xL + sxL*cos(t*pi)
         y(i) = -yL + syL*sin(t*pi)
@@ -298,7 +311,8 @@ subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
         nx =  0.0
         ny = -1.0
      else if (t .le. 2-taL) then
-        call nMap(t, 2-tbL, 2-taL, val)
+        !call nMap(t, 2-tbL, 2-taL, val)
+        val = nMap2(t, 2-tbL, 2-taL)
         t = val/2.0 + 1.5
         x(i) =  xL + sxL*cos(t*pi)
         y(i) = -yL + syL*sin(t*pi)
