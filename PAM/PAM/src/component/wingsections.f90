@@ -44,18 +44,18 @@ end subroutine outer
 
 
 
-subroutine computeRotations(nj, nD, pos, rot0, Da, Di, Dj)
+subroutine computeRotations(ax1, ax2, nj, nD, pos, rot0, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nj, nD, pos
+  !f2py intent(in) ax1, ax2, nj, nD, pos
   !f2py intent(out) rot0, Da, Di, Dj
   !f2py depend(nj) pos, rot0
   !f2py depend(nD) Da, Di, Dj
 
   !Input
-  integer, intent(in) ::  nj, nD
+  integer, intent(in) ::  ax1, ax2, nj, nD
   double precision, intent(in) ::  pos(nj,3)
 
   !Output
@@ -64,7 +64,7 @@ subroutine computeRotations(nj, nD, pos, rot0, Da, Di, Dj)
   integer, intent(out) ::  Di(nD), Dj(nD)
 
   !Working
-  integer j, k, l, iD
+  integer j, k, l, iD, ax3
   double precision z, one, pi, t(3), ta(3), tb(3), ra2, rb2, p, q, v(2), w(2)
   double precision dt_dpos_jp1(3,3), dt_dpos_j(3,3), dt_dpos_jm1(3,3)
   double precision dp_dv(2), dq_dw(2), I(3,3), A(3,3), B(3,3)
@@ -75,6 +75,7 @@ subroutine computeRotations(nj, nD, pos, rot0, Da, Di, Dj)
   iD = 1
   z = 0.0
   one = 1.0
+  ax3 = 6 - ax1 - ax2
   do j=1,nj
      dt_dpos_jm1(:,:) = 0.0
      dt_dpos_j(:,:) = 0.0
@@ -99,17 +100,28 @@ subroutine computeRotations(nj, nD, pos, rot0, Da, Di, Dj)
         dt_dpos_j(:,:) = (ra2*I - A)/ra2**1.5 - (rb2*I - B)/rb2**1.5
         dt_dpos_jp1(:,:) = (rb2*I - B)/rb2**1.5
      end if
-     v = (/t(3),t(2)/)
-     w = (/(t(2)**2+t(3)**2)**0.5,t(1)/)
+     v = (/t(ax1),t(ax2)/)
+     w = (/(t(ax1)**2+t(ax2)**2)**0.5,-t(ax3)/)
+     dv_dt(1,:) = 0.0
+     dv_dt(2,:) = 0.0
+     dw_dt(1,:) = 0.0
+     dw_dt(2,:) = 0.0
+     dv_dt(1,ax1) = 1.0
+     dv_dt(2,ax2) = 1.0
+     dw_dt(1,ax1) = t(ax1)/(t(ax1)**2+t(ax2)**2)**0.5
+     dw_dt(1,ax2) = t(ax2)/(t(ax1)**2+t(ax2)**2)**0.5
+     dw_dt(2,ax3) = -1.0
      call arctan2pi(v, p, dp_dv)
      call arctan2pi(w, q, dq_dw)
+     if ((ax2-ax1 .eq. -1) .or. (ax2-ax1 .eq. 2)) then
+        p = -p
+        q = -q
+        dp_dv = -dp_dv
+        dq_dw = -dq_dw
+     end if
      rot0(j,1) = p
      rot0(j,2) = q
      rot0(j,3) = 0.0
-     dv_dt(1,:) = (/ z, z, one /)
-     dv_dt(2,:) = (/ z, one, z /)
-     dw_dt(1,:) = (/ z, t(2)/(t(2)**2+t(3)**2)**0.5, t(3)/(t(2)**2+t(3)**2)**0.5 /)
-     dw_dt(2,:) = (/ one, z, z /)
      drotj_dt(1,:) = matmul(dp_dv, dv_dt)
      drotj_dt(2,:) = matmul(dq_dw, dw_dt)
      drotj_dt(3,:) = 0.0
@@ -142,20 +154,20 @@ end subroutine computeRotations
 
 
 
-subroutine computeSections(f, ni, nj, nD, ishape, r, offset, chord, &
+subroutine computeSections(ax1, ax2, f, ni, nj, nD, ishape, r, offset, chord, &
      pos, rot, shape0, Q, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) f, ni, nj, nD, ishape, r, offset, chord, pos, rot, shape0
+  !f2py intent(in) ax1, ax2, f, ni, nj, nD, ishape, r, offset, chord, pos, rot, shape0
   !f2py intent(out) Q, Da, Di, Dj
   !f2py depend(nj) chord, pos, rot
   !f2py depend(ni,nj) shape0, Q
   !f2py depend(nD) Da, Di, Dj
 
   !Input
-  integer, intent(in) ::  f, ni, nj, nD, ishape
+  integer, intent(in) ::  ax1, ax2, f, ni, nj, nD, ishape
   double precision, intent(in) ::  r(3), offset(3)
   double precision, intent(in) ::  chord(nj), pos(nj,3), rot(nj,3)
   double precision, intent(in) ::  shape0(ni,nj,3)
@@ -165,12 +177,13 @@ subroutine computeSections(f, ni, nj, nD, ishape, r, offset, chord, &
   integer, intent(out) ::  Di(nD), Dj(nD)
 
   !Working
-  integer i, j, k, l, iD, index
+  integer i, j, k, l, iD, index, ax3
   double precision T(3,3), dT_drot(3,3,3)
 
+  ax3 = 6 - ax1 - ax2
   iD = 1
   do j=1,nj
-     call computeRtnMtx(rot(j,:), T, dT_drot)
+     call computeRtnMtx(ax1, ax2, ax3, rot(j,:), T, dT_drot)
      do i=1,ni
         Q(i,j,:) = (matmul(T,shape0(i,j,:)-r) + r)*chord(j) + pos(j,:) + offset
         do k=1,3
@@ -209,75 +222,75 @@ end subroutine computeSections
 
 
 
-subroutine computeRtnMtx(rot, T, dT_drot)
+subroutine computeRtnMtx(ax1, ax2, ax3, rot, T, dT_drot)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) rot
+  !f2py intent(in) ax1, ax2, ax3, rot
   !f2py intent(out) T, dT_drot
 
   !Input
+  integer, intent(in) ::  ax1, ax2, ax3
   double precision, intent(in) ::  rot(3)
 
   !Output
   double precision, intent(out) ::  T(3,3), dT_drot(3,3,3)
 
   !Working
-  double precision p, q, r
-  double precision Tp(3,3), Tq(3,3), Tr(3,3)
-  double precision dTp(3,3), dTq(3,3), dTr(3,3)
+  double precision T1(3,3), T2(3,3), T3(3,3)
+  double precision dT1(3,3), dT2(3,3), dT3(3,3)
 
-  dTp(:,:) = 0.0
-  dTq(:,:) = 0.0
-  dTr(:,:) = 0.0
+  call computeRtn(ax3, rot(1), T1, dT1)
+  call computeRtn(ax2, rot(2), T2, dT2)
+  call computeRtn(ax1, rot(3), T3, dT3)
 
-  p = rot(1)
-  q = rot(2)
-  r = rot(3)
-
-  Tp(:,:) = 0.0
-  Tp(1,1) = 1.0
-  Tp(2,2) = cos(p)
-  Tp(2,3) = sin(p)
-  Tp(3,2) = -sin(p)
-  Tp(3,3) = cos(p)
-
-  Tq(:,:) = 0.0
-  Tq(2,2) = 1.0
-  Tq(1,1) = cos(q)
-  Tq(1,3) = sin(q)
-  Tq(3,1) = -sin(q)
-  Tq(3,3) = cos(q)
-
-  Tr(:,:) = 0.0
-  Tr(3,3) = 1.0
-  Tr(1,1) = cos(r)
-  Tr(1,2) = sin(r)
-  Tr(2,1) = -sin(r)
-  Tr(2,2) = cos(r)
-
-  dTp(2,2) = -sin(p)
-  dTp(2,3) = cos(p)
-  dTp(3,2) = -cos(p)
-  dTp(3,3) = -sin(p)
-
-  dTq(1,1) = -sin(q)
-  dTq(1,3) = cos(q)
-  dTq(3,1) = -cos(q)
-  dTq(3,3) = -sin(q)
-
-  dTr(1,1) = -sin(r)
-  dTr(1,2) = cos(r)
-  dTr(2,1) = -cos(r)
-  dTr(2,2) = -sin(r)
-
-  T = matmul(matmul(Tr,Tq),Tp)
-  dT_drot(:,:,1) = matmul(matmul(Tr,Tq),dTp)
-  dT_drot(:,:,2) = matmul(matmul(Tr,dTq),Tp)
-  dT_drot(:,:,3) = matmul(matmul(dTr,Tq),Tp)
+  T = matmul(matmul(T1,T2),T3)
+  dT_drot(:,:,1) = matmul(matmul(dT1,T2),T3)
+  dT_drot(:,:,2) = matmul(matmul(T1,dT2),T3)
+  dT_drot(:,:,3) = matmul(matmul(T1,T2),dT3)
 
 end subroutine computeRtnMtx
+
+
+
+subroutine computeRtn(k, p, T, dT)
+
+  implicit none
+
+  !Input
+  integer, intent(in) ::  k
+  double precision, intent(in) ::  p
+
+  !Output
+  double precision, intent(out) ::  T(3,3), dT(3,3)
+
+  !Working
+  integer i, j
+
+  i = k + 1
+  j = k + 2
+  if (i .gt. 3) then
+     i = i - 3
+  end if
+  if (j .gt. 3) then
+     j = j - 3
+  end if
+
+  T(:,:) = 0.0
+  T(k,k) = 1.0
+  T(i,i) = cos(p)
+  T(i,j) = -sin(p)
+  T(j,i) = sin(p)
+  T(j,j) = cos(p)
+
+  dT(:,:) = 0.0
+  dT(i,i) = -sin(p)
+  dT(i,j) = -cos(p)
+  dT(j,i) = cos(p)
+  dT(j,j) = -sin(p)
+
+end subroutine computeRtn
 
 
 

@@ -1,10 +1,10 @@
-subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dz, &
+subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
      shapeR, shapeT, shapeL, shapeB, Q)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) front, bot, nu, nv, nz, ny, L, dz, shapeR, shapeT, shapeL, shapeB
+  !f2py intent(in) front, bot, nu, nv, nz, ny, L, dx, shapeR, shapeT, shapeL, shapeB
   !f2py intent(out) Q
   !f2py depend(ny) shapeR, shapeL
   !f2py depend(nz) shapeT, shapeB
@@ -13,7 +13,7 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dz, &
   !Input
   logical, intent(in) ::  front, bot
   integer, intent(in) ::  nu, nv, nz, ny
-  double precision, intent(in) ::  L, dz
+  double precision, intent(in) ::  L, dx
   double precision, intent(in) ::  shapeR(ny,2,3), shapeT(nz,2,3)
   double precision, intent(in) ::  shapeL(ny,2,3), shapeB(nz,2,3)
 
@@ -25,7 +25,7 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dz, &
   double precision hCurves(3,2,nv,3), vCurves(2,3,nu,3)
   double precision pC(3), pL(2,3), pR(2,3), pT(2,3), pB(2,3)
   double precision nL(3), nR(3), nT(3), nB(3)
-  double precision e1(3), e2(3), e3(3), pz(3)
+  double precision e1(3), e2(3), e3(3), px(3)
 
   e1(:) = 0.0
   e2(:) = 0.0
@@ -34,9 +34,9 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dz, &
   e2(2) = 1.0
   e3(3) = 1.0
 
-  pC(1) = 0.0
+  pC(1) = L
   pC(2) = 0.0
-  pC(3) = L
+  pC(3) = 0.0
 
   if (front) then
      left = shapeR(ny:1:-1,:,:)
@@ -64,16 +64,16 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dz, &
   call midValues(nz, top, pT)
   call midValues(nz, bottom, pB)
 
-  pz = -e3*L/abs(L)*dz
-  nL = pL(2,:) - pL(1,:) + pz
-  nR = pR(2,:) - pR(1,:) + pz
-  nT = pT(2,:) - pT(1,:) + pz
-  nB = pB(2,:) - pB(1,:) + pz
+  px = -e1*L/abs(L)*dx
+  nL = pL(2,:) - pL(1,:) + px
+  nR = pR(2,:) - pR(1,:) + px
+  nT = pT(2,:) - pT(1,:) + px
+  nB = pB(2,:) - pB(1,:) + px
 
-  call quad2Dcurve(2, nv, pL(1,:), pC, nL, e1, hCurves(2,1,:,:))
-  call quad2Dcurve(2, nv, pC, pR(1,:), e1, nR, hCurves(2,2,:,:))
-  call quad2Dcurve(1, nu, pT(1,:), pC, nT, e2, vCurves(1,2,:,:))
-  call quad2Dcurve(1, nu, pC, pB(1,:), e2, nB, vCurves(2,2,:,:))
+  call quad2Dcurve(2, nv, pL(1,:), pC, nL, e3, hCurves(2,1,:,:))
+  call quad2Dcurve(2, nv, pC, pR(1,:), e3, nR, hCurves(2,2,:,:))
+  call quad2Dcurve(3, nu, pT(1,:), pC, nT, e2, vCurves(1,2,:,:))
+  call quad2Dcurve(3, nu, pC, pB(1,:), e2, nB, vCurves(2,2,:,:))
 
   call coonsPatch(nu, nv, hCurves(1,1,:,:), hCurves(2,1,:,:), &
        vCurves(1,1,:,:), vCurves(1,2,:,:), Q(1:nu,1:nv,:))
@@ -90,18 +90,18 @@ end subroutine computeCone1
 
 
 
-subroutine computeCone2(nu, nv, nQ, r, offset, pos, rot, Q0, Q, dQ_drot)
+subroutine computeCone2(ax1, ax2, nu, nv, nQ, r, offset, pos, rot, Q0, Q, dQ_drot)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nu, nv, nQ, r, offset, pos, rot, Q0
+  !f2py intent(in) ax1, ax2, nu, nv, nQ, r, offset, pos, rot, Q0
   !f2py intent(out) Q, dQ_drot
   !f2py depend(nu,nv) Q0, Q
   !f2py depend(nQ) dQ_drot
 
   !Input
-  integer, intent(in) ::  nu, nv, nQ
+  integer, intent(in) ::  ax1, ax2, nu, nv, nQ
   double precision, intent(in) ::  r(3), offset(3), pos(3), rot(3)
   double precision, intent(in) ::  Q0(nu,nv,3)
 
@@ -109,10 +109,11 @@ subroutine computeCone2(nu, nv, nQ, r, offset, pos, rot, Q0, Q, dQ_drot)
   double precision, intent(out) ::  Q(nu,nv,3), dQ_drot(nQ,3,3)
 
   !Working
-  integer u, v, k
+  integer u, v, k, ax3
   double precision T(3,3), dT_drot(3,3,3)
 
-  call computeRtnMtx(rot, T, dT_drot)
+  ax3 = 6 - ax1 - ax2
+  call computeRtnMtx(ax1, ax2, ax3, rot, T, dT_drot)
   
   do u=1,nu
      do v=1,nv
@@ -170,20 +171,21 @@ subroutine computeShape(ni, nj, t1, t2, radii, fillet, shape0, Q)
 
   !Working
   integer j
-  double precision rx, ry, taU, tbU, taL, tbL
+  double precision pi, rz, ry, taU, tbU, taL, tbL
 
+  pi = 2*acos(0.0)
   Q(:,:,:) = 0.0
   do j=1,nj
-     rx = radii(j,1)
+     rz = radii(j,1)
      ry = radii(j,2)
 
-     taU = fillet(j,1)/2.0
-     tbU = fillet(j,2)/2.0
-     taL = fillet(j,3)/2.0
-     tbL = fillet(j,4)/2.0
+     taU = atan(ry/rz*fillet(j,1))/pi
+     tbU = atan(ry/rz/fillet(j,2))/pi
+     taL = atan(ry/rz*fillet(j,3))/pi
+     tbL = atan(ry/rz/fillet(j,4))/pi
 
-     call computeRoundedSection(ni, rx, ry, taU, tbU, taL, tbL, &
-          t1, t2, shape0(:,j), Q(:,j,1), Q(:,j,2))
+     call computeRoundedSection(ni, rz, ry, taU, tbU, taL, tbL, &
+          t1, t2, shape0(:,j), Q(:,j,3), Q(:,j,2))
   end do
      
 end subroutine computeShape
@@ -202,38 +204,38 @@ end function nMap
 
 
 
-subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, x, y)
+subroutine computeRoundedSection(n, rz, ry, taU, tbU, taL, tbL, t1, t2, shape0, z, y)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0
-  !f2py intent(out) x, y
-  !f2py depend(n) shape0, x, y
+  !f2py intent(in) n, rz, ry, taU, tbU, taL, tbL, t1, t2, shape0
+  !f2py intent(out) z, y
+  !f2py depend(n) shape0, z, y
 
   !Input
   integer, intent(in) ::  n
-  double precision, intent(in) ::  rx, ry, taU, tbU, taL, tbL, t1, t2, shape0(n)
+  double precision, intent(in) ::  rz, ry, taU, tbU, taL, tbL, t1, t2, shape0(n)
 
   !Output
-  double precision, intent(out) ::  x(n), y(n)
+  double precision, intent(out) ::  z(n), y(n)
 
   !Working
   integer i
-  double precision xU, yU, xL, yL, sxU, syU, sxL, syL
-  double precision pi, t, tt, nx, ny, norm, nMap
+  double precision zU, yU, zL, yL, szU, syU, szL, syL
+  double precision pi, t, tt, nz, ny, norm, nMap
 
   pi = 2*acos(0.0)
   tt = (t2 - t1)/(n - 1)
 
-  xU = ry*tan((0.5-tbU)*pi)
-  yU = rx*tan(taU*pi)     
-  xL = ry*tan((0.5-tbL)*pi)
-  yL = rx*tan(taL*pi)
+  zU = ry*tan((0.5-tbU)*pi)
+  yU = rz*tan(taU*pi)     
+  zL = ry*tan((0.5-tbL)*pi)
+  yL = rz*tan(taL*pi)
   
-  sxU = rx - xU
+  szU = rz - zU
   syU = ry - yU
-  sxL = rx - xL
+  szL = rz - zL
   syL = ry - yL
   
   do i=1,n
@@ -242,57 +244,57 @@ subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
         t = t + 2.0
      end if
      if (t .le. taU) then
-        x(i) = rx
-        y(i) = rx*tan(t*pi)
-        nx = 1.0
+        z(i) = rz
+        y(i) = rz*tan(t*pi)
+        nz = 1.0
         ny = 0.0
      else if (t .le. tbU) then
         t = nMap(t, taU, tbU)/2.0
-        x(i) = xU + sxU*cos(t*pi)
+        z(i) = zU + szU*cos(t*pi)
         y(i) = yU + syU*sin(t*pi)
-        nx = syU*cos(t*pi)
-        ny = sxU*sin(t*pi)
+        nz = syU*cos(t*pi)
+        ny = szU*sin(t*pi)
      else if (t .le. 1-tbU) then
-        x(i) = ry*tan((0.5-t)*pi)
+        z(i) = ry*tan((0.5-t)*pi)
         y(i) = ry
-        nx = 0.0
+        nz = 0.0
         ny = 1.0
      else if (t .le. 1-taU) then
         t = nMap(t, 1-tbU, 1-taU)/2.0 + 0.5
-        x(i) = -xU + sxU*cos(t*pi)
+        z(i) = -zU + szU*cos(t*pi)
         y(i) =  yU + syU*sin(t*pi)
-        nx = syU*cos(t*pi)
-        ny = sxU*sin(t*pi)
+        nz = syU*cos(t*pi)
+        ny = szU*sin(t*pi)
      else if (t .le. 1+taL) then
-        x(i) = -rx
-        y(i) = rx*tan((1-t)*pi)
-        nx = -1.0
+        z(i) = -rz
+        y(i) = rz*tan((1-t)*pi)
+        nz = -1.0
         ny =  0.0
      else if (t .le. 1+tbL) then
         t = nMap(t, 1+taL, 1+tbL)/2.0 + 1.0
-        x(i) = -xL + sxL*cos(t*pi)
+        z(i) = -zL + szL*cos(t*pi)
         y(i) = -yL + syL*sin(t*pi)
-        nx = syL*cos(t*pi)
-        ny = sxL*sin(t*pi)
+        nz = syL*cos(t*pi)
+        ny = szL*sin(t*pi)
      else if (t .le. 2-tbL) then
-        x(i) = -ry*tan((1.5-t)*pi)
+        z(i) = -ry*tan((1.5-t)*pi)
         y(i) = -ry
-        nx =  0.0
+        nz =  0.0
         ny = -1.0
      else if (t .le. 2-taL) then
         t = nMap(t, 2-tbL, 2-taL)/2.0 + 1.5
-        x(i) =  xL + sxL*cos(t*pi)
+        z(i) =  zL + szL*cos(t*pi)
         y(i) = -yL + syL*sin(t*pi)
-        nx = syL*cos(t*pi)
-        ny = sxL*sin(t*pi)
+        nz = syL*cos(t*pi)
+        ny = szL*sin(t*pi)
      else
-        x(i) = rx
-        y(i) = rx*tan(t*pi)  
-        nx = 1.0
+        z(i) = rz
+        y(i) = rz*tan(t*pi)  
+        nz = 1.0
         ny = 0.0
      end if
-     norm = (nx**2 + ny**2)**0.5
-     x(i) = x(i) + nx/norm*shape0(i)
+     norm = (nz**2 + ny**2)**0.5
+     z(i) = z(i) + nz/norm*shape0(i)
      y(i) = y(i) + ny/norm*shape0(i)
   end do
 

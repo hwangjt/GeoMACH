@@ -111,7 +111,7 @@ class Shell(Component):
         v = self.variables
         b = self.bottom==2
 
-        rot0, Da, Di, Dj = PAMlib.computerotations(nx, 9*(nx*3-2), v['pos'])
+        rot0, Da, Di, Dj = PAMlib.computerotations(1, 2, nx, 9*(nx*3-2), v['pos'])
         drot0_dpos = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nx*3,nx*3))
         rot = v['rot']*numpy.pi/180.0 + rot0*v['nor']
         r0 = v['radii'] + v['thickness']
@@ -172,11 +172,11 @@ if __name__ == '__main__':
     s.initializeDOFmappings()
     s.initializeVariables()
     s.variables['pos'][:,0] = numpy.linspace(0,4,s.Qs[0].shape[1])
-    #s.variables['pos'][3,1] = -0.2
+    #s.variables['pos'][:,1] = numpy.linspace(0,4,s.Qs[0].shape[1])
+    s.variables['pos'][:,2] = numpy.linspace(0,4,s.Qs[0].shape[1])
+    s.variables['pos'][4,1] = -0.5
     #s.variables['fillet'][:,0] = 0.4
     #s.variables['fillet'][:,1] = 0.6
-    s.variables['noseL'] = 0.5
-    s.variables['tailL'] = 0.5
     #s.variables['shapeR'][:10,3:-3] = -0.5
     #s.variables['shapeL'][-10:,3:-3] = -0.5
     s.propagateQs()
