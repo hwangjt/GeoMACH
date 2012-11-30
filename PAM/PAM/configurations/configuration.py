@@ -17,6 +17,78 @@ class Configuration(object):
 
     def separateComps(self):
         for k in range(len(self.comps)):
+            self.comps[self.keys[k]].translatePoints(0,0,k*4)   
+
+    def assembleComponents(self):
+        Ps = []        
+        for k in range(len(self.comps)):
+            comp = self.comps[self.keys[k]]
+            if k > 0:
+                comp0 = self.comps[self.keys[k-1]]
+                maxk = numpy.max(comp0.Ks[-1]) + 1
+                for s in range(len(comp.Ks)):
+                    for j in range(comp.Ks[s].shape[1]):
+                        for i in range(comp.Ks[s].shape[0]):
+                            if comp.Ks[s][i,j] != -1:
+                                comp.Ks[s][i,j] += maxk
+            Ps.extend(comp.Ps)
+            comp.Ps = []
+
+        self.oml0 = PUBS.PUBS(Ps)
+        self.export = PUBS.PUBSexport(self.oml0)
+        self.export.write2Tec('test')
+        self.plot()
+        exit()
+
+        for k in range(len(self.comps)):
+            comp = self.comps[self.keys[k]]
+            comp.oml0 = self.oml0
+            comp.computems()
+            comp.setDOFs()
+        self.oml0.updateBsplines()
+
+        for k in range(len(self.comps)):
+            comp = self.comps[self.keys[k]]
+            comp.initializeDOFmappings()
+            comp.initializeVariables()
+            comp.propagateQs()
+            comp.updateQs()
+        self.oml0.computePoints()
+
+    def updateComponents(self):
+        self.oml0.updateBsplines()
+        for k in range(len(self.comps)):
+            comp = self.comps[self.keys[k]]
+            comp.computeDims(self)
+            comp.initializeDOFs()
+        self.computePoints()
+
+    def computePoints(self):
+        for k in range(len(self.comps)):
+            comp = self.comps[self.keys[k]]
+            comp.propagateQs()
+            comp.updateQs()
+        self.oml0.computePoints()
+
+    def plot(self):
+        #self.oml0.plot(pylab.figure(),False)
+        #pylab.show()
+        self.oml0.plotm(mlab.figure(),False)
+        mlab.show()
+
+
+class Configuration2(object):
+    
+    def __init__(self):
+        self.comps = {}
+        self.keys = []
+
+    def addComp(self, name, comp):
+        self.comps[name] = comp
+        self.keys.append(name)
+
+    def separateComps(self):
+        for k in range(len(self.comps)):
             self.comps[self.keys[k]].translatePoints(k*4,0,0)   
 
     def assembleComponents(self):

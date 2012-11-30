@@ -38,6 +38,8 @@ class Wing(Component):
 
         self.left = left
         self.right = right
+        self.ax1 = 3
+        self.ax2 = 2
 
     def setDOFs(self):
         setC1 = self.setC1
@@ -81,9 +83,8 @@ class Wing(Component):
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
         v = self.variables
-
-        ax1 = 3
-        ax2 = 2
+        ax1 = self.ax1
+        ax2 = self.ax2
 
         if self.left==2:
             v['pos'][0] = 2*v['pos'][1] - v['pos'][2]

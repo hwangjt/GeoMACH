@@ -38,6 +38,8 @@ class Body(Component):
             self.addFace(-3, 1,-0.5)
 
         self.bottom = bottom
+        self.ax1 = 1
+        self.ax2 = 2
 
     def setDOFs(self):
         setC1 = self.setC1
@@ -76,7 +78,7 @@ class Body(Component):
             }
         self.setSections()
 
-    def setSections(self, sections=[], t1U=0, t2U=1, t1L=0, t2L=1):
+    def setSections(self, sections=[], t1U=0, t2U=0, t1L=0, t2L=0):
         Ns = self.Ns
         v = self.variables
         for j in range(Ns[2].shape[1]):
@@ -100,20 +102,19 @@ class Body(Component):
         nz = self.Qs[3].shape[0]
         v = self.variables
         b = self.bottom==2
+        ax1 = self.ax1
+        ax2 = self.ax2
 
         v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
         v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
 
-        ax1 = 1
-        ax2 = 3
-
         rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nx, 9*(nx*3-2), v['pos'])
         drot0_dpos = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nx*3,nx*3))
         rot = v['rot']*numpy.pi/180.0 + rot0*v['nor']
-        shapeR = PAMlib.computeshape(ny, nx, (-b)/4.0, 1/4.0, v['radii'], v['fillet'], v['shapeR'])
-        shapeT = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, v['radii'], v['fillet'], v['shapeT'])
-        shapeL = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, v['radii'], v['fillet'], v['shapeL'])
-        shapeB = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, v['radii'], v['fillet'], v['shapeB'])
+        shapeR = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, v['radii'], v['fillet'], v['shapeR'])
+        shapeT = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, v['radii'], v['fillet'], v['shapeT'])
+        shapeL = PAMlib.computeshape(ny, nx, 1/4.0, (-b)/4.0, v['radii'], v['fillet'], v['shapeL'])
+        shapeB = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, v['radii'], v['fillet'], v['shapeB'])
         chord = numpy.ones(nx)
 
         if self.bottom==2:
