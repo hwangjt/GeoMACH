@@ -140,7 +140,13 @@ class Junction(Component):
         self.setC1('surf', 0, val=True)
 
     def initializeVariables(self):
-        Ns = self.Ns
+        ni = self.Qs[0].shape[0]
+        nj = self.Qs[0].shape[1]
+        self.variables = {
+            'f0':1.0,
+            'm0':1.0,
+            'shape':numpy.zeros((ni,nj),order='F')
+            }
 
     def propagateQs(self):
         getmPt = lambda f,i,j: mQs[f][i,j,:]
@@ -210,4 +216,5 @@ class Junction(Component):
             mB[1,0,:] = getmPt(0, 0,-2)
             mB[1,1,:] = getmPt(0,-1,-2)
 
-        self.Qs[0] = PAMlib.computejunction(fQ.shape[0], fQ.shape[1], nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], 1.0, 1.0, mQT, mQB, mQL, mQR, mA, mB, fQ)
+        v = self.variables
+        self.Qs[0] = PAMlib.computejunction(fQ.shape[0], fQ.shape[1], nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['f0'], v['m0'], mQT, mQB, mQL, mQR, mA, mB, fQ, v['shape'])

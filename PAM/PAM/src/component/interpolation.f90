@@ -1,14 +1,14 @@
 subroutine computeJunction(nQu, nQv, nu1, nu2, nu3, nv1, nv2, nv3, &
-     f0, m0, mQT, mQB, mQL, mQR, mA, mB, fQ, Q)
+     f0, m0, mQT, mQB, mQL, mQR, mA, mB, fQ, shape0, Q)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nQu, nQv, nu1, nu2, nu3, nv1, nv2, nv3, f0, m0, mQT, mQB, mQL, mQR, mA, mB, fQ
+  !f2py intent(in) nQu, nQv, nu1, nu2, nu3, nv1, nv2, nv3, f0, m0, mQT, mQB, mQL, mQR, mA, mB, fQ, shape0
   !f2py intent(out) Q
   !f2py depend(nv2) mQT, mQB
   !f2py depend(nu2) mQL, mQR
-  !f2py depend(nQu, nQv) fQ, Q
+  !f2py depend(nQu, nQv) fQ, shape0, Q
 
   !Input
   integer, intent(in) ::  nQu, nQv, nu1, nu2, nu3, nv1, nv2, nv3
@@ -16,18 +16,20 @@ subroutine computeJunction(nQu, nQv, nu1, nu2, nu3, nv1, nv2, nv3, &
   double precision, intent(in) ::  mQT(nv2,3), mQB(nv2,3)
   double precision, intent(in) ::  mQL(nu2,3), mQR(nu2,3)
   double precision, intent(in) ::  mA(2,2,3), mB(2,2,3)
-  double precision, intent(in) ::  fQ(nQu,nQv,3)
+  double precision, intent(in) ::  fQ(nQu,nQv,3), shape0(nQu,nQv)
 
   !Output
   double precision, intent(out) ::  Q(nQu,nQv,3)
 
   !Working
+  double precision dQdw(nQu,nQv,3)
   double precision vNW(nu1,3), vNE(nu1,3), vSW(nu3,3), vSE(nu3,3)
   double precision hNW(nv1,3), hSW(nv1,3), hNE(nv3,3), hSE(nv3,3)
   double precision A(3), B(3)
-  integer u1, u2, v1, v2
+  integer k, u1, u2, v1, v2
 
   Q(:,:,:) = 0.0
+  dQdw(:,:,:) = 0.0
 
   u1 = nu1
   u2 = nu1 + nu2 - 1
@@ -62,16 +64,22 @@ subroutine computeJunction(nQu, nQv, nu1, nu2, nu3, nv1, nv2, nv3, &
   B = fQ(nu1+nu2-1,nQv-1,:)
   call bezierCurve(nv3, mA(2,2,:), m0*(mB(2,2,:)-mA(2,2,:)), A, f0*(B-A), hSE)
 
-  call coonsPatch(nu1, nv1, fQ(:u1,1,:), vNW, fQ(1,:v1,:), hNW, Q(:u1,:v1,:))
-  call coonsPatch(nu1, nv2, vNW, vNE, fQ(1,v1:v2,:), mQT, Q(:u1,v1:v2,:))
-  call coonsPatch(nu1, nv3, vNE, fQ(:u1,nQv,:), fQ(1,v2:,:), hNE, Q(:u1,v2:,:))
+  call coonsPatch(nu1, nv1, fQ(:u1,1,:), vNW, fQ(1,:v1,:), hNW, Q(:u1,:v1,:), dQdw(:u1,:v1,:))
+  call coonsPatch(nu1, nv2, vNW, vNE, fQ(1,v1:v2,:), mQT, Q(:u1,v1:v2,:), dQdw(:u1,v1:v2,:))
+  call coonsPatch(nu1, nv3, vNE, fQ(:u1,nQv,:), fQ(1,v2:,:), hNE, Q(:u1,v2:,:), dQdw(:u1,v2:,:))
 
-  call coonsPatch(nu2, nv1, fQ(u1:u2,1,:), mQL, hNW, hSW, Q(u1:u2,:v1,:))
-  call coonsPatch(nu2, nv3, mQR, fQ(u1:u2,nQv,:), hNE, hSE, Q(u1:u2,v2:,:))
+  if (nu2 .gt. 1) then
+     call coonsPatch(nu2, nv1, fQ(u1:u2,1,:), mQL, hNW, hSW, Q(u1:u2,:v1,:), dQdw(u1:u2,:v1,:))
+     call coonsPatch(nu2, nv3, mQR, fQ(u1:u2,nQv,:), hNE, hSE, Q(u1:u2,v2:,:), dQdw(u1:u2,v2:,:))
+  end if
 
-  call coonsPatch(nu3, nv1, fQ(u2:,1,:), vSW, hSW, fQ(nQu,:v1,:), Q(u2:,:v1,:))
-  call coonsPatch(nu3, nv2, vSW, vSE, mQB, fQ(nQu,v1:v2,:), Q(u2:,v1:v2,:))
-  call coonsPatch(nu3, nv3, vSE, fQ(u2:,nQv,:), hSE, fQ(nQu,v2:,:), Q(u2:,v2:,:))
+  call coonsPatch(nu3, nv1, fQ(u2:,1,:), vSW, hSW, fQ(nQu,:v1,:), Q(u2:,:v1,:), dQdw(u2:,:v1,:))
+  call coonsPatch(nu3, nv2, vSW, vSE, mQB, fQ(nQu,v1:v2,:), Q(u2:,v1:v2,:), dQdw(u2:,v1:v2,:))
+  call coonsPatch(nu3, nv3, vSE, fQ(u2:,nQv,:), hSE, fQ(nQu,v2:,:), Q(u2:,v2:,:), dQdw(u2:,v2:,:))
+
+  do k=1,3
+     Q(:,:,k) = Q(:,:,k) + shape0(:,:)*dQdw(:,:,k)
+  end do
 
 end subroutine computeJunction
 
@@ -215,7 +223,7 @@ end subroutine bezierCurve
 
 
 
-subroutine coonsPatch(nu, nv, Pu0, Pu1, P0v, P1v, P)
+subroutine coonsPatch(nu, nv, Pu0, Pu1, P0v, P1v, P, dPdw)
 
   implicit none
 
@@ -224,17 +232,18 @@ subroutine coonsPatch(nu, nv, Pu0, Pu1, P0v, P1v, P)
   !f2py intent(out) P
   !f2py depend(nu) Pu0, Pu1
   !f2py depend(nv) P0v, P1v
-  !f2py depend(nu,nv) P
+  !f2py depend(nu,nv) P, dPdw
 
   !Input
   integer, intent(in) ::  nu, nv
   double precision, intent(in) ::  Pu0(nu,3), Pu1(nu,3), P0v(nv,3), P1v(nv,3)
 
   !Output
-  double precision, intent(out) ::  P(nu,nv,3)
+  double precision, intent(out) ::  P(nu,nv,3), dPdw(nu,nv,3)
 
   !Working
   double precision P00(3), P01(3), P10(3), P11(3)
+  double precision dPdu(3), dPdv(3), norm
   double precision denu, denv
   double precision u, v
   integer i, j
@@ -253,7 +262,35 @@ subroutine coonsPatch(nu, nv, Pu0, Pu1, P0v, P1v, P)
         v = (j-1)*denv
         P(i,j,:) = (1-u)*P0v(j,:) + u*P1v(j,:) + (1-v)*Pu0(i,:) + v*Pu1(i,:)
         P(i,j,:) = P(i,j,:) - (1-u)*(1-v)*P00 - u*(1-v)*P10 - (1-u)*v*P01 - u*v*P11
+        dPdu = -P0v(j,:) + P1v(j,:) + (1-v)*P00 - (1-v)*P10 + v*P01 - v*P11
+        dPdv = -Pu0(i,:) + Pu1(i,:) + (1-u)*P00 + u*P10 - (1-u)*P01 - u*P11
+        call cross_product(dPdu, dPdv, dPdw(i,j,:))
+        norm = dot_product(dPdw(i,j,:),dPdw(i,j,:))**0.5
+        if (norm .gt. 1e-10) then
+           dPdw(i,j,:) = dPdw(i,j,:)/norm
+        end if
      end do
   end do
 
 end subroutine coonsPatch
+
+
+
+subroutine cross_product(u, v, w)
+
+  implicit none
+
+  !Input
+  double precision, intent(in) ::  u(3), v(3)
+
+  !Output
+  double precision, intent(out) ::  w(3)
+
+  !Working
+  double precision cross_ij
+
+  w(1) = cross_ij(2, 3, u, v)
+  w(2) = cross_ij(3, 1, u, v)
+  w(3) = cross_ij(1, 2, u, v)
+
+end subroutine cross_product

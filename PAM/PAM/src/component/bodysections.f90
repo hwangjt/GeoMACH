@@ -1,5 +1,5 @@
 subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
-     shapeR, shapeT, shapeL, shapeB, Q)
+     shapeR, shapeT, shapeL, shapeB, shape0, Q)
 
   implicit none
 
@@ -8,7 +8,7 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
   !f2py intent(out) Q
   !f2py depend(ny) shapeR, shapeL
   !f2py depend(nz) shapeT, shapeB
-  !f2py depend(ny,nz) Q
+  !f2py depend(ny,nz) shape0, Q
 
   !Input
   logical, intent(in) ::  front, bot
@@ -16,6 +16,7 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
   double precision, intent(in) ::  L, dx
   double precision, intent(in) ::  shapeR(ny,2,3), shapeT(nz,2,3)
   double precision, intent(in) ::  shapeL(ny,2,3), shapeB(nz,2,3)
+  double precision, intent(in) ::  shape0(ny,nz)
 
   !Output
   double precision, intent(out) ::  Q(ny,nz,3)
@@ -26,8 +27,11 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
   double precision pC(3), pL(2,3), pR(2,3), pT(2,3), pB(2,3)
   double precision nL(3), nR(3), nT(3), nB(3)
   double precision e1(3), e2(3), e3(3), px(3)
+  double precision dQdw(ny,nz,3)
+  integer k
 
   Q(:,:,:) = 0.0
+  dQdw(:,:,:) = 0.0
 
   e1(:) = 0.0
   e2(:) = 0.0
@@ -78,15 +82,19 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
   call quad2Dcurve(3, nu, pC, pB(1,:), e2, nB, vCurves(2,2,:,:))
 
   call coonsPatch(nu, nv, vCurves(1,1,:,:), vCurves(1,2,:,:), &
-       hCurves(1,1,:,:), hCurves(2,1,:,:), Q(1:nu,1:nv,:))
+       hCurves(1,1,:,:), hCurves(2,1,:,:), Q(1:nu,1:nv,:), dQdw(1:nu,1:nv,:))
   call coonsPatch(nu, nv, vCurves(1,2,:,:), vCurves(1,3,:,:), &
-       hCurves(1,2,:,:), hCurves(2,2,:,:), Q(1:nu,nz-nv+1:nz,:))
+       hCurves(1,2,:,:), hCurves(2,2,:,:), Q(1:nu,nz-nv+1:nz,:), dQdw(1:nu,nz-nv+1:nz,:))
   if (bot) then
      call coonsPatch(nu, nv, vCurves(2,1,:,:), vCurves(2,2,:,:), &
-          hCurves(2,1,:,:), hCurves(3,1,:,:), Q(ny-nu+1:ny,1:nv,:))
+          hCurves(2,1,:,:), hCurves(3,1,:,:), Q(ny-nu+1:ny,1:nv,:), dQdw(ny-nu+1:ny,1:nv,:))
      call coonsPatch(nu, nv, vCurves(2,2,:,:), vCurves(2,3,:,:), &
-          hCurves(2,2,:,:), hCurves(3,2,:,:), Q(ny-nu+1:ny,nz-nv+1:nz,:))
+          hCurves(2,2,:,:), hCurves(3,2,:,:), Q(ny-nu+1:ny,nz-nv+1:nz,:), dQdw(ny-nu+1:ny,nz-nv+1:nz,:))
   end if
+
+  do k=1,3
+     Q(:,:,k) = Q(:,:,k) + shape0(:,:)*dQdw(:,:,k)
+  end do
 
 end subroutine computeCone1
 

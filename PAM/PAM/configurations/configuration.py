@@ -66,7 +66,9 @@ class Configuration(object):
     def computePoints(self):
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
+            t0 = time.time()
             comp.propagateQs()
+            print time.time()-t0
             comp.updateQs()
         self.oml0.computePoints()
 

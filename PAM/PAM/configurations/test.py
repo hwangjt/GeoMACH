@@ -39,6 +39,7 @@ class Test(Configuration):
         c['body2'].variables['offset'] = [0.5,1.2,0]
         c['body2'].variables['radii'][:] = 0.2
         c['body2'].variables['pos'][:,0] = numpy.linspace(0,1,c['body2'].Qs[2].shape[1])
+        #c['juncB'].variables['shape'][3:8,3:8] -= 0.2
 
         self.computePoints()   
 

@@ -74,7 +74,9 @@ class Body(Component):
             'shapeR':zeros((ny,nx),order='F'),
             'shapeT':zeros((nz,nx),order='F'),
             'shapeL':zeros((ny,nx),order='F'),
-            'shapeB':zeros((nz,nx),order='F')
+            'shapeB':zeros((nz,nx),order='F'),
+            'shapeF':zeros((ny,nz),order='F'),
+            'shapeA':zeros((ny,nz),order='F')
             }
         self.setSections()
 
@@ -144,11 +146,11 @@ class Body(Component):
             nv = int(numpy.ceil(nz/2.0))
         r = numpy.array([0.0,0.0,0.0])
         dx = numpy.linalg.norm(v['pos'][2,:]-v['pos'][1,:])
-        Q = PAMlib.computecone1(True, self.bottom==2, nu, nv, nz, ny, -v['noseL'], dx, shapeR[:,1:3,:], shapeT[:,1:3,:], shapeL[:,1:3,:], shapeB[:,1:3,:])
+        Q = PAMlib.computecone1(True, self.bottom==2, nu, nv, nz, ny, -v['noseL'], dx, shapeR[:,1:3,:], shapeT[:,1:3,:], shapeL[:,1:3,:], shapeB[:,1:3,:], v['shapeF'])
         self.Qs[0][:,:,:], dQ_drot = PAMlib.computecone2(ax1, ax2, ny, nz, 3*ny*nz, r, v['offset'], v['pos'][1,:], rot[1,:], Q)
 
         dx = numpy.linalg.norm(v['pos'][-3,:]-v['pos'][-2,:])
-        Q = PAMlib.computecone1(False, self.bottom==2, nu, nv, nz, ny, v['tailL'], dx, shapeR[:,-2:-4:-1,:], shapeT[:,-2:-4:-1,:], shapeL[:,-2:-4:-1,:], shapeB[:,-2:-4:-1,:])
+        Q = PAMlib.computecone1(False, self.bottom==2, nu, nv, nz, ny, v['tailL'], dx, shapeR[:,-2:-4:-1,:], shapeT[:,-2:-4:-1,:], shapeL[:,-2:-4:-1,:], shapeB[:,-2:-4:-1,:], v['shapeA'])
         self.Qs[1][:,:,:], dQ_drot = PAMlib.computecone2(ax1, ax2, ny, nz, 3*ny*nz, r, v['offset'], v['pos'][-2,:], rot[-2,:], Q)
 
 
