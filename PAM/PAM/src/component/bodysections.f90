@@ -27,6 +27,8 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
   double precision nL(3), nR(3), nT(3), nB(3)
   double precision e1(3), e2(3), e3(3), px(3)
 
+  Q(:,:,:) = 0.0
+
   e1(:) = 0.0
   e2(:) = 0.0
   e3(:) = 0.0
@@ -75,15 +77,15 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
   call quad2Dcurve(3, nu, pT(1,:), pC, nT, e2, vCurves(1,2,:,:))
   call quad2Dcurve(3, nu, pC, pB(1,:), e2, nB, vCurves(2,2,:,:))
 
-  call coonsPatch(nu, nv, hCurves(1,1,:,:), hCurves(2,1,:,:), &
-       vCurves(1,1,:,:), vCurves(1,2,:,:), Q(1:nu,1:nv,:))
-  call coonsPatch(nu, nv, hCurves(1,2,:,:), hCurves(2,2,:,:), &
-       vCurves(1,2,:,:), vCurves(1,3,:,:), Q(1:nu,nz-nv+1:nz,:))
+  call coonsPatch(nu, nv, vCurves(1,1,:,:), vCurves(1,2,:,:), &
+       hCurves(1,1,:,:), hCurves(2,1,:,:), Q(1:nu,1:nv,:))
+  call coonsPatch(nu, nv, vCurves(1,2,:,:), vCurves(1,3,:,:), &
+       hCurves(1,2,:,:), hCurves(2,2,:,:), Q(1:nu,nz-nv+1:nz,:))
   if (bot) then
-     call coonsPatch(nu, nv, hCurves(2,1,:,:), hCurves(3,1,:,:), &
-          vCurves(2,1,:,:), vCurves(2,2,:,:), Q(ny-nu+1:ny,1:nv,:))
-     call coonsPatch(nu, nv, hCurves(2,2,:,:), hCurves(3,2,:,:), &
-          vCurves(2,2,:,:), vCurves(2,3,:,:), Q(ny-nu+1:ny,nz-nv+1:nz,:))
+     call coonsPatch(nu, nv, vCurves(2,1,:,:), vCurves(2,2,:,:), &
+          hCurves(2,1,:,:), hCurves(3,1,:,:), Q(ny-nu+1:ny,1:nv,:))
+     call coonsPatch(nu, nv, vCurves(2,2,:,:), vCurves(2,3,:,:), &
+          hCurves(2,2,:,:), hCurves(3,2,:,:), Q(ny-nu+1:ny,nz-nv+1:nz,:))
   end if
 
 end subroutine computeCone1

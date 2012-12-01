@@ -20,7 +20,7 @@ class Configuration(object):
             self.comps[self.keys[k]].translatePoints(0,0,k*4)   
 
     def assembleComponents(self):
-        Ps = []        
+        Ps = []
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
             if k > 0:
@@ -36,9 +36,9 @@ class Configuration(object):
 
         self.oml0 = PUBS.PUBS(Ps)
         self.export = PUBS.PUBSexport(self.oml0)
-        self.export.write2Tec('test')
-        self.plot()
-        exit()
+        #self.export.write2Tec('test')
+        #self.plot()
+        #exit()
 
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]

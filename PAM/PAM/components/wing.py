@@ -32,9 +32,9 @@ class Wing(Component):
         self.connectEdges(f1=0,u1=0,f2=1,u2=-1)
         self.connectEdges(f1=0,u1=-1,f2=1,u2=0)
         if left==2:
-            self.connectEdges(f1=0,v1=0,f2=1,v2=0)
-        if right==2:
             self.connectEdges(f1=0,v1=-1,f2=1,v2=-1)
+        if right==2:
+            self.connectEdges(f1=0,v1=0,f2=1,v2=0)
 
         self.left = left
         self.right = right
@@ -48,14 +48,14 @@ class Wing(Component):
             setC1('surf', f, val=True) #C1 Everywhere
             setC1('surf', f, i=-f, u=-f, val=False) #C0 trailing edge
             setC1('edge', f, i=-f, u=-f, val=True) #C0 trailing edge
-            if self.left==0:                
-                setC1('surf', f, j=0, v=0, val=False) #C0 left edge
-                setC1('edge', f, j=0, v=0, val=True) #C0 left edge
-                setCornerC1(f, i=-f, j=0, val=False) #C0 left TE corner
-            if self.right==0:
-                setC1('surf', f, j=-1, v=-1, val=False) #C0 right edge
-                setC1('edge', f, j=-1, v=-1, val=True) #C0 right edge
-                setCornerC1(f, i=-f, j=-1, val=False) #C0 right TE corner
+            if self.left==0:  
+                setC1('surf', f, j=-1, v=-1, val=False) #C0 left edge
+                setC1('edge', f, j=-1, v=-1, val=True) #C0 left edge
+                setCornerC1(f, i=-f, j=-1, val=False) #C0 left TE corner     
+            if self.right==0:         
+                setC1('surf', f, j=0, v=0, val=False) #C0 right edge
+                setC1('edge', f, j=0, v=0, val=True) #C0 right edge
+                setCornerC1(f, i=-f, j=0, val=False) #C0 right TE corner
 
     def initializeVariables(self):
         ni = self.Qs[0].shape[0]
@@ -87,9 +87,9 @@ class Wing(Component):
         ax2 = self.ax2
 
         if self.left==2:
-            v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
-        if self.right==2:
             v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
+        if self.right==2:
+            v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
         rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nj, 9*(nj*3-2), v['pos'])
         drot0_dpos = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
         rot = v['rot']*numpy.pi/180.0 + rot0*v['nor']
