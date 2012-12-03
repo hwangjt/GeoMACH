@@ -1,4 +1,4 @@
-subroutine initializeT(nT, nD, nsurf, nedge, ngroup, surf_edge, edge_group, & 
+subroutine computeParameters(nT, nD, nsurf, nedge, ngroup, surf_edge, edge_group, & 
            group_k, group_m, group_n, group_d, knot_index, T)
 
   implicit none
@@ -84,4 +84,4 @@ subroutine initializeT(nT, nD, nsurf, nedge, ngroup, surf_edge, edge_group, &
      deallocate(bufferT)
   end do
 
-end subroutine initializeT
+end subroutine computeParameters

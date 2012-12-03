@@ -7,8 +7,6 @@ SRC_FILES = PUBS/src/bspline/basis.f90 \
 	PUBS/src/bspline/paramuni.f90 \
 	PUBS/src/tensor/curve.f90 \
 	PUBS/src/tensor/surface.f90 \
-#	PUBS/src/fileIO/readcgnsvol.f90 \
-#	PUBS/src/fileIO/readcgnssurf.f90 \
 	PUBS/src/patchwork/initializeTopology.f90 \
 	PUBS/src/patchwork/initializeBsplines.f90 \
 	PUBS/src/patchwork/initializePoints.f90 \
@@ -17,9 +15,9 @@ SRC_FILES = PUBS/src/bspline/basis.f90 \
 	PUBS/src/patchwork/computeParameters.f90 \
         PUBS/src/patchwork/computeJacobian.f90 \
         PUBS/src/patchwork/computeDOFmapping.f90 \
-	PUBS/src/patchwork/computeDerivative.f90 \
-	PUBS/src/patchwork/computeProjection.f90 \
-	PUBS/src/patchwork/plotSurfaces.f90
+	PUBS/src/patchwork/evaluatePoints.f90 \
+	PUBS/src/patchwork/evaluateProjections.f90 \
+	PUBS/src/patchwork/getSurface.f90
 
 default:	
 	f2py --fcompiler=gnu95 -I$(CGNS_INCLUDE) -c ${SRC_FILES} -m PUBSlib ${LIB_CGNS}

@@ -1,4 +1,4 @@
-subroutine getKMN(k, nsurf, nedge, ngroup, ratio, ns, surf_edge, edge_group, &
+subroutine initializeKMN(k, nsurf, nedge, ngroup, ratio, ns, surf_edge, edge_group, &
            group_k, group_m, group_n)
 
   implicit none
@@ -48,4 +48,4 @@ subroutine getKMN(k, nsurf, nedge, ngroup, ratio, ns, surf_edge, edge_group, &
      group_m(vgroup) = m
   end do
 
-end subroutine getKMN
+end subroutine initializeKMN

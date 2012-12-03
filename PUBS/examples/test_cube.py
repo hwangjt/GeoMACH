@@ -39,6 +39,8 @@ oml1.edge_c1[0,0] = True
 oml1.surf_c1[-1,:] = True
 oml1.edge_c1[3,1] = True
 oml1.updateBsplines()
+oml1.group_n[0] += 10
+oml1.updateEvaluation()
 
 #oml1.plotm(mlab.figure(),False)
 #mlab.show()

@@ -1,4 +1,4 @@
-subroutine computeTopology(nsurf, vtol, etol, P, nvert, nedge, surf_vert, & 
+subroutine initializeConnectivities(nsurf, vtol, etol, P, nvert, nedge, surf_vert, & 
            surf_edge)
 
   implicit none
@@ -129,7 +129,7 @@ subroutine computeTopology(nsurf, vtol, etol, P, nvert, nedge, surf_vert, &
   nvert = vert
   nedge = edge
 
-end subroutine computeTopology
+end subroutine initializeConnectivities
 
 
 
@@ -139,8 +139,8 @@ subroutine checkEdge(nsurf, edge, surf1, surf2, u1, v1, u2, v2, du1, dv1, du2, &
   implicit none
 
   !Input
-  integer, intent(in) ::  nsurf, edge, surf1, surf2, u1, v1, u2, v2, du1, dv1, & 
-           du2, dv2
+  integer, intent(in) ::  nsurf, edge, surf1, surf2
+  integer, intent(in) ::  u1, v1, u2, v2, du1, dv1, du2, dv2
   double precision, intent (in) ::  etol, P(nsurf,3,3,3)
 
   !Output
@@ -168,7 +168,7 @@ end subroutine checkEdge
 
 
 
-subroutine countVEptrs(nsurf, nvert, nedge, surf_vert, surf_edge, vert_count, & 
+subroutine initializeVEcounts(nsurf, nvert, nedge, surf_vert, surf_edge, vert_count, & 
            edge_count)
 
   implicit none
@@ -210,11 +210,11 @@ subroutine countVEptrs(nsurf, nvert, nedge, surf_vert, surf_edge, vert_count, &
      end do
   end do
 
-end subroutine countVEptrs
+end subroutine initializeVEcounts
 
 
 
-subroutine computeGroups(nsurf, nedge, surf_edge, ngroup, edge_group)
+subroutine initializeGroups(nsurf, nedge, surf_edge, ngroup, edge_group)
 
   implicit none
 
@@ -270,7 +270,7 @@ subroutine computeGroups(nsurf, nedge, surf_edge, ngroup, edge_group)
      end do
   end do
 
-end subroutine computeGroups
+end subroutine initializeGroups
 
 
 

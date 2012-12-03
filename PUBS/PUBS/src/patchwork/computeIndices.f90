@@ -1,4 +1,4 @@
-subroutine getEdgeIndices(nedge, ngroup, edge_group, group_n, edge_index)
+subroutine computeEdgeIndices(nedge, ngroup, edge_group, group_n, edge_index)
 
   implicit none
 
@@ -28,11 +28,11 @@ subroutine getEdgeIndices(nedge, ngroup, edge_group, group_n, edge_index)
      edge_index(edge,2) = i2
   end do
 
-end subroutine getEdgeIndices
+end subroutine computeEdgeIndices
 
 
 
-subroutine getSurfIndices(nsurf, nedge, ngroup, surf_edge, edge_group, group_n,& 
+subroutine computeSurfIndices(nsurf, nedge, ngroup, surf_edge, edge_group, group_n,& 
            surf_index)
 
   implicit none
@@ -65,11 +65,11 @@ subroutine getSurfIndices(nsurf, nedge, ngroup, surf_edge, edge_group, group_n,&
      surf_index(surf,2) = i2
   end do
 
-end subroutine getSurfIndices
+end subroutine computeSurfIndices
 
 
 
-subroutine getEdgeIndicesQ(nsurf, nedge, ngroup, surf_edge, edge_group, & 
+subroutine computeEdgeIndicesQ(nsurf, nedge, ngroup, surf_edge, edge_group, & 
            group_n, surf_c1, edge_index)
 
   implicit none
@@ -123,11 +123,11 @@ subroutine getEdgeIndicesQ(nsurf, nedge, ngroup, surf_edge, edge_group, &
      end if
   end do
 
-end subroutine getEdgeIndicesQ
+end subroutine computeEdgeIndicesQ
 
 
 
-subroutine getVertIndicesQ(nsurf, nedge, nvert, surf_vert, surf_edge, surf_c1,& 
+subroutine computeVertIndicesQ(nsurf, nedge, nvert, surf_vert, surf_edge, surf_c1,& 
            edge_c1, vert_index)
 
   implicit none
@@ -193,11 +193,11 @@ subroutine getVertIndicesQ(nsurf, nedge, nvert, surf_vert, surf_edge, surf_c1,&
      end if
   end do
 
-end subroutine getVertIndicesQ
+end subroutine computeVertIndicesQ
 
 
 
-subroutine getKnotIndices(ngroup, group_k, group_m, knot_index)
+subroutine computeKnotIndices(ngroup, group_k, group_m, knot_index)
 
   implicit none
 
@@ -224,11 +224,11 @@ subroutine getKnotIndices(ngroup, group_k, group_m, knot_index)
      knot_index(group,2) = i
   end do
 
-end subroutine getKnotIndices
+end subroutine computeKnotIndices
 
 
 
-subroutine computeIndex(surf, u, v, mu, mv, nsurf, nedge, nvert, surf_vert, &
+subroutine getIndex(surf, u, v, mu, mv, nsurf, nedge, nvert, surf_vert, &
            surf_edge, surf_index, edge_index, index)
 
   implicit none
@@ -290,5 +290,4 @@ subroutine computeIndex(surf, u, v, mu, mv, nsurf, nedge, nvert, surf_vert, &
      index = surf_vert(surf,uu,vv)
   end if
 
-end subroutine computeIndex
-   
+end subroutine getIndex

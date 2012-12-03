@@ -1,99 +1,65 @@
 from __future__ import division
-import numpy, pylab, copy
+import numpy, copy
 import PUBS, PUBSlib
 
 
 class PUBSexport(object):
 
-    def __init__(self, model):
-        self.model = model
+    def plot(self, Ps):
+        from mayavi import mlab
+        mlab.figure(mlab.figure(),bgcolor=(1,1,1))
+        for s in range(len(Ps)):
+            mlab.mesh(Ps[s][:,:,0],Ps[s][:,:,1],Ps[s][:,:,2],color=(65/256,105/256,225/256))
+        mlab.show()
 
-    def write2Tec(self, filename, names=[], data=[]):
-        model = self.model
-        f = open(filename+'.dat','w')
-        f.write('title = "PUBSlib output"\n')
-        f.write('variables = "x", "y", "z"')
-        for i in range(len(data)):
-            f.write(', "' + names[i] + '"')
+    def writeTecHeader(self, filename, title, variables):
+        f = open(filename,'w')
+        f.write('title = ' + title + '\n')
+        f.write('variables = ')
+        for i in range(len(variables)):
+            f.write(variables[i] + ',')
         f.write('\n')
-        for surf in range(model.nsurf):
-            ugroup = model.edge_group[abs(model.surf_edge[surf,0,0])-1]
-            vgroup = model.edge_group[abs(model.surf_edge[surf,1,0])-1]
-            nu = model.group_n[ugroup-1]
-            nv = model.group_n[vgroup-1]      
+        return f
+
+    def writeLine(self, f, data, label=''):
+        f.write(label)
+        for k in range(data.shape[0]):
+            f.write(str(data[k]) + ' ')
+        f.write('\n')
+
+    def write2TecStruct(self, filename, Ps, variables, title="PUBS output"):
+        f = self.writeTecHeader(filename,title,variables) 
+        for s in range(len(Ps)):
+            nu = Ps[s].shape[0]
+            nv = Ps[s].shape[1]
             f.write('zone i='+str(nu)+', j='+str(nv)+', DATAPACKING=POINT\n')
-            P = PUBSlib.getsurfacep(surf+1, model.nP, nu, nv, model.nsurf, model.nedge, model.nvert, model.surf_vert, model.surf_edge, model.surf_index_P, model.edge_index_P, model.P)
             for v in range(nv):
                 for u in range(nu):
-                    f.write(str(P[u,v,0]) + ' ' + str(P[u,v,1]) + ' ' + str(P[u,v,2]))
-                    for i in range(len(data)):
-                        index = model.computeIndex(surf,u,v,0)
-                        f.write(' ' + str(data[i][index,0]))
-                    f.write('\n')
+                    self.writeLine(f, Ps[s][u,v,:])
         f.close()
 
-    def write2TecC(self, filename):
-        model = self.model
-        f = open(filename+'.dat','w')
-        f.write('title = "PUBSlib output"\n')
-        f.write('variables = "x", "y", "z"\n')        
-        f.write('zone i='+str(model.nC)+', DATAPACKING=POINT\n')
-        for i in range(model.nC):
-            f.write(str(model.C[i,0]) + ' ' + str(model.C[i,1]) + ' ' + str(model.C[i,2]) + '\n')
+    def write2TecScatter(self, filename, C, variables, title="PUBS output"):
+        f = self.writeTecHeader(filename,title,variables) 
+        f.write('zone i='+str(C.shape[0])+', DATAPACKING=POINT\n')
+        for i in range(C.shape[0]):
+            self.writeLine(f, C[i,:])
         f.close()
 
-    def write2STL(self, filename):
-        def writeline(f, label, data):
-            f.write(label)
-            for k in range(3):
-                f.write(' '+str(data[k]))
-            f.write('\n')
-
-        model = self.model
-        f = open(filename+'.stl','w')
+    def write2STL(self, filename, Ts):
+        f = open(filename,'w')
         f.write('solid model\n')
-        n = PUBSlib.getsurfacesizes(model.nsurf, model.nedge, model.ngroup, model.surf_edge, model.edge_group, model.group_n)
-        for s in range(model.nsurf):
-            P = PUBSlib.getsurfacep(s+1, model.nP, n[s,0], n[s,1], model.nsurf, model.nedge, model.nvert, model.surf_vert, model.surf_edge, model.surf_index_P, model.edge_index_P, model.P)
-            for i in range(P.shape[0]-1):
-                for j in range(P.shape[1]-1):
-                    P00 = P[i,j,:]
-                    P01 = P[i,j+1,:]
-                    P10 = P[i+1,j,:]
-                    P11 = P[i+1,j+1,:]
-                    n1 = numpy.cross(P10-P00,P01-P00)
-                    n2 = numpy.cross(P01-P11,P10-P11)
-
-                    writeline(f, 'facet normal', n1)
-                    f.write('outer loop\n')
-                    writeline(f, 'vertex', P01)
-                    writeline(f, 'vertex', P00)
-                    writeline(f, 'vertex', P10)
-                    f.write('endloop\n')
-                    f.write('endfacet\n')
-
-                    writeline(f, 'facet normal', n2)
-                    f.write('outer loop\n')
-                    writeline(f, 'vertex', P01)
-                    writeline(f, 'vertex', P11)
-                    writeline(f, 'vertex', P10)
-                    f.write('endloop\n')
-                    f.write('endfacet\n')
+        for t in range(Ts.shape[0]):
+            self.writeLine(f, Ts[t,3,:], 'facet normal ')
+            f.write('outer loop\n')
+            self.writeLine(f, Ts[t,0,:], 'vertex ')
+            self.writeLine(f, Ts[t,1,:], 'vertex ')
+            self.writeLine(f, Ts[t,2,:], 'vertex ')
+            f.write('endloop\n')
+            f.write('endfacet\n')
+        f.write('endsolid model')
         f.close()
 
-    def write2IGES(self, filename):
-        model = self.model
-        def getProps(surf):
-            ugroup = model.edge_group[abs(model.surf_edge[surf,0,0])-1]
-            vgroup = model.edge_group[abs(model.surf_edge[surf,1,0])-1]
-            ku = model.group_k[ugroup-1]
-            kv = model.group_k[vgroup-1]      
-            mu = model.group_m[ugroup-1]
-            mv = model.group_m[vgroup-1]      
-            du = model.group_d[model.knot_index[ugroup-1,0]:model.knot_index[ugroup-1,1]]
-            dv = model.group_d[model.knot_index[vgroup-1,0]:model.knot_index[vgroup-1,1]]
-            return ku,kv,mu,mv,du,dv            
-
+    def write2IGES(self, filename, ks, ms, ds, Cs):
         def write(f, val, dirID, parID, field, last=False):
             if last:
                 f.write('%20.12e;' %(val.real))
@@ -108,7 +74,7 @@ class PUBSexport(object):
                 parID += 1
             return parID, field
 
-        f = open(filename+'.igs','w')
+        f = open(filename,'w')
         f.write('                                                                        S      1\n')
         f.write('1H,,1H;,4HSLOT,37H$1$DUA2:[IGESLIB.BDRAFT.B2I]SLOT.IGS;,                G      1\n')
         f.write('17HBravo3 BravoDRAFT,31HBravo3->IGES V3.002 (02-Oct-87),32,38,6,38,15,  G      2\n')
@@ -116,10 +82,9 @@ class PUBSexport(object):
         f.write('31HD. A. Harrod, Tel. 313/995-6333,24HAPPLICON - Ann Arbor, MI,4,0;     G      4\n')
 
         dirID = 1
-        parID = 1    
-        for surf in range(model.nsurf):
-            ku,kv,mu,mv,du,dv = getProps(surf)
-            numFields = 4 + du.shape[0] + dv.shape[0] + 4*mu*mv
+        parID = 1
+        for s in range(ks.shape[0]):
+            numFields = 4 + ds[0][s].shape[0] + ds[1][s].shape[0] + 4*ms[s,0]*ms[s,1]
             numLines = 2 + numpy.ceil(numFields/3.0)
             for val in [128, parID, 0, 0, 1, 0, 0, 0]:
                 f.write('%8i' %(val))
@@ -136,10 +101,15 @@ class PUBSexport(object):
             parID += numLines
         nDir = dirID - 1
 
-        dirID = 1    
+        dirID = 1
         parID = 1
-        for surf in range(model.nsurf):
-            ku,kv,mu,mv,du,dv = getProps(surf)
+        for s in range(ks.shape[0]):
+            ku = ks[s,0]
+            kv = ks[s,1]
+            mu = ms[s,0]
+            mv = ms[s,1]
+            du = ds[0][s]
+            dv = ds[1][s]
 
             for val in [128, mu-1, mv-1, ku-1, kv-1]:
                 f.write('%12i,' %(val))
@@ -164,9 +134,8 @@ class PUBSexport(object):
                 parID,field = write(f, 1.0, dirID, parID, field)
             for j in range(mv):
                 for i in range(mu):
-                    C = model.C[model.computeIndex(surf,i,j,1)]
                     for k in range(3):
-                        parID,field = write(f, C[k].real, dirID, parID, field)
+                        parID,field = write(f, Cs[s][i,j,k], dirID, parID, field)
             parID,field = write(f, 0, dirID, parID, field)
             parID,field = write(f, 1, dirID, parID, field)
             parID,field = write(f, 0, dirID, parID, field)
@@ -200,7 +169,7 @@ class PUBSexport(object):
             vgroup = model.edge_group[abs(model.surf_edge[surf,1,0])-1]
             nu = model.group_n[ugroup-1]
             nv = model.group_n[vgroup-1]      
-            P = PUBSlib.getsurfacep(surf+1, model.nP, nu, nv, model.nsurf, model.nedge, model.nvert, model.surf_vert, model.surf_edge, model.surf_index_P, model.edge_index_P, model.P)
+            P = PUBSlib.getsurfacep(surf+1, model.nP, nu, nv, model.nvar, model.nsurf, model.nedge, model.nvert, model.surf_vert, model.surf_edge, model.surf_index_P, model.edge_index_P, model.P)
             Ps.append(P[:,:,:])
             Ps.append(copy.copy(P[::-1,:,:]))
             Ps[-1][:,:,2] *= -1
@@ -257,7 +226,7 @@ class PUBSexport(object):
             for j in range(d.shape[0]):
                 file.write(str(d[j])+' ')
             file.write('\n')
-            C = PUBSlib.getsurfacep(surf+1, oml0.nC, ms[surf,0], ms[surf,1], oml0.nsurf, oml0.nedge, oml0.nvert, oml0.surf_vert, oml0.surf_edge, oml0.surf_index_C, oml0.edge_index_C, oml0.C)
+            C = PUBSlib.getsurfacep(surf+1, oml0.nC, ms[surf,0], ms[surf,1], oml0.nvar, oml0.nsurf, oml0.nedge, oml0.nvert, oml0.surf_vert, oml0.surf_edge, oml0.surf_index_C, oml0.edge_index_C, oml0.C)
             if edge0==0:
                 if edge1==0:
                     edgeCs = copy.copy(C[:,0,:])
@@ -299,7 +268,7 @@ class PUBSexport(object):
             for j in range(d.shape[0]):
                 file.write(str(d[j])+' ')
             file.write('\n')
-            C = PUBSlib.getsurfacep(i+1, oml0.nC, ms[i,0], ms[i,1], oml0.nsurf, oml0.nedge, oml0.nvert, oml0.surf_vert, oml0.surf_edge, oml0.surf_index_C, oml0.edge_index_C, oml0.C)
+            C = PUBSlib.getsurfacep(i+1, oml0.nC, ms[i,0], ms[i,1], oml0.nvar, oml0.nsurf, oml0.nedge, oml0.nvert, oml0.surf_vert, oml0.surf_edge, oml0.surf_index_C, oml0.edge_index_C, oml0.C)
             for v in range(C.shape[1]):
                 for u in range(C.shape[0]):
                     file.write(str(C[u,v,0])+' ')

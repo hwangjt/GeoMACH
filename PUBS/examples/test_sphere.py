@@ -77,10 +77,10 @@ Q = numpy.zeros((n,3),order='F')
 for i in range(n):
     Q[i] = [0,0,1]
 t0 = time.time()
-s,u,v = oml1.computeProjection(P0,Q=Q,surfs=[3])
+s,u,v = oml1.evaluateProjection(P0,Q=Q,surfs=[3])
 print time.time()-t0
 t0 = time.time()
-B = oml1.computeBases(s,u,v)
+B = oml1.evaluateBases(s,u,v)
 print time.time()-t0
 P = B.dot(oml1.C)
 print 'Projection test:'
@@ -89,11 +89,11 @@ print P[0],s[0],u[0],v[0]
 
 h=1e-5
 print '1st parametric derivative test:'
-print (oml1.computePt(0,0.1,0.4+h) - oml1.computePt(0,0.1,0.4-h))/2/h
-print oml1.computePt(0,0.1,0.4,0,1)
+print (oml1.evaluatePoint(0,0.1,0.4+h) - oml1.evaluatePoint(0,0.1,0.4-h))/2/h
+print oml1.evaluatePoint(0,0.1,0.4,0,1)
 print '2nd parametric derivative test:'
-print (oml1.computePt(0,0.1,0.4+2*h) - 2*oml1.computePt(0,0.1,0.4+h) + oml1.computePt(0,0.1,0.4))/h**2
-print oml1.computePt(0,0.1,0.4,0,2)
+print (oml1.evaluatePoint(0,0.1,0.4+2*h) - 2*oml1.evaluatePoint(0,0.1,0.4+h) + oml1.evaluatePoint(0,0.1,0.4))/h**2
+print oml1.evaluatePoint(0,0.1,0.4,0,2)
 
 for i in range(oml1.ngroup):
     oml1.group_n[i] -= 4

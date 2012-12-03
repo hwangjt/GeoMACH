@@ -16,9 +16,9 @@ sources = [
     'PUBS/src/patchwork/computeParameters.f90',
     'PUBS/src/patchwork/computeJacobian.f90',
     'PUBS/src/patchwork/computeDOFmapping.f90', 
-    'PUBS/src/patchwork/computeDerivative.f90', 
-    'PUBS/src/patchwork/computeProjection.f90', 
-    'PUBS/src/patchwork/plotSurfaces.f90',
+    'PUBS/src/patchwork/evaluatePoints.f90',
+    'PUBS/src/patchwork/evaluateProjections.f90',
+    'PUBS/src/patchwork/getSurface.f90',
     ]
 
 config = Configuration(name='PUBS')

@@ -1,4 +1,4 @@
-subroutine getMnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m,&
+subroutine computeMnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m,&
            surf_index, edge_index, vert_index, edge_count, surf_c1, edge_c1, nM)
 
   implicit none
@@ -68,11 +68,11 @@ subroutine getMnnz(nsurf, nedge, ngroup, nvert, surf_edge, edge_group, group_m,&
   end do
   nM = nM + surf_index(nsurf,2)
 
-end subroutine getMnnz
+end subroutine computeMnnz
 
 
 
-subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge,&
+subroutine computeDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge,&
            edge_group, group_m, surf_index_C, edge_index_C, edge_index_Q, &
            vert_index_Q, edge_count, surf_c1, edge_c1, Ma, Mi, Mj)
 
@@ -290,4 +290,4 @@ subroutine getDOFmapping(nM, nsurf, nedge, ngroup, nvert, surf_vert, surf_edge,&
      Mj(iM) = Mj(iM) - 1
   end do
 
-end subroutine getDOFmapping
+end subroutine computeDOFmapping

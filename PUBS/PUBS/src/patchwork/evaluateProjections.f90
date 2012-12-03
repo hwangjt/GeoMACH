@@ -1,4 +1,4 @@
-subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
+subroutine evaluateProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
      nvert, surfs, surf_vert, surf_edge, edge_group, group_k, group_m, group_n,&
      group_d, surf_index_P, edge_index_P, surf_index_C, edge_index_C, &
      knot_index, T, C, P, P0, mins, minu, minv)
@@ -44,7 +44,7 @@ subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
   double precision, intent(out) ::  minu(nP0), minv(nP0)
 
   !Working
-  integer surf, ugroup, vgroup, ku, kv, mu, mv, nu, nv, nB
+  integer surf, ugroup, vgroup, ku, kv, mu, mv, nu, nv
   double precision, allocatable, dimension(:,:,:) ::  bufferT, bufferP
   integer k, i, s, u, v, u0, v0
   double precision x(2), dx(2), g(2), H(2,2), W(2,2), norm, det
@@ -66,10 +66,9 @@ subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
      mv = group_m(vgroup)
      nu = group_n(ugroup)
      nv = group_n(vgroup)
-     nB = ku*kv
      allocate(bufferT(nu,nv,2))
      allocate(bufferP(nu,nv,3))     
-     call extractSurfaceT(surf, nu, nv, nT, nsurf, nedge, surf_edge, &
+     call getSurfaceT(surf, nu, nv, nT, nsurf, nedge, surf_edge, &
           surf_index_P, edge_index_P, T, bufferT)
      call getSurfaceP(surf, nP, nu, nv, nsurf, nedge, nvert, surf_vert, &
           surf_edge, surf_index_P, edge_index_P, P, bufferP)
@@ -97,22 +96,22 @@ subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
         x(1) = bufferT(u0,v0,1)
         x(2) = bufferT(u0,v0,2)
         do counter=0,40
-           call computePt(surf,0,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,0,0,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pc)
-           call computePt(surf,1,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,1,0,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pu)
-           call computePt(surf,0,1,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,0,1,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pv)
-           call computePt(surf,2,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,2,0,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Puu)
-           call computePt(surf,1,1,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,1,1,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Puv)
-           call computePt(surf,0,2,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,0,2,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pvv)
            f = Pc - P0(k,:)
@@ -152,7 +151,7 @@ subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
            end if
            x = x + dx
         end do
-        call computePt(surf,0,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+        call evaluatePoint(surf,0,0,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
              surf_vert,surf_edge,edge_group,group_d,& 
              surf_index_C,edge_index_C,knot_index,C,Pc)
         d = abs(dot_product(Pc-P0(k,:),Pc-P0(k,:)))
@@ -167,11 +166,11 @@ subroutine computeProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
      deallocate(bufferP)
   end do
 
-end subroutine computeProjection
+end subroutine evaluateProjection
 
 
 
-subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
+subroutine evaluatePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
      nvert, surfs, surf_vert, surf_edge, edge_group, group_k, group_m, group_n,&
      group_d, surf_index_P, edge_index_P, surf_index_C, edge_index_C, &
      knot_index, T, C, P, P0, Q, mins, minu, minv)
@@ -218,7 +217,7 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
   double precision, intent(out) ::  minu(nP0), minv(nP0)
 
   !Working
-  integer surf, ugroup, vgroup, ku, kv, mu, mv, nu, nv, nB
+  integer surf, ugroup, vgroup, ku, kv, mu, mv, nu, nv
   double precision, allocatable, dimension(:,:,:) ::  bufferT, bufferP
   integer k, i, s, u, v, u0, v0
   double precision x(2), dx(2), g(2), H(2,2), W(2,2), norm, det
@@ -242,10 +241,9 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
      mv = group_m(vgroup)
      nu = group_n(ugroup)
      nv = group_n(vgroup)
-     nB = ku*kv
      allocate(bufferT(nu,nv,2))
      allocate(bufferP(nu,nv,3))     
-     call extractSurfaceT(surf, nu, nv, nT, nsurf, nedge, surf_edge, &
+     call getSurfaceT(surf, nu, nv, nT, nsurf, nedge, surf_edge, &
           surf_index_P, edge_index_P, T, bufferT)
      call getSurfaceP(surf, nP, nu, nv, nsurf, nedge, nvert, surf_vert, &
           surf_edge, surf_index_P, edge_index_P, P, bufferP)
@@ -275,22 +273,22 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
         x(1) = bufferT(u0,v0,1)
         x(2) = bufferT(u0,v0,2)
         do counter=0,40
-           call computePt(surf,0,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,0,0,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pc)
-           call computePt(surf,1,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,1,0,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pu)
-           call computePt(surf,0,1,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,0,1,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pv)
-           call computePt(surf,2,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,2,0,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Puu)
-           call computePt(surf,1,1,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,1,1,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Puv)
-           call computePt(surf,0,2,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+           call evaluatePoint(surf,0,2,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pvv)
            f = Pc - (P0(k,:) + R*dot_product(Pc-P0(k,:),R)/dot_product(R,R))
@@ -335,7 +333,7 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
            end if
            x = x + dx
         end do
-        call computePt(surf,0,0,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
+        call evaluatePoint(surf,0,0,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
              surf_vert,surf_edge,edge_group,group_d,& 
              surf_index_C,edge_index_C,knot_index,C,Pc)
         f = Pc - (P0(k,:) + R*dot_product(Pc-P0(k,:),R)/dot_product(R,R))
@@ -351,7 +349,7 @@ subroutine computePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
      deallocate(bufferP)
   end do
 
-end subroutine computePjtnAlongQ
+end subroutine evaluatePjtnAlongQ
 
 
 
@@ -370,60 +368,3 @@ subroutine getOuter(a,b,C)
   end do
 
 end subroutine getOuter
-
-
-
-subroutine computePt(surf,uder,vder,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,u,v,& 
-           surf_vert,surf_edge,edge_group,group_d,& 
-           surf_index_C,edge_index_C,knot_index,C,P)
-
-  implicit none
-
-  !Fortran-python interface directives
-  !f2py intent(in) surf,uder,vder,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert,u,v,surf_vert,surf_edge,edge_group,group_d,surf_index_C,edge_index_C,knot_index,C
-  !f2py intent(out) P
-  !f2py depend(nsurf) surf_vert
-  !f2py depend(nsurf) surf_edge
-  !f2py depend(nedge) edge_group
-  !f2py depend(nD) group_d
-  !f2py depend(nsurf) surf_index_C
-  !f2py depend(nedge) edge_index_C
-  !f2py depend(ngroup) knot_index
-  !f2py depend(nC) C
-
-  !Input
-  integer, intent(in) ::  surf,uder,vder,ku,kv,mu,mv,nB,nD,nC,nsurf,nedge,ngroup,nvert
-  double precision, intent(in) ::  u,v
-  integer, intent(in) ::  surf_vert(nsurf,2,2), surf_edge(nsurf,2,2), &
-                          edge_group(nedge)
-  double precision, intent(in) ::  group_d(nD)
-  integer, intent(in) ::  surf_index_C(nsurf,2), edge_index_C(nedge,2), &
-                          knot_index(ngroup,2)
-  double precision, intent(in) ::  C(nC,3)
-
-  !Output
-  double precision, intent(out) ::  P(3)
-
-  !Working
-  integer iB, k
-  double precision t(2)
-  double precision Ba(nB)
-  integer Bi(nB), Bj(nB)
-
-  t(1) = u
-  t(2) = v
-  call computeDerivativeSingle(surf, uder, vder, ku, kv, mu, mv, ku+mu, &
-       kv+mv, nB, nD, nsurf, nedge, ngroup, nvert, t, surf_vert, &
-       surf_edge, edge_group, group_d, surf_index_C, &
-       edge_index_C, knot_index, Ba, Bi, Bj)
-  P(:) = 0.0
-  do iB=1,nB
-     do k=1,3
-        P(k) = P(k) + Ba(iB)*C(Bj(iB)+1,k)
-     end do
-  end do
-
-end subroutine computePt
-
-
-

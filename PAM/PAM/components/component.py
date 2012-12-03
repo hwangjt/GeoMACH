@@ -224,7 +224,7 @@ class Component(object):
                                         DOF = DOF and not getC1(surf,u=int(uType/2),d=int(vType/2))
                                         DOF = DOF and not getC1(surf,v=int(vType/2),d=int(uType/2))
                                 if DOF:
-                                    Ns[f][ii,jj,0] = oml0.computeIndex(surf,u,v,2)
+                                    Ns[f][ii,jj,0] = oml0.getIndex(surf,u,v,2)
                                     Ns[f][ii,jj,1] = i
                                     Ns[f][ii,jj,2] = u
                                     Ns[f][ii,jj,3] = j
@@ -320,7 +320,7 @@ class Component2(object):
                                 vType = self.classifyC(v,jj,nj[j]+1,Ns[f].shape[1])
                                 isInteriorDOF = (uType==2 and vType==2)
                                 if isInteriorDOF or self.isExteriorDOF(f,uType,vType,i,j):
-                                    Ns[f][ii,jj,0] = oml0.computeIndex(surf,u,v,2)
+                                    Ns[f][ii,jj,0] = oml0.getIndex(surf,u,v,2)
                                     Ns[f][ii,jj,1] = i
                                     Ns[f][ii,jj,2] = u
                                     Ns[f][ii,jj,3] = j
@@ -472,7 +472,7 @@ class Component2(object):
                             jj = sum(nj[:j]) + v
                             for u in range(ni[i]+1):
                                 ii = sum(ni[:i]) + u
-                                Ms[f][ii,jj] = oml0.computeIndex(surf,u,v,1)
+                                Ms[f][ii,jj] = oml0.getIndex(surf,u,v,1)
         self.Ms = Ms
 
     def findJunctions(self):

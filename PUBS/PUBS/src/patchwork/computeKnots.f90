@@ -1,4 +1,4 @@
-subroutine getD(ngroup, numD, group_k, group_m, group_d)
+subroutine computeKnots(ngroup, numD, group_k, group_m, group_d)
 
   implicit none
 
@@ -34,4 +34,4 @@ subroutine getD(ngroup, numD, group_k, group_m, group_d)
      d1 = d1 + k + m
   end do
 
-end subroutine getD
+end subroutine computeKnots

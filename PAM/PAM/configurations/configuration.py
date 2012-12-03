@@ -35,10 +35,6 @@ class Configuration(object):
             comp.Ps = []
 
         self.oml0 = PUBS.PUBS(Ps)
-        self.export = PUBS.PUBSexport(self.oml0)
-        #self.export.write2Tec('test')
-        #self.plot()
-        #exit()
 
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
@@ -71,12 +67,6 @@ class Configuration(object):
             print time.time()-t0
             comp.updateQs()
         self.oml0.computePoints()
-
-    def plot(self):
-        #self.oml0.plot(pylab.figure(),False)
-        #pylab.show()
-        self.oml0.plotm(mlab.figure(),False)
-        mlab.show()
 
 
 class Configuration2(object):
@@ -182,7 +172,7 @@ class Configuration2(object):
     def plot(self):
         #self.oml0.plot(pylab.figure(),False)
         #pylab.show()
-        self.oml0.plotm(mlab.figure(),True)
+        self.oml0.plotm(mlab.figure(),False)
         mlab.show()
 
 

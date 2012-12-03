@@ -50,7 +50,7 @@ def getP(nP, airfoil):
     oml0.updateEvaluation()
     P = numpy.zeros((nP,2))
     for i in range(nP):
-        P[i,:] = oml0.P[oml0.computeIndex(0,i,0,0),:2]
+        P[i,:] = oml0.P[oml0.getIndex(0,i,0,0),:2]
     return P
 
 def getQ(ms, ns, P0):
@@ -67,9 +67,8 @@ def getQ(ms, ns, P0):
     Q = numpy.zeros((sum(ms) + 1,2))
     for i in range(ns.shape[0]):
         for j in range(ms[i]+1):
-            Q[sum(ms[:i])+j] = oml0.Q[oml0.computeIndex(i,0,j,2),:2]
+            Q[sum(ms[:i])+j] = oml0.Q[oml0.getIndex(i,0,j,2),:2]
     return Q
-    
 
 def fitAirfoil(wing,filename):
     airfoil = getAirfoil(filename)
