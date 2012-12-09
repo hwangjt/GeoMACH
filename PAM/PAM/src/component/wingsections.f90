@@ -44,38 +44,37 @@ end subroutine outer
 
 
 
-subroutine computeRotations(ax1, ax2, nj, nD, pos, rot0, Da, Di, Dj)
+subroutine computeRotations(ax1, ax2, nj, nD, pos, nor, rot, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) ax1, ax2, nj, nD, pos
-  !f2py intent(out) rot0, Da, Di, Dj
-  !f2py depend(nj) pos, rot0
+  !f2py intent(in) ax1, ax2, nj, nD, pos, nor
+  !f2py intent(out) rot, Da, Di, Dj
+  !f2py depend(nj) pos, nor, rot
   !f2py depend(nD) Da, Di, Dj
 
   !Input
   integer, intent(in) ::  ax1, ax2, nj, nD
-  double precision, intent(in) ::  pos(nj,3)
+  double precision, intent(in) ::  pos(nj,3), nor(nj,3)
 
   !Output
-  double precision, intent(out) ::  rot0(nj,3)
+  double precision, intent(out) ::  rot(nj,3)
   double precision, intent(out) ::  Da(nD)
   integer, intent(out) ::  Di(nD), Dj(nD)
 
   !Working
-  integer j, k, l, iD, ax3
-  double precision z, one, pi, t(3), ta(3), tb(3), ra2, rb2, p, q, v(2), w(2)
+  integer j, k, l, iD
+  double precision z, one, pi, t(3), ta(3), tb(3), ra, rb
+  double precision dt_dta(3,3), dt_dtb(3,3)
   double precision dt_dpos_jp1(3,3), dt_dpos_j(3,3), dt_dpos_jm1(3,3)
-  double precision dp_dv(2), dq_dw(2), I(3,3), A(3,3), B(3,3)
-  double precision drotj_dt(3,3), dv_dt(2,3), dw_dt(2,3)
+  double precision I(3,3), A(3,3), B(3,3), drotj_dt(3,3)
 
   pi = 2*acos(0.0)
   call eye(3,I)
   iD = 1
   z = 0.0
   one = 1.0
-  ax3 = 6 - ax1 - ax2
   do j=1,nj
      dt_dpos_jm1(:,:) = 0.0
      dt_dpos_j(:,:) = 0.0
@@ -91,40 +90,24 @@ subroutine computeRotations(ax1, ax2, nj, nD, pos, rot0, Da, Di, Dj)
      else
         ta = pos(j,:) - pos(j-1,:)
         tb = pos(j+1,:) - pos(j,:)
-        ra2 = dot_product(ta,ta)
-        rb2 = dot_product(tb,tb)
-        t = ta/ra2**0.5 + tb/rb2**0.5
+        ra = dot_product(ta,ta)**0.5
+        rb = dot_product(tb,tb)**0.5
+        if (ra .lt. 1e-12) then
+           ra = 1.0
+        end if
+        if (rb .lt. 1e-12) then
+           rb = 1.0
+        end if
+        t = ta/ra + tb/rb
         call outer(3,ta,ta,A)
         call outer(3,tb,tb,B)
-        dt_dpos_jm1(:,:) = -(ra2*I - A)/ra2**1.5
-        dt_dpos_j(:,:) = (ra2*I - A)/ra2**1.5 - (rb2*I - B)/rb2**1.5
-        dt_dpos_jp1(:,:) = (rb2*I - B)/rb2**1.5
+        dt_dta = (ra**2*I - A)/ra**3
+        dt_dtb = (rb**2*I - B)/rb**3
+        dt_dpos_jm1(:,:) = -dt_dta
+        dt_dpos_j(:,:) = dt_dta - dt_dtb
+        dt_dpos_jp1(:,:) = dt_dtb
      end if
-     v = (/t(ax1),t(ax2)/)
-     w = (/(t(ax1)**2+t(ax2)**2)**0.5,-t(ax3)/)
-     dv_dt(1,:) = 0.0
-     dv_dt(2,:) = 0.0
-     dw_dt(1,:) = 0.0
-     dw_dt(2,:) = 0.0
-     dv_dt(1,ax1) = 1.0
-     dv_dt(2,ax2) = 1.0
-     dw_dt(1,ax1) = t(ax1)/(t(ax1)**2+t(ax2)**2)**0.5
-     dw_dt(1,ax2) = t(ax2)/(t(ax1)**2+t(ax2)**2)**0.5
-     dw_dt(2,ax3) = -1.0
-     call arctan2pi(v, p, dp_dv)
-     call arctan2pi(w, q, dq_dw)
-     if ((ax2-ax1 .eq. -1) .or. (ax2-ax1 .eq. 2)) then
-        p = -p
-        q = -q
-        dp_dv = -dp_dv
-        dq_dw = -dq_dw
-     end if
-     rot0(j,1) = p
-     rot0(j,2) = q
-     rot0(j,3) = 0.0
-     drotj_dt(1,:) = matmul(dp_dv, dv_dt)
-     drotj_dt(2,:) = matmul(dq_dw, dw_dt)
-     drotj_dt(3,:) = 0.0
+     call computeAngles(ax1, ax2, t, nor(j,:), rot(j,:), drotj_dt)
      do k=1,3
         do l=1,3
            if (j .ne. 1) then
@@ -151,6 +134,59 @@ subroutine computeRotations(ax1, ax2, nj, nD, pos, rot0, Da, Di, Dj)
   Dj(:) = Dj(:) - 1
 
 end subroutine computeRotations
+
+
+
+subroutine computeAngles(ax1, ax2, t, nor, rot, drot_dt)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) ax1, ax2, t, nor
+  !f2py intent(out) rot, drot_dt
+
+  !Input
+  integer, intent(in) ::  ax1, ax2
+  double precision, intent(in) ::  t(3), nor(3)
+
+  !Output
+  double precision, intent(out) ::  rot(3), drot_dt(3,3)
+
+  !Working
+  integer ax3
+  double precision vnorm, v(2), w(2), dv_dt(2,3), dw_dt(2,3)
+  double precision p, q, dp_dv(2), dq_dw(2)
+
+  ax3 = 6 - ax1 - ax2
+  v = (/t(ax1),t(ax2)/)
+  vnorm = dot_product(v,v)**0.5
+  if (vnorm .lt. 1e-12) then
+     vnorm = 1.0
+  end if
+  w = (/vnorm,-t(ax3)/)
+  dv_dt(:,:) = 0.0
+  dw_dt(:,:) = 0.0
+  dv_dt(1,ax1) = 1.0
+  dv_dt(2,ax2) = 1.0
+  dw_dt(1,ax1) = t(ax1)/vnorm
+  dw_dt(1,ax2) = t(ax2)/vnorm
+  dw_dt(2,ax3) = -1.0
+  if ((ax2-ax1 .eq. -1) .or. (ax2-ax1 .eq. 2)) then
+     v(2) = -v(2)
+     w(2) = -w(2)
+     dv_dt(2,:) = -dv_dt(2,:)
+     dw_dt(2,:) = -dw_dt(2,:)
+  end if
+  call arctan2pi(v, p, dp_dv)
+  call arctan2pi(w, q, dq_dw)
+  rot(1) = p*nor(1)
+  rot(2) = q*nor(2)
+  rot(3) = 0.0
+  drot_dt(1,:) = matmul(dp_dv, dv_dt)*nor(1)
+  drot_dt(2,:) = matmul(dq_dw, dw_dt)*nor(2)
+  drot_dt(3,:) = 0.0
+
+end subroutine computeAngles
 
 
 
@@ -192,26 +228,17 @@ subroutine computeSections(ax1, ax2, f, ni, nj, nD, ishape, r, offset, chord, &
            Di(iD) = index
            Dj(iD) = j
            iD = iD + 1
-           Da(iD) = 1.0
-           Di(iD) = index
-           Dj(iD) = nj + nj*(k-1) + j
-           iD = iD + 1
            do l=1,3
               Da(iD) = dot_product(dT_drot(k,:,l),shape0(i,j,:)-r)*chord(j)
               Di(iD) = index
-              Dj(iD) = 4*nj + nj*(l-1) + j
+              Dj(iD) = nj + nj*(l-1) + j
               iD = iD + 1
               Da(iD) = T(k,l)*chord(j)
               Di(iD) = index
-              Dj(iD) = 7*nj + ishape + ni*nj*(l-1) + ni*(j-1) + i
+              Dj(iD) = 4*nj + ishape + ni*nj*(l-1) + ni*(j-1) + i
               iD = iD + 1
            end do
         end do
-        if ((i .eq. 1) .and. (f .eq. 0)) then
-           Da(iD-24:iD-1) = Da(iD-24:iD-1)/2.0
-        else if ((i .eq. ni) .and. (f .eq. 1)) then
-           Da(iD-24:iD-1) = Da(iD-24:iD-1)/2.0
-        end if
      end do
   end do
 

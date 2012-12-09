@@ -148,7 +148,7 @@ class Junction(Component):
             'shape':numpy.zeros((ni,nj),order='F')
             }
 
-    def propagateQs(self):
+    def computeQs(self):
         getmPt = lambda f,i,j: mQs[f][i,j,:]
         def getmEdge(f, i=None, j=None, d=1):
             if j==None:
@@ -194,27 +194,27 @@ class Junction(Component):
             mQB = getmEdge(1, j= 0, d= 1)
             mQL = numpy.zeros((1,3),order='F')
             mQR = numpy.zeros((1,3),order='F')
-            mA[0,0,:] = getmPt(0,-1, 0)
-            mA[0,1,:] = getmPt(0, 0, 0)
-            mA[1,0,:] = getmPt(0,-1, 0)
-            mA[1,1,:] = getmPt(0, 0, 0)
-            mB[0,0,:] = getmPt(0,-1, 1)
-            mB[0,1,:] = getmPt(0, 0, 1)
-            mB[1,0,:] = getmPt(0,-1, 1)
-            mB[1,1,:] = getmPt(0, 0, 1)
+            mA[0,0,:] = getmPt(1, 0, 0)
+            mA[0,1,:] = getmPt(1,-1, 0)
+            mA[1,0,:] = getmPt(1, 0, 0)
+            mA[1,1,:] = getmPt(1,-1, 0)
+            mB[0,0,:] = getmPt(1, 0, 1)
+            mB[0,1,:] = getmPt(1,-1, 1)
+            mB[1,0,:] = getmPt(1, 0, 1)
+            mB[1,1,:] = getmPt(1,-1, 1)
         elif self.mSide==1:
             mQT = getmEdge(0, j=-1, d= 1)
             mQB = getmEdge(1, j=-1, d=-1)
             mQL = numpy.zeros((1,3),order='F')
             mQR = numpy.zeros((1,3),order='F')
-            mA[0,0,:] = getmPt(0, 0,-1)
-            mA[0,1,:] = getmPt(0,-1,-1)
-            mA[1,0,:] = getmPt(0, 0,-1)
-            mA[1,1,:] = getmPt(0,-1,-1)
-            mB[0,0,:] = getmPt(0, 0,-2)
-            mB[0,1,:] = getmPt(0,-1,-2)
-            mB[1,0,:] = getmPt(0, 0,-2)
-            mB[1,1,:] = getmPt(0,-1,-2)
+            mA[0,0,:] = getmPt(1,-1,-1)
+            mA[0,1,:] = getmPt(1, 0,-1)
+            mA[1,0,:] = getmPt(1,-1,-1)
+            mA[1,1,:] = getmPt(1, 0,-1)
+            mB[0,0,:] = getmPt(1,-1,-2)
+            mB[0,1,:] = getmPt(1, 0,-2)
+            mB[1,0,:] = getmPt(1,-1,-2)
+            mB[1,1,:] = getmPt(1, 0,-2)
 
         v = self.variables
         self.Qs[0] = PAMlib.computejunction(fQ.shape[0], fQ.shape[1], nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['f0'], v['m0'], mQT, mQB, mQL, mQR, mA, mB, fQ, v['shape'])

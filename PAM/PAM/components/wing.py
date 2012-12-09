@@ -67,8 +67,10 @@ class Wing(Component):
             'chord':ones(nj),
             'pos':zeros((nj,3),order='F'),
             'rot':zeros((nj,3),order='F'),
-            'nor':zeros((nj,3),order='F'),
             'shape':zeros((2,ni,nj,3),order='F')
+            }
+        self.parameters = {
+            'nor':ones((nj,3),order='F')
             }
         self.setAirfoil()
 
@@ -78,26 +80,111 @@ class Wing(Component):
             for j in range(self.Ns[f].shape[1]):
                 self.variables['shape'][f,:,j,:2] = Ps[f][:,:]
         
-    def propagateQs(self):
+    def computeQs(self):
         r = numpy.array([0.25,0,0])
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
         v = self.variables
+        p = self.parameters
         ax1 = self.ax1
         ax2 = self.ax2
 
-        if self.left==2:
-            v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
-        if self.right==2:
-            v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
-        rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nj, 9*(nj*3-2), v['pos'])
-        drot0_dpos = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
-        rot = v['rot']*numpy.pi/180.0 + rot0*v['nor']
+        #if self.left==2:
+        #    v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
+        #if self.right==2:
+        #    v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
+        rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nj, 9*(nj*3-2), v['pos'], p['nor'])
+        self.drot0_dpos = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
+        rot = v['rot']*numpy.pi/180.0 + rot0
+
+        if 0:
+            h = 1e-5
+            P = numpy.array([1.,2.])
+            t0, dt_dP = PAMlib.arctan2pi(P)
+            for k in range(2):
+                P[k] += h
+                t, dt_dP = PAMlib.arctan2pi(P)
+                print P, t
+                P[k] -= h
+                d1 = (t-t0)/h
+                d2 = dt_dP[k]
+                print abs(d2-d1)
+            exit()
+
+        if 0:
+            h = 1e-5
+            t = numpy.array([2.,3,4])
+            nor = numpy.ones(3)
+            rot0, drot_dt = PAMlib.computeangles(ax1, ax2, t, nor)
+            for k in range(3):
+                t[k] += h
+                rot, drot_dt = PAMlib.computeangles(ax1, ax2, t, nor)
+                t[k] -= h
+                d1 = (rot-rot0)/h
+                d2 = drot_dt[:,k]
+                print numpy.linalg.norm(d2-d1)
+            exit()
+
+        if 0:
+            h = 1e-5
+            v['pos'][:,0] = numpy.linspace(0.,1,nj)
+            v['pos'][:,1] = numpy.linspace(0.,1,nj)
+            v['pos'][:,2] = numpy.linspace(0.,1,nj)
+            rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nj, 9*(nj*3-2), v['pos'], p['nor'])
+            self.drot0_dpos = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
+            for j in range(nj):
+                for k in range(3):
+                    v['pos'][j,k] += h
+                    rot1, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nj, 9*(nj*3-2), v['pos'], p['nor'])
+                    #print rot1
+                    #print '--------'
+                    v['pos'][j,k] -= h
+                    for l in range(3):
+                        d1 = self.drot0_dpos.getcol(nj*k+j).todense()[l*nj:(l+1)*nj]
+                        d2 = (rot1-rot0)[:,l]/h
+                        print numpy.linalg.norm(d2-d1.T)
+                        print d2
+                        print d1.T
+                        print '----------'
+            print rot0
+            exit()
 
         self.dQs_dv = range(2)
         for f in range(2):
-            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, f, ni, nj, ni*nj*24, f*3*ni*nj, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:])
-            self.dQs_dv[f] = scipy.sparse.csr_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nj*(7+6*ni)))
+            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, f, ni, nj, ni*nj*21, f*3*ni*nj, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:])
+            self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nj*(4+6*ni)))
+
+    def setDerivatives(self, var, ind):
+        ni = self.Qs[0].shape[0]
+        nj = self.Qs[0].shape[1]
+        if var=='offset':
+            for f in range(2):
+                self.Qs[f][:,:,ind] += 1.0
+        elif var=='chord':
+            for f in range(2):
+                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(ind).todense())
+        elif var=='pos':
+            j = ind[0]
+            k = ind[1]
+            A = scipy.sparse.csc_matrix((nj,3*nj))
+            B = self.drot0_dpos
+            C = scipy.sparse.csc_matrix((self.dQs_dv[0].shape[1]-4*nj,3*nj))
+            D = scipy.sparse.vstack([A,B,C],format='csc')
+            for f in range(2):
+                self.Qs[f][:,j,k] += 1.0
+                Q = self.dQs_dv[f].dot(D).todense()[:,nj*k+j]
+                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, Q)
+        elif var=='rot':
+            j = ind[0]
+            k = ind[1]
+            for f in range(2):
+                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(nj+nj*k+j).todense()*numpy.pi/180.0)
+        elif var=='shape':
+            f = ind[0]
+            i = ind[1]
+            j = ind[2]
+            k = ind[3]
+            self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(4*nj+f*3*ni*nj+ni*nj*k+ni*j+i).todense())
 
 
 if __name__ == '__main__':
@@ -111,20 +198,17 @@ if __name__ == '__main__':
     w.initializeDOFmappings()
     w.initializeVariables()
     w.variables['pos'][:,2] = numpy.linspace(0,1,w.Qs[0].shape[1])
-    for j in range(w.Qs[0].shape[1]):
-        w.variables['shape'][0,:,j,0] = 1 - numpy.linspace(0,1,w.Qs[0].shape[0])
-        w.variables['shape'][1,:,j,0] = numpy.linspace(0,1,w.Qs[0].shape[0])
+    #for j in range(w.Qs[0].shape[1]):
+    #    w.variables['shape'][0,:,j,0] = 1 - numpy.linspace(0,1,w.Qs[0].shape[0])
+    #    w.variables['shape'][1,:,j,0] = numpy.linspace(0,1,w.Qs[0].shape[0])
     w.variables['pos'][:,0] = numpy.linspace(0,1,w.Qs[0].shape[1])
     w.variables['pos'][:,1] = numpy.linspace(0,1,w.Qs[0].shape[1])
     #w.variables['rot'][:,2] = 20
-    w.variables['nor'][:,:] = 1.0
+    w.parameters['nor'][:,:] = 1.0
     w.setAirfoil("naca0012.dat")
+    w.computeQs()
     w.propagateQs()
-    w.updateQs()
     w.oml0.computePoints()
-    w.oml0.plot(pylab.figure(),False)
-    export = PUBS.PUBSexport(w.oml0)
+    w.oml0.plot()
     name='wing'
-    export.write2Tec(name)
-    export.write2TecC(name+'_C')
-    pylab.show()
+    w.oml0.write2Tec(name)

@@ -232,12 +232,12 @@ class Component(object):
         self.Qs = Qs
         self.Ns = Ns
 
-    def updateQs(self):
+    def propagateQs(self):
         Qs = self.Qs
         Ns = self.Ns
         oml0 = self.oml0
         for f in range(len(Ns)):
-            PAMlib.updateqs(oml0.nQ, Ns[f].shape[0], Ns[f].shape[1], Ns[f], Qs[f], oml0.Q)
+            PAMlib.updateqs(oml0.nQ, Ns[f].shape[0], Ns[f].shape[1], oml0.nvar, Ns[f], Qs[f], oml0.Q)
 
     def translatePoints(self, dx, dy, dz):
         for k in range(len(self.Ps)):

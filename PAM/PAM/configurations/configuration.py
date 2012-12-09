@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy, pylab, time
+import scipy.sparse
 import PUBS
 import mpl_toolkits.mplot3d.axes3d as p3
 from mayavi import mlab
@@ -16,6 +17,7 @@ class Configuration(object):
         self.keys.append(name)
 
     def separateComps(self):
+        self.nprim = len(self.comps)
         for k in range(len(self.comps)):
             self.comps[self.keys[k]].translatePoints(0,0,k*4)   
 
@@ -47,9 +49,7 @@ class Configuration(object):
             comp = self.comps[self.keys[k]]
             comp.initializeDOFmappings()
             comp.initializeVariables()
-            comp.propagateQs()
-            comp.updateQs()
-        self.oml0.computePoints()
+        self.computePoints()
 
     def updateComponents(self):
         self.oml0.updateBsplines()
@@ -60,13 +60,55 @@ class Configuration(object):
         self.computePoints()
 
     def computePoints(self):
-        for k in range(len(self.comps)):
-            comp = self.comps[self.keys[k]]
-            t0 = time.time()
-            comp.propagateQs()
-            print time.time()-t0
-            comp.updateQs()
+        self.computeQs()
+        self.propagateQs()
         self.oml0.computePoints()
+
+    def computeQs(self, full=True):
+        if full:
+            for k in range(len(self.comps)):
+                self.comps[self.keys[k]].computeQs()
+        else:
+            for k in range(self.nprim,len(self.comps)):
+                self.comps[self.keys[k]].computeQs()
+
+    def propagateQs(self):
+        self.oml0.Q[:,:3] = 0.0
+        for k in range(len(self.comps)):
+            self.comps[self.keys[k]].propagateQs()
+
+    def getDerivatives(self, comp, var, ind, clean=True, FD=False, h=1e-5):
+        self.computeQs()
+        self.propagateQs()
+        Q0 = numpy.array(self.oml0.Q[:,:3])
+        if FD:
+            self.comps[comp].variables[var][ind] += h
+            self.computeQs()
+            self.comps[comp].variables[var][ind] -= h
+        else:
+            self.comps[comp].setDerivatives(var,ind)
+            self.computeQs(False)
+            h = 1.0
+        self.propagateQs()
+        res = (self.oml0.Q[:,:3] - Q0)/h
+        if clean:
+            self.computePoints()
+        return res
+
+    def runDerivativeTest(self, comp):
+        h = 1e-4
+        for var in self.comps[comp].variables.keys():
+            dat = self.comps[comp].variables[var]
+            for ind,x in numpy.ndenumerate(dat):
+                ind = ind[0] if len(ind)==1 else ind
+                d1 = self.getDerivatives(comp,var,ind,clean=False)
+                d2 = self.getDerivatives(comp,var,ind,clean=False,FD=True,h=h)
+                norm0 = numpy.linalg.norm(d2)
+                norm0 = 1.0 if norm0==0 else norm0
+                error = numpy.linalg.norm(d2-d1)/norm0
+                good = 'O' if error < h else 'X'
+                print good, ' ', comp, ' ', var, ' ', ind, ' ', error
+        self.computePoints()
 
 
 class Configuration2(object):
