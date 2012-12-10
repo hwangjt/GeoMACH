@@ -97,58 +97,6 @@ class Wing(Component):
         self.drot0_dpos = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
         rot = v['rot']*numpy.pi/180.0 + rot0
 
-        if 0:
-            h = 1e-5
-            P = numpy.array([1.,2.])
-            t0, dt_dP = PAMlib.arctan2pi(P)
-            for k in range(2):
-                P[k] += h
-                t, dt_dP = PAMlib.arctan2pi(P)
-                print P, t
-                P[k] -= h
-                d1 = (t-t0)/h
-                d2 = dt_dP[k]
-                print abs(d2-d1)
-            exit()
-
-        if 0:
-            h = 1e-5
-            t = numpy.array([2.,3,4])
-            nor = numpy.ones(3)
-            rot0, drot_dt = PAMlib.computeangles(ax1, ax2, t, nor)
-            for k in range(3):
-                t[k] += h
-                rot, drot_dt = PAMlib.computeangles(ax1, ax2, t, nor)
-                t[k] -= h
-                d1 = (rot-rot0)/h
-                d2 = drot_dt[:,k]
-                print numpy.linalg.norm(d2-d1)
-            exit()
-
-        if 0:
-            h = 1e-5
-            v['pos'][:,0] = numpy.linspace(0.,1,nj)
-            v['pos'][:,1] = numpy.linspace(0.,1,nj)
-            v['pos'][:,2] = numpy.linspace(0.,1,nj)
-            rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nj, 9*(nj*3-2), v['pos'], p['nor'])
-            self.drot0_dpos = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
-            for j in range(nj):
-                for k in range(3):
-                    v['pos'][j,k] += h
-                    rot1, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nj, 9*(nj*3-2), v['pos'], p['nor'])
-                    #print rot1
-                    #print '--------'
-                    v['pos'][j,k] -= h
-                    for l in range(3):
-                        d1 = self.drot0_dpos.getcol(nj*k+j).todense()[l*nj:(l+1)*nj]
-                        d2 = (rot1-rot0)[:,l]/h
-                        print numpy.linalg.norm(d2-d1.T)
-                        print d2
-                        print d1.T
-                        print '----------'
-            print rot0
-            exit()
-
         self.dQs_dv = range(2)
         for f in range(2):
             self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, f, ni, nj, ni*nj*21, f*3*ni*nj, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:])

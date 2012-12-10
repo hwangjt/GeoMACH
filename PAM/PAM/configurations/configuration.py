@@ -95,9 +95,12 @@ class Configuration(object):
             self.computePoints()
         return res
 
-    def runDerivativeTest(self, comp):
-        h = 1e-4
-        for var in self.comps[comp].variables.keys():
+    def runDerivativeTest(self, comp, variables=[]):
+        self.computePoints()
+        if variables==[]:
+            variables = self.comps[comp].variables.keys()
+        h = 1e-5
+        for var in variables:
             dat = self.comps[comp].variables[var]
             for ind,x in numpy.ndenumerate(dat):
                 ind = ind[0] if len(ind)==1 else ind
@@ -106,7 +109,7 @@ class Configuration(object):
                 norm0 = numpy.linalg.norm(d2)
                 norm0 = 1.0 if norm0==0 else norm0
                 error = numpy.linalg.norm(d2-d1)/norm0
-                good = 'O' if error < h else 'X'
+                good = 'O' if error < 1e-4 else 'X'
                 print good, ' ', comp, ' ', var, ' ', ind, ' ', error
         self.computePoints()
 

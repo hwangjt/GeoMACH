@@ -63,8 +63,7 @@ class Body(Component):
         zeros = numpy.zeros
         ones = numpy.ones
         self.variables = {
-            'noseL':0.1,
-            'tailL':0.1,
+            'coneL':0.1*ones(2),
             'offset':zeros(3),
             'radii':ones((nx,3),order='F'),
             'pos':zeros((nx,3),order='F'),
@@ -117,10 +116,11 @@ class Body(Component):
         rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nx, 9*(nx*3-2), v['pos'], p['nor'])
         drot0_dpos = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(nx*3,nx*3))
         rot = v['rot']*numpy.pi/180.0 + rot0
-        shapeR = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, v['radii'], p['fillet'], v['shapeR'])
-        shapeT = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, v['radii'], p['fillet'], v['shapeT'])
-        shapeL = PAMlib.computeshape(ny, nx, 1/4.0, (-b)/4.0, v['radii'], p['fillet'], v['shapeL'])
-        shapeB = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, v['radii'], p['fillet'], v['shapeB'])
+        shapes = range(6)
+        shapes[2] = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, v['radii'], p['fillet'], v['shapeR'])
+        shapes[3] = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, v['radii'], p['fillet'], v['shapeT'])
+        shapes[4] = PAMlib.computeshape(ny, nx, 1/4.0, (-b)/4.0, v['radii'], p['fillet'], v['shapeL'])
+        shapes[5] = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, v['radii'], p['fillet'], v['shapeB'])
         chord = numpy.ones(nx)
 
         if self.bottom==2:
@@ -129,18 +129,12 @@ class Body(Component):
             nQ = nx*(4+6*ny+3*nz)
         self.dQs_dv = range(len(self.Qs))
 
-        self.Qs[2][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, ny, nx, nx*ny*21, 0, r, v['offset'], chord, v['pos'], rot, shapeR)
-        self.dQs_dv[2] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*ny,nQ))
-
-        self.Qs[3][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, nz, nx, nx*nz*21, 3*nx*ny, r, v['offset'], chord, v['pos'], rot, shapeT)
-        self.dQs_dv[3] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*nz,nQ))
-
-        self.Qs[4][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, ny, nx, nx*ny*21, 3*nx*(ny+nz), r, v['offset'], chord, v['pos'], rot, shapeL)
-        self.dQs_dv[4] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*ny,nQ))
-
-        if self.bottom==2:
-            self.Qs[5][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, nz, nx, nx*nz*21, 3*nx*(2*ny+nz), r, v['offset'], chord, v['pos'], rot, shapeB)
-            self.dQs_dv[5] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*nz,nQ))
+        counter = 0
+        for f in range(2,len(self.Qs)):
+            ni, nj = self.Qs[f].shape[:2]
+            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, ni, nj, ni*nj*21, counter, r, v['offset'], chord, v['pos'], rot, shapes[f])
+            self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nQ))
+            counter += 3*ni*nj
 
         if self.bottom==2:
             nu = int(numpy.ceil(ny/2.0))
@@ -148,14 +142,58 @@ class Body(Component):
         else:
             nu = ny
             nv = int(numpy.ceil(nz/2.0))
+
         r = numpy.array([0.0,0.0,0.0])
+        self.dQ_dL = range(2)
+        self.dQ_drot = range(2)
+
         dx = numpy.linalg.norm(v['pos'][2,:]-v['pos'][1,:])
-        Q = PAMlib.computecone1(True, self.bottom==2, nu, nv, nz, ny, -v['noseL'], dx, shapeR[:,1:3,:], shapeT[:,1:3,:], shapeL[:,1:3,:], shapeB[:,1:3,:], v['shapeF'])
-        self.Qs[0][:,:,:], dQ_drot = PAMlib.computecone2(ax1, ax2, ny, nz, 3*ny*nz, r, v['offset'], v['pos'][1,:], rot[1,:], Q)
+        Q = PAMlib.computecone1(True, self.bottom==2, nu, nv, nz, ny, -v['coneL'][0], dx, shapes[2][:,1:3,:], shapes[3][:,1:3,:], shapes[4][:,1:3,:], shapes[5][:,1:3,:], v['shapeF'])
+        QtdQ = PAMlib.computecone1(True, self.bottom==2, nu, nv, nz, ny, -v['coneL'][0]-1, dx, shapes[2][:,1:3,:], shapes[3][:,1:3,:], shapes[4][:,1:3,:], shapes[5][:,1:3,:], v['shapeF'])
+        self.Qs[0][:,:,:], self.dQ_drot[0] = PAMlib.computecone2(ax1, ax2, ny, nz, 3*ny*nz, r, v['offset'], v['pos'][1,:], rot[1,:], Q)
+        self.dQ_dL[0] = PAMlib.computecone2(ax1, ax2, ny, nz, 3*ny*nz, r, v['offset'], v['pos'][1,:], rot[1,:], QtdQ)[0] - self.Qs[0][:,:,:]
 
         dx = numpy.linalg.norm(v['pos'][-3,:]-v['pos'][-2,:])
-        Q = PAMlib.computecone1(False, self.bottom==2, nu, nv, nz, ny, v['tailL'], dx, shapeR[:,-2:-4:-1,:], shapeT[:,-2:-4:-1,:], shapeL[:,-2:-4:-1,:], shapeB[:,-2:-4:-1,:], v['shapeA'])
-        self.Qs[1][:,:,:], dQ_drot = PAMlib.computecone2(ax1, ax2, ny, nz, 3*ny*nz, r, v['offset'], v['pos'][-2,:], rot[-2,:], Q)
+        Q = PAMlib.computecone1(False, self.bottom==2, nu, nv, nz, ny, v['coneL'][1], dx, shapes[2][:,-2:-4:-1,:], shapes[3][:,-2:-4:-1,:], shapes[4][:,-2:-4:-1,:], shapes[5][:,-2:-4:-1,:], v['shapeA'])
+        QtdQ = PAMlib.computecone1(False, self.bottom==2, nu, nv, nz, ny, v['coneL'][1]+1, dx, shapes[2][:,-2:-4:-1,:], shapes[3][:,-2:-4:-1,:], shapes[4][:,-2:-4:-1,:], shapes[5][:,-2:-4:-1,:], v['shapeA'])
+        self.Qs[1][:,:,:], self.dQ_drot[1] = PAMlib.computecone2(ax1, ax2, ny, nz, 3*ny*nz, r, v['offset'], v['pos'][-2,:], rot[-2,:], Q)
+        self.dQ_dL[1] = PAMlib.computecone2(ax1, ax2, ny, nz, 3*ny*nz, r, v['offset'], v['pos'][-2,:], rot[-2,:], QtdQ)[0] -  self.Qs[1][:,:,:]
+
+    def setDerivatives(self, var, ind):
+        nx = self.Qs[2].shape[1]
+        ny = self.Qs[2].shape[0]
+        nz = self.Qs[3].shape[0]
+        if var=='offset':
+            for f in range(len(self.Qs)):
+                self.Qs[f][:,:,ind] += 1.0
+        elif var=='coneL':
+            self.Qs[ind][:,:,:] += self.dQ_dL[ind]
+        elif var=='radii':
+            p = 0
+        elif var=='pos':
+            p = 0
+        elif var=='rot':
+            j = ind[0]
+            k = ind[1]
+            for f in range(2,len(self.Qs)):
+                ni, nj = self.Qs[f].shape[:2]
+                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(nj+nj*k+j).todense()*numpy.pi/180.0)
+            if j==1:
+                self.Qs[0][:,:,:] += self.dQ_drot[0][:,:,:,k]*numpy.pi/180.0
+            elif j==nx-2:
+                self.Qs[1][:,:,:] += self.dQ_drot[1][:,:,:,k]*numpy.pi/180.0
+        elif var=='shapeR':
+            p = 0
+        elif var=='shapeT':
+            p = 0
+        elif var=='shapeL':
+            p = 0
+        elif var=='shapeB':
+            p = 0
+        elif var=='shapeF':
+            p = 0
+        elif var=='shapeA':
+            p = 0
 
 
 if __name__ == '__main__':

@@ -125,15 +125,17 @@ class Shell(Component):
         r0 = v['radii'] + v['thickness']
         r1 = v['radii'] - v['thickness']
 
-        shapeR0 = PAMlib.computeshape(ny, nx, (-b)/4.0, 1/4.0, r0, p['fillet'], v['shapeR0'])
-        shapeT0 = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, r0, p['fillet'], v['shapeT0'])
-        shapeL0 = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, r0, p['fillet'], v['shapeL0'])
-        shapeB0 = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, r0, p['fillet'], v['shapeB0'])
+        shapes = range(8)
 
-        shapeR1 = PAMlib.computeshape(ny, nx, 1/4.0, (-b)/4.0, r1, p['fillet'], v['shapeR1'])
-        shapeT1 = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, r1, p['fillet'], v['shapeT1'])
-        shapeL1 = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, r1, p['fillet'], v['shapeL1'])
-        shapeB1 = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, r1, p['fillet'], v['shapeB1'])
+        shapes[0] = PAMlib.computeshape(ny, nx, (-b)/4.0, 1/4.0, r0, p['fillet'], v['shapeR0'])
+        shapes[1] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, r0, p['fillet'], v['shapeT0'])
+        shapes[2] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, r0, p['fillet'], v['shapeL0'])
+        shapes[6] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, r0, p['fillet'], v['shapeB0'])
+
+        shapes[5] = PAMlib.computeshape(ny, nx, 1/4.0, (-b)/4.0, r1, p['fillet'], v['shapeR1'])
+        shapes[4] = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, r1, p['fillet'], v['shapeT1'])
+        shapes[3] = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, r1, p['fillet'], v['shapeL1'])
+        shapes[7] = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, r1, p['fillet'], v['shapeB1'])
 
         chord = numpy.ones(nx)
 
@@ -143,30 +145,48 @@ class Shell(Component):
             nQ = nx*(4+12*ny+6*nz)
         self.dQs_dv = range(len(self.Qs))
 
-        self.Qs[0][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, ny, nx, nx*ny*21, 0, r, v['offset'], chord, v['pos'], rot, shapeR0)
-        self.dQs_dv[0] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*ny,nQ))
+        counter = 0
+        for f in range(len(self.Qs)):
+            ni, nj = self.Qs[f].shape[:2]
+            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, ni, nj, ni*nj*21, counter, r, v['offset'], chord, v['pos'], rot, shapes[f])
+            self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nQ))
+            counter += 3*ni*nj
 
-        self.Qs[1][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, nz, nx, nx*nz*21, 3*nx*ny, r, v['offset'], chord, v['pos'], rot, shapeT0)
-        self.dQs_dv[1] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*nz,nQ))
-
-        self.Qs[2][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, ny, nx, nx*ny*21, 3*nx*(ny+nz), r, v['offset'], chord, v['pos'], rot, shapeL0)
-        self.dQs_dv[2] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*ny,nQ))
-
-        self.Qs[3][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, ny, nx, nx*ny*21, 3*nx*(2*ny+nz), r, v['offset'], chord, v['pos'], rot, shapeL1)
-        self.dQs_dv[3] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*ny,nQ))
-
-        self.Qs[4][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, nz, nx, nx*nz*21, 3*nx*(3*ny+nz), r, v['offset'], chord, v['pos'], rot, shapeT1)
-        self.dQs_dv[4] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*nz,nQ))
-
-        self.Qs[5][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, ny, nx, nx*ny*21, 3*nx*(3*ny+2*nz), r, v['offset'], chord, v['pos'], rot, shapeR1)
-        self.dQs_dv[5] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*ny,nQ))
-
-        if self.bottom==2:
-            self.Qs[6][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, nz, nx, nx*nz*21, 3*nx*(4*ny+2*nz), r, v['offset'], chord, v['pos'], rot, shapeB0)
-            self.dQs_dv[6] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*nz,nQ))
-
-            self.Qs[7][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, nz, nx, nx*nz*21, 3*nx*(4*ny+3*nz), r, v['offset'], chord, v['pos'], rot, shapeB1)
-            self.dQs_dv[7] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*nx*nz,nQ))
+    def setDerivatives(self, var, ind):
+        nx = self.Qs[0].shape[1]
+        ny = self.Qs[0].shape[0]
+        nz = self.Qs[1].shape[0]
+        if var=='offset':
+            for f in range(len(self.Qs)):
+                self.Qs[f][:,:,ind] += 1.0
+        elif var=='thickness':
+            p = 0
+        elif var=='radii':
+            p = 0
+        elif var=='pos':
+            p = 0
+        elif var=='rot':
+            j = ind[0]
+            k = ind[1]
+            for f in range(len(self.Qs)):
+                ni, nj = self.Qs[f].shape[:2]
+                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(nj+nj*k+j).todense()*numpy.pi/180.0)
+        elif var=='shapeR0':
+            p = 0
+        elif var=='shapeT0':
+            p = 0
+        elif var=='shapeL0':
+            p = 0
+        elif var=='shapeB0':
+            p = 0
+        elif var=='shapeR1':
+            p = 0
+        elif var=='shapeT1':
+            p = 0
+        elif var=='shapeL1':
+            p = 0
+        elif var=='shapeB1':
+            p = 0
 
 
 if __name__ == '__main__':

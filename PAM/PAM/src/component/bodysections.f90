@@ -107,8 +107,7 @@ subroutine computeCone2(ax1, ax2, nu, nv, nQ, r, offset, pos, rot, Q0, Q, dQ_dro
   !Fortran-python interface directives
   !f2py intent(in) ax1, ax2, nu, nv, nQ, r, offset, pos, rot, Q0
   !f2py intent(out) Q, dQ_drot
-  !f2py depend(nu,nv) Q0, Q
-  !f2py depend(nQ) dQ_drot
+  !f2py depend(nu,nv) Q0, Q, dQ_drot
 
   !Input
   integer, intent(in) ::  ax1, ax2, nu, nv, nQ
@@ -116,7 +115,7 @@ subroutine computeCone2(ax1, ax2, nu, nv, nQ, r, offset, pos, rot, Q0, Q, dQ_dro
   double precision, intent(in) ::  Q0(nu,nv,3)
 
   !Output
-  double precision, intent(out) ::  Q(nu,nv,3), dQ_drot(nQ,3,3)
+  double precision, intent(out) ::  Q(nu,nv,3), dQ_drot(nu,nv,3,3)
 
   !Working
   integer u, v, k, ax3
@@ -129,7 +128,7 @@ subroutine computeCone2(ax1, ax2, nu, nv, nQ, r, offset, pos, rot, Q0, Q, dQ_dro
      do v=1,nv
         Q(u,v,:) = matmul(T,Q0(u,v,:)-r) + r + offset + pos
         do k=1,3
-           dQ_drot((k-1)*nu*nv+(v-1)*nu+u,:,k) = matmul(dT_drot(:,:,k),Q0(u,v,:)-r)
+           dQ_drot(u,v,:,k) = matmul(dT_drot(:,:,k),Q0(u,v,:)-r)
         end do
      end do
   end do
