@@ -38,8 +38,8 @@ class Body(Component):
             self.addFace(-3, 1,-0.5)
 
         self.bottom = bottom
-        self.ax1 = 1
-        self.ax2 = 2
+        self.ax1 = 3
+        self.ax2 = 1
 
     def setDOFs(self):
         setC1 = self.setC1
@@ -119,10 +119,10 @@ class Body(Component):
         self.drot0_dpos = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(nx*3,nx*3))
         rot = v['rot']*numpy.pi/180.0 + rot0
         shapes = range(6)
-        shapes[2] = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, p['fillet'], v['shapeR'])
-        shapes[3] = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, p['fillet'], v['shapeT'])
-        shapes[4] = PAMlib.computeshape(ny, nx, 1/4.0,-b/4.0, p['fillet'], v['shapeL'])
-        shapes[5] = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, p['fillet'], v['shapeB'])
+        shapes[2] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['fillet'], v['shapeR'])
+        shapes[3] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['fillet'], v['shapeT'])
+        shapes[4] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['fillet'], v['shapeL'])
+        shapes[5] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['fillet'], v['shapeB'])
 
         nQ = nx*(6+6*ny+6*nz) if self.bottom==2 else nx*(6+6*ny+3*nz)
         self.dQs_dv = range(len(self.Qs))
@@ -142,27 +142,40 @@ class Body(Component):
             nv = int(numpy.ceil(nz/2.0))
 
         self.dQ_drot = range(2)
+        self.dQ_dC = [range(3), range(3)]
         Qb = 5 if self.bottom==2 else 3
+        eye = numpy.eye(3)
 
         C = v['offset'] + v['pos'][1,:] + v['coneL'][0]*(v['pos'][0,:] - v['pos'][1,:])
         hT, vT, dhT_drot, dvT_drot = PAMlib.computetiptangents(ax1, ax2, rot[1,:])
         self.Qs[0][:,:,:] = PAMlib.computecone(True, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C, hT, -vT, self.Qs[2][:,1:3,:], self.Qs[3][:,1:3,:], self.Qs[4][:,1:3,:], self.Qs[Qb][:,1:3,:], v['shapeF'])
+        for k in range(3):
+            self.dQ_dC[0][k] = PAMlib.computecone(True, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C + eye[:,k], hT, -vT, self.Qs[2][:,1:3,:], self.Qs[3][:,1:3,:], self.Qs[4][:,1:3,:], self.Qs[Qb][:,1:3,:], v['shapeF']) - self.Qs[0][:,:,:]
 
         C = v['offset'] + v['pos'][-2,:] + v['coneL'][1]*(v['pos'][-1,:] - v['pos'][-2,:])
         hT, vT, dhT_drot, dvT_drot = PAMlib.computetiptangents(ax1, ax2, rot[-2,:])
         self.Qs[1][:,:,:] = PAMlib.computecone(False, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C, -hT, -vT, self.Qs[2][:,-2:-4:-1,:], self.Qs[3][:,-2:-4:-1,:], self.Qs[4][:,-2:-4:-1,:], self.Qs[Qb][:,-2:-4:-1,:], v['shapeA'])
+        for k in range(3):
+            self.dQ_dC[1][k] = PAMlib.computecone(False, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C + eye[:,k], -hT, -vT, self.Qs[2][:,-2:-4:-1,:], self.Qs[3][:,-2:-4:-1,:], self.Qs[4][:,-2:-4:-1,:], self.Qs[Qb][:,-2:-4:-1,:], v['shapeA']) - self.Qs[1][:,:,:]
 
     def setDerivatives(self, var, ind):
         nx = self.Qs[2].shape[1]
         ny = self.Qs[2].shape[0]
         nz = self.Qs[3].shape[0]
+        v = self.variables
         if var=='offset':
             for f in range(len(self.Qs)):
                 self.Qs[f][:,:,ind] += 1.0
         elif var=='coneL':
-            self.Qs[ind][:,:,:] += self.dQ_dL[ind]
+            if ind==0:
+                for k in range(3):
+                    self.Qs[0][:,:,:] += self.dQ_dC[0][k]*(v['pos'][0,k] - v['pos'][1,k])
+            else:
+                for k in range(3):
+                    self.Qs[1][:,:,:] += self.dQ_dC[1][k]*(v['pos'][-1,k] - v['pos'][-2,k])
         elif var=='radii':
-            p = 0
+            j = ind[0]
+            k = ind[1]
         elif var=='pos':
             j = ind[0]
             k = ind[1]

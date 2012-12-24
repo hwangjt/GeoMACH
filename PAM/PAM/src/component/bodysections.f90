@@ -181,45 +181,45 @@ subroutine computeShape(ni, nj, t1, t2, fillet, shape0, Q)
      taL = atan(fillet(j,3))/pi
      tbL = atan(1.0/fillet(j,4))/pi
      call computeRoundedSection(ni, one, one, taU, tbU, taL, tbL, &
-          t1, t2, shape0(:,j), Q(:,j,3), Q(:,j,2))
+          t1, t2, shape0(:,j), Q(:,j,1), Q(:,j,2))
   end do
      
 end subroutine computeShape
 
 
 
-subroutine computeRoundedSection(n, rz, ry, taU, tbU, taL, tbL, t1, t2, shape0, z, y)
+subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, x, y)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) n, rz, ry, taU, tbU, taL, tbL, t1, t2, shape0
-  !f2py intent(out) z, y
-  !f2py depend(n) shape0, z, y
+  !f2py intent(in) n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0
+  !f2py intent(out) x, y
+  !f2py depend(n) shape0, x, y
 
   !Input
   integer, intent(in) ::  n
-  double precision, intent(in) ::  rz, ry, taU, tbU, taL, tbL, t1, t2, shape0(n)
+  double precision, intent(in) ::  rx, ry, taU, tbU, taL, tbL, t1, t2, shape0(n)
 
   !Output
-  double precision, intent(out) ::  z(n), y(n)
+  double precision, intent(out) ::  x(n), y(n)
 
   !Working
   integer i
-  double precision zU, yU, zL, yL, szU, syU, szL, syL
-  double precision pi, t, tt, nz, ny, norm, nMap
+  double precision xU, yU, xL, yL, sxU, syU, sxL, syL
+  double precision pi, t, tt, nx, ny, norm, nMap
 
   pi = 2*acos(0.0)
   tt = (t2 - t1)/(n - 1)
 
-  zU = ry*tan((0.5-tbU)*pi)
-  yU = rz*tan(taU*pi)     
-  zL = ry*tan((0.5-tbL)*pi)
-  yL = rz*tan(taL*pi)
+  xU = ry*tan((0.5-tbU)*pi)
+  yU = rx*tan(taU*pi)     
+  xL = ry*tan((0.5-tbL)*pi)
+  yL = rx*tan(taL*pi)
   
-  szU = rz - zU
+  sxU = rx - xU
   syU = ry - yU
-  szL = rz - zL
+  sxL = rx - xL
   syL = ry - yL
   
   do i=1,n
@@ -228,57 +228,57 @@ subroutine computeRoundedSection(n, rz, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
         t = t + 2.0
      end if
      if (t .le. taU) then
-        z(i) = rz
-        y(i) = rz*tan(t*pi)
-        nz = 1.0
+        x(i) = rx
+        y(i) = rx*tan(t*pi)
+        nx = 1.0
         ny = 0.0
      else if (t .le. tbU) then
         t = nMap(t, taU, tbU)/2.0
-        z(i) = zU + szU*cos(t*pi)
+        x(i) = xU + sxU*cos(t*pi)
         y(i) = yU + syU*sin(t*pi)
-        nz = syU*cos(t*pi)
-        ny = szU*sin(t*pi)
+        nx = syU*cos(t*pi)
+        ny = sxU*sin(t*pi)
      else if (t .le. 1-tbU) then
-        z(i) = ry*tan((0.5-t)*pi)
+        x(i) = ry*tan((0.5-t)*pi)
         y(i) = ry
-        nz = 0.0
+        nx = 0.0
         ny = 1.0
      else if (t .le. 1-taU) then
         t = nMap(t, 1-tbU, 1-taU)/2.0 + 0.5
-        z(i) = -zU + szU*cos(t*pi)
+        x(i) = -xU + sxU*cos(t*pi)
         y(i) =  yU + syU*sin(t*pi)
-        nz = syU*cos(t*pi)
-        ny = szU*sin(t*pi)
+        nx = syU*cos(t*pi)
+        ny = sxU*sin(t*pi)
      else if (t .le. 1+taL) then
-        z(i) = -rz
-        y(i) = rz*tan((1-t)*pi)
-        nz = -1.0
+        x(i) = -rx
+        y(i) = rx*tan((1-t)*pi)
+        nx = -1.0
         ny =  0.0
      else if (t .le. 1+tbL) then
         t = nMap(t, 1+taL, 1+tbL)/2.0 + 1.0
-        z(i) = -zL + szL*cos(t*pi)
+        x(i) = -xL + sxL*cos(t*pi)
         y(i) = -yL + syL*sin(t*pi)
-        nz = syL*cos(t*pi)
-        ny = szL*sin(t*pi)
+        nx = syL*cos(t*pi)
+        ny = sxL*sin(t*pi)
      else if (t .le. 2-tbL) then
-        z(i) = -ry*tan((1.5-t)*pi)
+        x(i) = -ry*tan((1.5-t)*pi)
         y(i) = -ry
-        nz =  0.0
+        nx =  0.0
         ny = -1.0
      else if (t .le. 2-taL) then
         t = nMap(t, 2-tbL, 2-taL)/2.0 + 1.5
-        z(i) =  zL + szL*cos(t*pi)
+        x(i) =  xL + sxL*cos(t*pi)
         y(i) = -yL + syL*sin(t*pi)
-        nz = syL*cos(t*pi)
-        ny = szL*sin(t*pi)
+        nx = syL*cos(t*pi)
+        ny = sxL*sin(t*pi)
      else
-        z(i) = rz
-        y(i) = rz*tan(t*pi)  
-        nz = 1.0
+        x(i) = rx
+        y(i) = rx*tan(t*pi)  
+        nx = 1.0
         ny = 0.0
      end if
-     norm = (nz**2 + ny**2)**0.5
-     z(i) = z(i) + nz/norm*shape0(i)
+     norm = (nx**2 + ny**2)**0.5
+     x(i) = x(i) + nx/norm*shape0(i)
      y(i) = y(i) + ny/norm*shape0(i)
   end do
 

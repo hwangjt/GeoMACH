@@ -49,8 +49,8 @@ class Shell(Component):
             self.connectEdges(f1=6,v1=-1,f2=7,v2=-1)
 
         self.bottom = bottom
-        self.ax1 = 1
-        self.ax2 = 2
+        self.ax1 = 3
+        self.ax2 = 1
 
     def setDOFs(self):
         setC1 = self.setC1
@@ -119,7 +119,7 @@ class Shell(Component):
         ax1 = self.ax1
         ax2 = self.ax2
 
-        rot0, Da, Di, Dj = PAMlib.computerotations(1, 2, nx, 9*(nx*3-2), v['pos'], p['nor'])
+        rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nx, 9*(nx*3-2), v['pos'], p['nor'])
         drot0_dpos = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(nx*3,nx*3))
         rot = v['rot']*numpy.pi/180.0 + rot0
         r0 = v['radii'] + v['thickness']
@@ -127,12 +127,12 @@ class Shell(Component):
 
         shapes = range(8)
 
-        shapes[0] = PAMlib.computeshape(ny, nx, (-b)/4.0, 1/4.0, p['fillet'], v['shapeR0'])
+        shapes[0] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['fillet'], v['shapeR0'])
         shapes[1] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['fillet'], v['shapeT0'])
         shapes[2] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['fillet'], v['shapeL0'])
         shapes[6] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['fillet'], v['shapeB0'])
 
-        shapes[5] = PAMlib.computeshape(ny, nx, 1/4.0, (-b)/4.0, p['fillet'], v['shapeR1'])
+        shapes[5] = PAMlib.computeshape(ny, nx, 1/4.0,-b/4.0, p['fillet'], v['shapeR1'])
         shapes[4] = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, p['fillet'], v['shapeT1'])
         shapes[3] = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, p['fillet'], v['shapeL1'])
         shapes[7] = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, p['fillet'], v['shapeB1'])

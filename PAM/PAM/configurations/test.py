@@ -75,10 +75,10 @@ if __name__ == '__main__':
     #aircraft.comps['body'].variables['pos'][:,0] = numpy.linspace(0,2,aircraft.comps['body'].Qs[2].shape[1])
     #aircraft.comps['body'].variables['pos'][:,1] = numpy.linspace(0,2,aircraft.comps['body'].Qs[2].shape[1])
     #aircraft.comps['body'].variables['pos'][:,2] = numpy.linspace(0,2,aircraft.comps['body'].Qs[2].shape[1])
-    #aircraft.runDerivativeTest('body',['offset','coneL','rot','pos'])
+    #aircraft.runDerivativeTest('body',['offset','coneL'])
     #aircraft.runDerivativeTest('shell',['offset','rot'])
-    aircraft.runDerivativeTest('wingL')
-    exit()
+    #aircraft.runDerivativeTest('wingL')
+    #exit()
 
     #d1 = aircraft.getDerivatives('body','rot',(1,0))
     #d2 = aircraft.getDerivatives('body','rot',(1,0),FD=True)
