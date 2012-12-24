@@ -127,28 +127,30 @@ class Shell(Component):
 
         shapes = range(8)
 
-        shapes[0] = PAMlib.computeshape(ny, nx, (-b)/4.0, 1/4.0, r0, p['fillet'], v['shapeR0'])
-        shapes[1] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, r0, p['fillet'], v['shapeT0'])
-        shapes[2] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, r0, p['fillet'], v['shapeL0'])
-        shapes[6] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, r0, p['fillet'], v['shapeB0'])
+        shapes[0] = PAMlib.computeshape(ny, nx, (-b)/4.0, 1/4.0, p['fillet'], v['shapeR0'])
+        shapes[1] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['fillet'], v['shapeT0'])
+        shapes[2] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['fillet'], v['shapeL0'])
+        shapes[6] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['fillet'], v['shapeB0'])
 
-        shapes[5] = PAMlib.computeshape(ny, nx, 1/4.0, (-b)/4.0, r1, p['fillet'], v['shapeR1'])
-        shapes[4] = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, r1, p['fillet'], v['shapeT1'])
-        shapes[3] = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, r1, p['fillet'], v['shapeL1'])
-        shapes[7] = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, r1, p['fillet'], v['shapeB1'])
-
-        chord = numpy.ones(nx)
+        shapes[5] = PAMlib.computeshape(ny, nx, 1/4.0, (-b)/4.0, p['fillet'], v['shapeR1'])
+        shapes[4] = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, p['fillet'], v['shapeT1'])
+        shapes[3] = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, p['fillet'], v['shapeL1'])
+        shapes[7] = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, p['fillet'], v['shapeB1'])
 
         if self.bottom==2:
-            nQ = nx*(4+12*ny+12*nz)
+            nQ = nx*(6+12*ny+12*nz)
         else:
-            nQ = nx*(4+12*ny+6*nz)
+            nQ = nx*(6+12*ny+6*nz)
         self.dQs_dv = range(len(self.Qs))
 
         counter = 0
         for f in range(len(self.Qs)):
+            if f in [0,1,2,6]:
+                radii = r0
+            else:
+                radii = r1
             ni, nj = self.Qs[f].shape[:2]
-            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, -1, ni, nj, ni*nj*21, counter, r, v['offset'], chord, v['pos'], rot, shapes[f])
+            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, ni, nj, ni*nj*27, counter, r, v['offset'], radii, v['pos'], rot, shapes[f])
             self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nQ))
             counter += 3*ni*nj
 
@@ -170,7 +172,7 @@ class Shell(Component):
             k = ind[1]
             for f in range(len(self.Qs)):
                 ni, nj = self.Qs[f].shape[:2]
-                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(nj+nj*k+j).todense()*numpy.pi/180.0)
+                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(3*nj+nj*k+j).todense()*numpy.pi/180.0)
         elif var=='shapeR0':
             p = 0
         elif var=='shapeT0':

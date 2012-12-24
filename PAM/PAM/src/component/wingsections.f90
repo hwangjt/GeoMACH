@@ -190,22 +190,22 @@ end subroutine computeAngles
 
 
 
-subroutine computeSections(ax1, ax2, f, ni, nj, nD, ishape, r, offset, chord, &
+subroutine computeSections(ax1, ax2, ni, nj, nD, ishape, r, offset, scale0, &
      pos, rot, shape0, Q, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) ax1, ax2, f, ni, nj, nD, ishape, r, offset, chord, pos, rot, shape0
+  !f2py intent(in) ax1, ax2, ni, nj, nD, ishape, r, offset, scale0, pos, rot, shape0
   !f2py intent(out) Q, Da, Di, Dj
-  !f2py depend(nj) chord, pos, rot
+  !f2py depend(nj) scale0, pos, rot
   !f2py depend(ni,nj) shape0, Q
   !f2py depend(nD) Da, Di, Dj
 
   !Input
-  integer, intent(in) ::  ax1, ax2, f, ni, nj, nD, ishape
+  integer, intent(in) ::  ax1, ax2, ni, nj, nD, ishape
   double precision, intent(in) ::  r(3), offset(3)
-  double precision, intent(in) ::  chord(nj), pos(nj,3), rot(nj,3)
+  double precision, intent(in) ::  scale0(nj,3), pos(nj,3), rot(nj,3)
   double precision, intent(in) ::  shape0(ni,nj,3)
 
   !Output
@@ -221,21 +221,21 @@ subroutine computeSections(ax1, ax2, f, ni, nj, nD, ishape, r, offset, chord, &
   do j=1,nj
      call computeRtnMtx(ax1, ax2, ax3, rot(j,:), T, dT_drot)
      do i=1,ni
-        Q(i,j,:) = (matmul(T,shape0(i,j,:)-r) + r)*chord(j) + pos(j,:) + offset
+        Q(i,j,:) = matmul(T,(shape0(i,j,:)-r)*scale0(j,:)) + pos(j,:) + offset
         do k=1,3
            index = ni*nj*(k-1) + ni*(j-1) + i
-           Da(iD) = dot_product(T(k,:),shape0(i,j,:)-r) + r(k)
-           Di(iD) = index
-           Dj(iD) = j
-           iD = iD + 1
            do l=1,3
-              Da(iD) = dot_product(dT_drot(k,:,l),shape0(i,j,:)-r)*chord(j)
+              Da(iD) = T(k,l)*(shape0(i,j,l)-r(l))
               Di(iD) = index
-              Dj(iD) = nj + nj*(l-1) + j
+              Dj(iD) = nj*(l-1) + j
               iD = iD + 1
-              Da(iD) = T(k,l)*chord(j)
+              Da(iD) = dot_product(dT_drot(k,:,l),(shape0(i,j,:)-r)*scale0(j,:))
               Di(iD) = index
-              Dj(iD) = 4*nj + ishape + ni*nj*(l-1) + ni*(j-1) + i
+              Dj(iD) = 3*nj + nj*(l-1) + j
+              iD = iD + 1
+              Da(iD) = T(k,l)*scale0(j,l)
+              Di(iD) = index
+              Dj(iD) = 6*nj + ishape + ni*nj*(l-1) + ni*(j-1) + i
               iD = iD + 1
            end do
         end do

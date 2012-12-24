@@ -96,11 +96,12 @@ class Wing(Component):
         rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nj, 9*(nj*3-2), v['pos'], p['nor'])
         self.drot0_dpos = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
         rot = v['rot']*numpy.pi/180.0 + rot0
+        scl = numpy.vstack([v['chord'],v['chord'],v['chord']]).T
 
         self.dQs_dv = range(2)
         for f in range(2):
-            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, f, ni, nj, ni*nj*21, f*3*ni*nj, r, v['offset'], v['chord'], v['pos'], rot, v['shape'][f,:,:,:])
-            self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nj*(4+6*ni)))
+            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, ni, nj, ni*nj*27, f*3*ni*nj, r, v['offset'], scl, v['pos'], rot, v['shape'][f,:,:,:])
+            self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nj*(6+6*ni)))
 
     def setDerivatives(self, var, ind):
         ni = self.Qs[0].shape[0]
@@ -109,30 +110,32 @@ class Wing(Component):
             for f in range(2):
                 self.Qs[f][:,:,ind] += 1.0
         elif var=='chord':
+            j = ind
             for f in range(2):
-                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(ind).todense())
+                for k in range(3):
+                    self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(nj*k+j).todense())
         elif var=='pos':
             j = ind[0]
             k = ind[1]
-            A = scipy.sparse.csc_matrix((nj,3*nj))
+            A = scipy.sparse.csc_matrix((3*nj,3*nj))
             B = self.drot0_dpos
-            C = scipy.sparse.csc_matrix((self.dQs_dv[0].shape[1]-4*nj,3*nj))
+            C = scipy.sparse.csc_matrix((self.dQs_dv[0].shape[1]-6*nj,3*nj))
             D = scipy.sparse.vstack([A,B,C],format='csc')
             for f in range(2):
                 self.Qs[f][:,j,k] += 1.0
-                Q = self.dQs_dv[f].dot(D).todense()[:,nj*k+j]
+                Q = self.dQs_dv[f].dot(D).getcol(nj*k+j).todense()
                 self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, Q)
         elif var=='rot':
             j = ind[0]
             k = ind[1]
             for f in range(2):
-                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(nj+nj*k+j).todense()*numpy.pi/180.0)
+                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(3*nj+nj*k+j).todense()*numpy.pi/180.0)
         elif var=='shape':
             f = ind[0]
             i = ind[1]
             j = ind[2]
             k = ind[3]
-            self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(4*nj+f*3*ni*nj+ni*nj*k+ni*j+i).todense())
+            self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(6*nj+f*3*ni*nj+ni*nj*k+ni*j+i).todense())
 
 
 if __name__ == '__main__':

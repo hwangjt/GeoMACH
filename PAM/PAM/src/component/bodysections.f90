@@ -1,10 +1,50 @@
-subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
+subroutine computeTipTangents(ax1, ax2, rot, hT, vT, dhT_drot, dvT_drot)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) ax1, ax2, rot
+  !f2py intent(out) hT, vT, dhT_drot, dvT_drot
+  
+  !Input
+  integer, intent(in) ::  ax1, ax2
+  double precision, intent(in) ::  rot(3)
+
+  !Output
+  double precision, intent(out) ::  hT(3), vT(3)
+  double precision, intent(out) ::  dhT_drot(3,3), dvT_drot(3,3)
+
+  !Working
+  integer k, ax3
+  double precision e2(3), e3(3)
+  double precision T(3,3), dT_drot(3,3,3)
+
+  ax3 = 6 - ax1 - ax2
+  call computeRtnMtx(ax1, ax2, ax3, rot, T, dT_drot)
+
+  e2(:) = 0.0
+  e3(:) = 0.0
+  e2(2) = 1.0
+  e3(3) = 1.0
+
+  hT = matmul(T,e3)
+  vT = matmul(T,e2)
+  do k=1,3
+     dhT_drot(:,k) = matmul(dT_drot(:,:,k),e3)
+     dvT_drot(:,k) = matmul(dT_drot(:,:,k),e2)
+  end do
+
+end subroutine computeTipTangents
+
+
+
+subroutine computeCone(front, bot, nu, nv, nz, ny, f0, m0, pC, hT, vT, &
      shapeR, shapeT, shapeL, shapeB, shape0, Q)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) front, bot, nu, nv, nz, ny, L, dx, shapeR, shapeT, shapeL, shapeB
+  !f2py intent(in) front, bot, nu, nv, nz, ny, pC, hT, vT, shapeR, shapeT, shapeL, shapeB, shape0
   !f2py intent(out) Q
   !f2py depend(ny) shapeR, shapeL
   !f2py depend(nz) shapeT, shapeB
@@ -13,7 +53,7 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
   !Input
   logical, intent(in) ::  front, bot
   integer, intent(in) ::  nu, nv, nz, ny
-  double precision, intent(in) ::  L, dx
+  double precision, intent(in) ::  f0, m0, pC(3), hT(3), vT(3)
   double precision, intent(in) ::  shapeR(ny,2,3), shapeT(nz,2,3)
   double precision, intent(in) ::  shapeL(ny,2,3), shapeB(nz,2,3)
   double precision, intent(in) ::  shape0(ny,nz)
@@ -24,25 +64,13 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
   !Working
   double precision left(ny,2,3), right(ny,2,3), top(nz,2,3), bottom(nz,2,3)
   double precision hCurves(3,2,nv,3), vCurves(2,3,nu,3)
-  double precision pC(3), pL(2,3), pR(2,3), pT(2,3), pB(2,3)
+  double precision pL(2,3), pR(2,3), pT(2,3), pB(2,3)
   double precision nL(3), nR(3), nT(3), nB(3)
-  double precision e1(3), e2(3), e3(3), px(3)
   double precision dQdw(ny,nz,3)
   integer k
 
   Q(:,:,:) = 0.0
   dQdw(:,:,:) = 0.0
-
-  e1(:) = 0.0
-  e2(:) = 0.0
-  e3(:) = 0.0
-  e1(1) = 1.0
-  e2(2) = 1.0
-  e3(3) = 1.0
-
-  pC(1) = L
-  pC(2) = 0.0
-  pC(3) = 0.0
 
   if (front) then
      left = shapeR(ny:1:-1,:,:)
@@ -70,16 +98,15 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
   call midValues(nz, top, pT)
   call midValues(nz, bottom, pB)
 
-  px = -e1*L/abs(L)*dx
-  nL = pL(2,:) - pL(1,:) + px
-  nR = pR(2,:) - pR(1,:) + px
-  nT = pT(2,:) - pT(1,:) + px
-  nB = pB(2,:) - pB(1,:) + px
+  nL = pL(1,:) - pL(2,:)
+  nR = pR(2,:) - pR(1,:)
+  nT = pT(1,:) - pT(2,:)
+  nB = pB(2,:) - pB(1,:)
 
-  call quad2Dcurve(2, nv, pL(1,:), pC, nL, e3, hCurves(2,1,:,:))
-  call quad2Dcurve(2, nv, pC, pR(1,:), e3, nR, hCurves(2,2,:,:))
-  call quad2Dcurve(3, nu, pT(1,:), pC, nT, e2, vCurves(1,2,:,:))
-  call quad2Dcurve(3, nu, pC, pB(1,:), e2, nB, vCurves(2,2,:,:))
+  call bezierCurve(nv, pL(1,:), nL*f0, pC, -hT*m0, hCurves(2,1,:,:))
+  call bezierCurve(nv, pC, hT*m0, pR(1,:), -nR*f0, hCurves(2,2,:,:))
+  call bezierCurve(nu, pT(1,:), nT*f0, pC, -vT*m0, vCurves(1,2,:,:))
+  call bezierCurve(nu, pC, vT*m0, pB(1,:), -nB*f0, vCurves(2,2,:,:))
 
   call coonsPatch(nu, nv, vCurves(1,1,:,:), vCurves(1,2,:,:), &
        hCurves(1,1,:,:), hCurves(2,1,:,:), Q(1:nu,1:nv,:), dQdw(1:nu,1:nv,:))
@@ -96,44 +123,7 @@ subroutine computeCone1(front, bot, nu, nv, nz, ny, L, dx, &
      Q(:,:,k) = Q(:,:,k) + shape0(:,:)*dQdw(:,:,k)
   end do
 
-end subroutine computeCone1
-
-
-
-subroutine computeCone2(ax1, ax2, nu, nv, nQ, r, offset, pos, rot, Q0, Q, dQ_drot)
-
-  implicit none
-
-  !Fortran-python interface directives
-  !f2py intent(in) ax1, ax2, nu, nv, nQ, r, offset, pos, rot, Q0
-  !f2py intent(out) Q, dQ_drot
-  !f2py depend(nu,nv) Q0, Q, dQ_drot
-
-  !Input
-  integer, intent(in) ::  ax1, ax2, nu, nv, nQ
-  double precision, intent(in) ::  r(3), offset(3), pos(3), rot(3)
-  double precision, intent(in) ::  Q0(nu,nv,3)
-
-  !Output
-  double precision, intent(out) ::  Q(nu,nv,3), dQ_drot(nu,nv,3,3)
-
-  !Working
-  integer u, v, k, ax3
-  double precision T(3,3), dT_drot(3,3,3)
-
-  ax3 = 6 - ax1 - ax2
-  call computeRtnMtx(ax1, ax2, ax3, rot, T, dT_drot)
-  
-  do u=1,nu
-     do v=1,nv
-        Q(u,v,:) = matmul(T,Q0(u,v,:)-r) + r + offset + pos
-        do k=1,3
-           dQ_drot(u,v,:,k) = matmul(dT_drot(:,:,k),Q0(u,v,:)-r)
-        end do
-     end do
-  end do
-
-end subroutine computeCone2
+end subroutine computeCone
 
 
 
@@ -159,20 +149,20 @@ end subroutine midValues
 
 
 
-subroutine computeShape(ni, nj, t1, t2, radii, fillet, shape0, Q)
+subroutine computeShape(ni, nj, t1, t2, fillet, shape0, Q)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) ni, nj, t1, t2, radii, fillet, shape0
+  !f2py intent(in) ni, nj, t1, t2, fillet, shape0
   !f2py intent(out) Q
-  !f2py depend(nj) radii, fillet
+  !f2py depend(nj) fillet
   !f2py depend(ni,nj) shape0, Q
 
   !Input
   integer, intent(in) ::  ni, nj
   double precision, intent(in) ::  t1, t2
-  double precision, intent(in) ::  radii(nj,3), fillet(nj,4)
+  double precision, intent(in) ::  fillet(nj,4)
   double precision, intent(in) ::  shape0(ni,nj)
 
   !Output
@@ -180,36 +170,21 @@ subroutine computeShape(ni, nj, t1, t2, radii, fillet, shape0, Q)
 
   !Working
   integer j
-  double precision pi, rz, ry, taU, tbU, taL, tbL
+  double precision pi, taU, tbU, taL, tbL, one
 
   pi = 2*acos(0.0)
+  one = 1.0
   Q(:,:,:) = 0.0
   do j=1,nj
-     rz = radii(j,1)
-     ry = radii(j,2)
-
-     taU = atan(ry/rz*fillet(j,1))/pi
-     tbU = atan(ry/rz/fillet(j,2))/pi
-     taL = atan(ry/rz*fillet(j,3))/pi
-     tbL = atan(ry/rz/fillet(j,4))/pi
-
-     call computeRoundedSection(ni, rz, ry, taU, tbU, taL, tbL, &
+     taU = atan(fillet(j,1))/pi
+     tbU = atan(1.0/fillet(j,2))/pi
+     taL = atan(fillet(j,3))/pi
+     tbL = atan(1.0/fillet(j,4))/pi
+     call computeRoundedSection(ni, one, one, taU, tbU, taL, tbL, &
           t1, t2, shape0(:,j), Q(:,j,3), Q(:,j,2))
   end do
      
 end subroutine computeShape
-
-
-
-function nMap(t, t1, t2)
-
-  implicit none
-  double precision, intent(in) ::  t, t1, t2
-  double precision ::  nMap
-
-  nMap = (t - t1)/(t2 - t1)
-
-end function nMap
 
 
 
@@ -308,3 +283,15 @@ subroutine computeRoundedSection(n, rz, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
   end do
 
 end subroutine computeRoundedSection
+
+
+
+function nMap(t, t1, t2)
+
+  implicit none
+  double precision, intent(in) ::  t, t1, t2
+  double precision ::  nMap
+
+  nMap = (t - t1)/(t2 - t1)
+
+end function nMap
