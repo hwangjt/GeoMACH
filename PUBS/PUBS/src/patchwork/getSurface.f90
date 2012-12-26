@@ -36,6 +36,14 @@ subroutine getSurfaceT(surf, nu, nv, nT, nsurf, nedge, surf_edge, &
 
   implicit none
 
+  !Fortran-python interface directives
+  !f2py intent(in) surf, nu, nv, nT, nsurf, nedge, surf_edge, surf_index_P, edge_index_P, T
+  !f2py intent(out) bufferT
+  !f2py depend(nsurf) surf_edge, surf_index_P
+  !f2py depend(nedge) edge_index_P
+  !f2py depend(nT) T
+  !f2py depend(nu,nv) bufferT
+
   !Input
   integer, intent(in) ::  surf, nu, nv, nT, nsurf, nedge
   integer, intent(in) ::  surf_edge(nsurf,2,2), surf_index_P(nsurf,2), & 
@@ -244,3 +252,35 @@ subroutine getMapping(surf, mu, mv, nsurf, nedge, nvert, surf_vert, &
   end do
 
 end subroutine getMapping
+
+
+
+subroutine inflateVector(ni, nj, nk, nV, V, Q)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) ni, nj, nk, nV, V
+  !f2py intent(out) Q
+  !f2py depend(nV,nk) V
+  !f2py depend(ni,nj,nk) Q
+
+  !Input
+  integer, intent(in) ::  ni, nj, nk, nV
+  double precision, intent(in) ::  V(nV,nk)
+
+  !Output
+  double precision, intent(out) ::  Q(ni,nj,nk)
+
+  !Working
+  integer i, j, k
+
+  do k=1,nk
+     do j=1,nj
+        do i=1,ni
+           Q(i,j,k) = V(ni*(j-1) + i, k)
+        end do
+     end do
+  end do
+
+end subroutine inflateVector

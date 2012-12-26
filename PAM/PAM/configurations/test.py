@@ -63,13 +63,8 @@ if __name__ == '__main__':
     #aircraft.buildStructure()
     #aircraft.writeStructure(name)
 
-    aircraft.oml0.addVariable('dQxdc')
-    aircraft.oml0.addVariable('dQydc')
-    aircraft.oml0.addVariable('dQzdc')
-
-    aircraft.oml0.addVariable('dQxdc2')
-    aircraft.oml0.addVariable('dQydc2')
-    aircraft.oml0.addVariable('dQzdc2')
+    aircraft.oml0.addVars(['dQxdc','dQydc','dQzdc'])
+    aircraft.oml0.addVars(['dQxdc2','dQydc2','dQzdc2'])
 
     #aircraft.comps['wingL'].parameters['nor'][:,:] = 0.0
     #aircraft.comps['body'].variables['pos'][:,0] = numpy.linspace(0,2,aircraft.comps['body'].Qs[2].shape[1])

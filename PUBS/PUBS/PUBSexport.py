@@ -24,7 +24,10 @@ class PUBSexport(object):
     def writeLine(self, f, data, label=''):
         f.write(label)
         for k in range(data.shape[0]):
-            f.write(str(data[k]) + ' ')
+            if data[k] == data[k]:
+                f.write(str(data[k]) + ' ')
+            else:
+                f.write(str(0.0) + ' ')
         f.write('\n')
 
     def write2TecStruct(self, filename, Ps, variables, title="PUBS output"):
@@ -45,17 +48,19 @@ class PUBSexport(object):
             self.writeLine(f, C[i,:])
         f.close()
 
-    def write2STL(self, filename, Ts):
+    def write2STL(self, filename, P, Ts):
         f = open(filename,'w')
         f.write('solid model\n')
-        for t in range(Ts.shape[0]):
-            self.writeLine(f, Ts[t,3,:], 'facet normal ')
-            f.write('outer loop\n')
-            self.writeLine(f, Ts[t,0,:], 'vertex ')
-            self.writeLine(f, Ts[t,1,:], 'vertex ')
-            self.writeLine(f, Ts[t,2,:], 'vertex ')
-            f.write('endloop\n')
-            f.write('endfacet\n')
+        for T in Ts:
+            for t in range(T.shape[0]):
+                nor = (P[T[t,0],3:6] + P[T[t,1],3:6] + P[T[t,2],3:6])/3.0
+                self.writeLine(f, nor, 'facet normal ')
+                f.write('outer loop\n')
+                self.writeLine(f, P[T[t,0],:3], 'vertex ')
+                self.writeLine(f, P[T[t,1],:3], 'vertex ')
+                self.writeLine(f, P[T[t,2],:3], 'vertex ')
+                f.write('endloop\n')
+                f.write('endfacet\n')
         f.write('endsolid model')
         f.close()
 
@@ -162,6 +167,7 @@ class PUBSexport(object):
         f.close()
 
     def write2EGADS(self,filename):
+        """ BROKEN """
         model = self.model
         Ps = []
         for surf in range(model.nsurf):
