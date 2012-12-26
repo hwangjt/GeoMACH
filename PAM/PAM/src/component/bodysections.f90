@@ -16,21 +16,21 @@ subroutine computeTipTangents(ax1, ax2, rot, hT, vT, dhT_drot, dvT_drot)
 
   !Working
   integer k, ax3
-  double precision e2(3), e3(3)
+  double precision e1(3), e2(3)
   double precision T(3,3), dT_drot(3,3,3)
 
   ax3 = 6 - ax1 - ax2
   call computeRtnMtx(ax1, ax2, ax3, rot, T, dT_drot)
 
+  e1(:) = 0.0
   e2(:) = 0.0
-  e3(:) = 0.0
+  e1(1) = 1.0
   e2(2) = 1.0
-  e3(3) = 1.0
 
-  hT = matmul(T,e3)
+  hT = matmul(T,e1)
   vT = matmul(T,e2)
   do k=1,3
-     dhT_drot(:,k) = matmul(dT_drot(:,:,k),e3)
+     dhT_drot(:,k) = matmul(dT_drot(:,:,k),e1)
      dvT_drot(:,k) = matmul(dT_drot(:,:,k),e2)
   end do
 

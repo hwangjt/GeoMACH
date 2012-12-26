@@ -148,15 +148,15 @@ class Body(Component):
 
         C = v['offset'] + v['pos'][1,:] + v['coneL'][0]*(v['pos'][0,:] - v['pos'][1,:])
         hT, vT, dhT_drot, dvT_drot = PAMlib.computetiptangents(ax1, ax2, rot[1,:])
-        self.Qs[0][:,:,:] = PAMlib.computecone(True, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C, hT, -vT, self.Qs[2][:,1:3,:], self.Qs[3][:,1:3,:], self.Qs[4][:,1:3,:], self.Qs[Qb][:,1:3,:], v['shapeF'])
+        self.Qs[0][:,:,:] = PAMlib.computecone(True, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C, -hT, -vT, self.Qs[2][:,1:3,:], self.Qs[3][:,1:3,:], self.Qs[4][:,1:3,:], self.Qs[Qb][:,1:3,:], v['shapeF'])
         for k in range(3):
-            self.dQ_dC[0][k] = PAMlib.computecone(True, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C + eye[:,k], hT, -vT, self.Qs[2][:,1:3,:], self.Qs[3][:,1:3,:], self.Qs[4][:,1:3,:], self.Qs[Qb][:,1:3,:], v['shapeF']) - self.Qs[0][:,:,:]
+            self.dQ_dC[0][k] = PAMlib.computecone(True, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C + eye[:,k], -hT, -vT, self.Qs[2][:,1:3,:], self.Qs[3][:,1:3,:], self.Qs[4][:,1:3,:], self.Qs[Qb][:,1:3,:], v['shapeF']) - self.Qs[0][:,:,:]
 
         C = v['offset'] + v['pos'][-2,:] + v['coneL'][1]*(v['pos'][-1,:] - v['pos'][-2,:])
         hT, vT, dhT_drot, dvT_drot = PAMlib.computetiptangents(ax1, ax2, rot[-2,:])
-        self.Qs[1][:,:,:] = PAMlib.computecone(False, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C, -hT, -vT, self.Qs[2][:,-2:-4:-1,:], self.Qs[3][:,-2:-4:-1,:], self.Qs[4][:,-2:-4:-1,:], self.Qs[Qb][:,-2:-4:-1,:], v['shapeA'])
+        self.Qs[1][:,:,:] = PAMlib.computecone(False, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C, hT, -vT, self.Qs[2][:,-2:-4:-1,:], self.Qs[3][:,-2:-4:-1,:], self.Qs[4][:,-2:-4:-1,:], self.Qs[Qb][:,-2:-4:-1,:], v['shapeA'])
         for k in range(3):
-            self.dQ_dC[1][k] = PAMlib.computecone(False, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C + eye[:,k], -hT, -vT, self.Qs[2][:,-2:-4:-1,:], self.Qs[3][:,-2:-4:-1,:], self.Qs[4][:,-2:-4:-1,:], self.Qs[Qb][:,-2:-4:-1,:], v['shapeA']) - self.Qs[1][:,:,:]
+            self.dQ_dC[1][k] = PAMlib.computecone(False, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C + eye[:,k], hT, -vT, self.Qs[2][:,-2:-4:-1,:], self.Qs[3][:,-2:-4:-1,:], self.Qs[4][:,-2:-4:-1,:], self.Qs[Qb][:,-2:-4:-1,:], v['shapeA']) - self.Qs[1][:,:,:]
 
     def setDerivatives(self, var, ind):
         nx = self.Qs[2].shape[1]
