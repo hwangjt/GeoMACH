@@ -1,220 +1,185 @@
 from __future__ import division
-from PAM.components import Component
+from PAM.components import Interpolant
 import numpy, pylab, time, scipy.sparse
 import PAM.PAMlib as PAMlib
+        
 
 
+class Junction(Interpolant):
 
-class Junction(Component):
-
-    def __init__(self, mComp, mSide, fComp, fFace, fNW, fSE):
+    def __init__(self, fComp, fFace, fRot, fNW, mComp, mComp0=None, mComp1=None, mSide=-1, ni=None, nj=None):
         super(Junction,self).__init__() 
 
-        self.nP = 10
-        self.mComp = mComp
-        self.mSide = mSide
         self.fComp = fComp
         self.fFace = fFace
+        self.fRot = fRot
         self.fNW = fNW
-        self.fSE = fSE
-        self.initializeIndices()
-        self.initializePoints()
+        self.mComp = mComp
+        self.mSide = mSide
+        self.mComp0 = mComp0
+        self.mComp1 = mComp1
+        self.initializeIndices(ni, nj)
+        self.initializeFaces()
+        self.initializeSurfaces()
         self.removeSurfaces()
 
-        self.ms = []
-        self.ms.append(numpy.zeros(self.ni,int))
-        self.ms.append(numpy.zeros(self.nj,int))
-        self.ms.append(None)
-        self.faces.append([1,2])
+    def initializeIndices(self, ni, nj):
+        if not ni==None:
+            self.ni = numpy.array(ni,int)
+        if not nj==None:
+            self.nj = numpy.array(nj,int)
+        if self.mSide==-1:
+            if ni==None:
+                self.ni = [1,self.mComp.ms[0].shape[0],1]
+            if nj==None:
+                self.nj = [1,self.mComp.ms[2].shape[0],1]
+        else:
+            if ni==None:
+                self.ni = [1,0,1]
+            if nj==None:
+                self.nj = [1,self.mComp.ms[0].shape[0],1]
 
-    def initializeIndices(self):
-        fNW = self.fNW
-        fSE = self.fSE
-        uInc = fSE[0] > fNW[0]
-        vInc = fSE[1] > fNW[1]
-        if uInc and vInc:
+        if self.fRot==0:
             self.rotate = lambda P: P
-        elif (not uInc) and (not vInc):
-            self.rotate = lambda P: P[::-1,::-1]
-        elif (not uInc) and vInc:
-            self.rotate = lambda P: numpy.swapaxes(P,0,1)[:,::-1]
-        elif uInc and (not vInc):
+            self.flip = lambda nu, nv: [nu,nv]
+        elif self.fRot==1:
             self.rotate = lambda P: numpy.swapaxes(P,0,1)[::-1,:]
-        self.fi1 = min(fSE[0],fNW[0])
-        self.fi2 = max(fSE[0],fNW[0])
-        self.fj1 = min(fSE[1],fNW[1])
-        self.fj2 = max(fSE[1],fNW[1])
-        self.fK = self.rotate(self.fComp.Ks[self.fFace][self.fi1:self.fi2+1,self.fj1:self.fj2+1])
-        self.ni = self.fK.shape[0]
-        self.nj = self.fK.shape[1]
+            self.flip = lambda nu, nv: [nv[::-1],nu]
+        elif self.fRot==2:
+            self.rotate = lambda P: P[::-1,::-1]
+            self.flip = lambda nu, nv: [nu[::-1],nv[::-1]]
+        elif self.fRot==3:
+            self.rotate = lambda P: numpy.swapaxes(P,0,1)[:,::-1]
+            self.flip = lambda nu, nv: [nv,nu[::-1]]
 
-    def initializePoints(self):
-        def getmEdge(f, i, j, du=0, dv=0):
-            if du==-1:
-                i = -1-i
-            if dv==-1:
-                j = -1-j
-            surf = mKs[f][i,j]
-            if du==1:
-                return mPs[surf][:,j,:]
-            elif du==-1:
-                return mPs[surf][::-1,j,:]
-            elif dv==1:
-                return mPs[surf][i,:,:]
-            elif dv==-1:
-                return mPs[surf][i,::-1,:]
+        self.fK = self.rotate(self.fComp.Ks[self.fFace])[self.fNW[0]:self.fNW[0]+sum(self.ni),self.fNW[1]:self.fNW[1]+sum(self.nj)]
 
-        rot = self.rotate
+    def initializeVerts(self):
+        vtx = lambda i, j, u, v: self.rotate(self.fComp.Ps[self.fK[i,j]])[u,v,:]
+        vtxM = lambda f, i, j, u, v: self.mComp.Ps[self.mComp.Ks[f][i,j]][u,v,:]
+
+        verts = numpy.zeros((4,4,3),order='F')
+        for i in [0,-1]:
+            for j in range(3):
+                verts[i,j,:] = vtx(i, self.sj[j], i, 0)
+                verts[i,j+1,:] = vtx(i, self.sj[j+1]-1, i, -1)
+        for j in [0,-1]:
+            for i in range(3):
+                verts[i,j,:] = vtx(self.si[i], j, 0, j)
+                verts[i+1,j,:] = vtx(self.si[i+1]-1, j, -1, j)
+        if self.mSide==-1:
+            verts[1,1,:] = vtxM(2, -1, 0, -1, 0)
+            verts[2,1,:] = vtxM(2, -1, -1, -1, -1)
+            verts[1,2,:] = vtxM(0, 0, 0, 0, 0)
+            verts[2,2,:] = vtxM(0, 0, -1, 0, -1)
+        else:
+            if self.mSide==0:
+                L = vtxM(0, -1, 0, -1, 0)
+                R = vtxM(0, 0, 0, 0, 0)
+            else:
+                L = vtxM(0, 0, -1, 0, -1)
+                R = vtxM(0, -1, -1, -1, -1)
+            verts[1,1,:] = L
+            verts[2,1,:] = L
+            verts[1,2,:] = R
+            verts[2,2,:] = R
+
+        return verts
+
+    def initializeSurfaces(self):
+        verts = self.initializeVerts()
+        
         nP = self.nP
         ni = self.ni
         nj = self.nj
-        fK = self.fK
-        fPs = self.fComp.Ps
-        mPs = self.mComp.Ps
-        mKs = self.mComp.Ks
+        si = self.si
+        sj = self.sj
 
         self.Ps = []
-        self.Ks = [-numpy.ones((ni,nj),int)]
+        self.Ks = [-numpy.ones((si[3],sj[3]),int)]
         counter = 0
-        for j in range(nj):
-            for i in range(ni):
-                if i==0 or j==0 or i==ni-1 or j==nj-1:
+        for j in range(sj[3]):
+            for i in range(si[3]):
+                if i<si[1] or j<sj[1] or i>=si[2] or j>=sj[2]:
                     self.Ps.append(numpy.zeros((nP,nP,3),order='F'))
                     self.Ks[0][i,j] = counter
                     counter += 1
 
-        iK = self.Ks[0]
-        for j in range(1,nj-1):
-            i = 0
-            e1 = rot(fPs[fK[i,j]])[0,:,:]
-            if ni > 2:
-                e2 = getmEdge(0, -1, j-1, dv=-1)
-            elif self.mSide==0:
-                e2 = getmEdge(0, j-1, 0, du=-1)
-            elif self.mSide==1:
-                e2 = getmEdge(0, j-1, -1, du=1)
-            self.Ps[iK[i,j]][:,:,:] = PAMlib.createinterface(nP, nP, e1, e2)
-            i = -1
-            if ni > 2:
-                e1 = getmEdge(1, -1, j-1, dv=1)
-            elif self.mSide==0:
-                e1 = getmEdge(1, j-1, 0, du=1)
-            elif self.mSide==1:
-                e1 = getmEdge(1, j-1, -1, du=-1)
-            e2 = rot(fPs[fK[i,j]])[-1,:,:]
-            self.Ps[iK[i,j]][:,:,:] = PAMlib.createinterface(nP, nP, e1, e2)
-        for i in range(1,ni-1):
-            j = 0
-            e1 = rot(fPs[fK[i,j]])[:,0,:]
-            e2 = getmEdge(4, -1, i-1, dv=1)
-            self.Ps[iK[i,j]][:,:,:] = numpy.swapaxes(PAMlib.createinterface(nP, nP, e1, e2),0,1)
-            j = -1
-            e1 = getmEdge(2, 0, i-1, dv=1)
-            e2 = rot(fPs[fK[i,j]])[:,-1,:]
-            self.Ps[iK[i,j]][:,:,:] = numpy.swapaxes(PAMlib.createinterface(nP, nP, e1, e2),0,1)
+        for b in range(3):
+            for a in range(3):
+                for j in range(nj[b]):
+                    jj = sj[b] + j
+                    for i in range(ni[a]):
+                        ii = si[a] + i
+                        if not self.Ks[0][ii,jj]==-1:
+                            self.Ps[self.Ks[0][ii,jj]][:,:,:] = PAMlib.bilinearinterp(nP, ni[a], nj[b], i+1, j+1, verts[a:a+2,b:b+2,:])
 
-        for i in [0,-1]:
-            e1 = rot(fPs[fK[i,0]])[:,0,:]
-            e2 = self.Ps[iK[i,1]][:,0,:]
-            self.Ps[iK[i,0]][:,:,:] = numpy.swapaxes(PAMlib.createinterface(nP, nP, e1, e2),0,1)
-
-            e1 = self.Ps[iK[i,-2]][:,-1,:]
-            e2 = rot(fPs[fK[i,-1]])[:,-1,:]
-            self.Ps[iK[i,-1]][:,:,:] = numpy.swapaxes(PAMlib.createinterface(nP, nP, e1, e2),0,1)
+        if not self.mSide==-1:
+            mComp = self.mComp
+            ii = si[1] - 1
+            for j in range(nj[1]):
+                jj = sj[1] + j
+                if self.mSide==0:
+                    self.averageEdges(self.Ps[self.Ks[0][ii,jj]][-1,:,:], mComp.Ps[mComp.Ks[0][-1-j,0]][::-1,0,:])
+                else:
+                    self.averageEdges(self.Ps[self.Ks[0][ii,jj]][-1,:,:], mComp.Ps[mComp.Ks[0][j,-1]][:,-1,:])
+            ii = si[2]
+            for j in range(nj[1]):
+                jj = sj[1] + j
+                if self.mSide==0:
+                    self.averageEdges(self.Ps[self.Ks[0][ii,jj]][0,:,:], mComp.Ps[mComp.Ks[1][j,0]][:,0,:])
+                else:
+                    self.averageEdges(self.Ps[self.Ks[0][ii,jj]][0,:,:], mComp.Ps[mComp.Ks[1][j,-1]][::-1,-1,:])
 
     def removeSurfaces(self):
         fPs = self.fComp.Ps
         fKs = self.fComp.Ks
-        f0 = self.fFace
-        for j0 in range(self.fj2,self.fj1-1,-1):
-            for i0 in range(self.fi2,self.fi1-1,-1):
-                fPs.pop(fKs[f0][i0,j0])
+        fK0 = self.fK
+
+        for j0 in range(fK0.shape[1]):
+            for i0 in range(fK0.shape[0]):
+                fPs.pop(fK0[i0,j0])
                 for f in range(len(fKs)):
                     for j in range(fKs[f].shape[1]):
                         for i in range(fKs[f].shape[0]):
-                            if fKs[f][i,j] > fKs[f0][i0,j0]:
+                            if (fKs[f][i,j] > fK0[i0,j0]) and (fKs[f][i,j] != -1):
                                 fKs[f][i,j] -= 1
-                fKs[f0][i0,j0] = -1
-
-    def setDOFs(self):
-        self.setC1('surf', 0, val=True)
-
-    def initializeVariables(self):
-        ni = self.Qs[0].shape[0]
-        nj = self.Qs[0].shape[1]
-        self.variables = {
-            'f0':1.0,
-            'm0':1.0,
-            'shape':numpy.zeros((ni,nj),order='F')
-            }
-
+                fK0[i0,j0] = -1
+        
     def computeQs(self):
-        getmPt = lambda f,i,j: mQs[f][i,j,:]
-        def getmEdge(f, i=None, j=None, d=1):
-            if j==None:
-                P = mQs[f][i,:,:]
-            else:
-                P = mQs[f][:,j,:]
-            if d==1:
-                return P
-            elif d==-1:
-                return P[::-1,:]
+        fu = self.fComp.getms(self.fFace,0)
+        fv = self.fComp.getms(self.fFace,1)
+        fu,fv = self.flip(fu,fv)
+        fu1 = sum(fu[:self.fNW[0]])
+        fu2 = sum(fu[:self.fNW[0]+self.si[3]])
+        fv1 = sum(fv[:self.fNW[1]])
+        fv2 = sum(fv[:self.fNW[1]+self.sj[3]])
+        fQ = self.rotate(self.fComp.Qs[self.fFace])[fu1:fu2+1,fv1:fv2+1,:]
 
-        nfu = self.fComp.getms(self.fFace,0)
-        nfv = self.fComp.getms(self.fFace,1)
-        nfu1 = sum(nfu[:self.fi1])
-        nfv1 = sum(nfv[:self.fj1])
-        nfu2 = sum(nfu[:self.fi2+1])
-        nfv2 = sum(nfv[:self.fj2+1])
-        fQ = self.rotate(self.fComp.Qs[self.fFace][nfu1:nfu2+1,nfv1:nfv2+1,:])
-
-        nu = self.getms(0,0)
-        nv = self.getms(0,1)
-        nu = numpy.array([nu[0]+1, sum(nu[1:-1])+1, nu[-1]+1])
-        nv = numpy.array([nv[0]+1, sum(nv[1:-1])+1, nv[-1]+1])
-        mQs = self.mComp.Qs
-        mA = numpy.zeros((2,2,3),order='F')
-        mB = numpy.zeros((2,2,3),order='F')
-
-        if self.ni > 2:
-            mQT = getmEdge(0, i=-1, d=-1)
-            mQB = getmEdge(1, i=-1, d= 1)
-            mQL = getmEdge(4, i=-1, d= 1)
-            mQR = getmEdge(2, i= 0, d= 1)
-            mA[0,0,:] = getmPt(0,-1,-1)
-            mA[0,1,:] = getmPt(0,-1, 0)
-            mA[1,0,:] = getmPt(1,-1, 0)
-            mA[1,1,:] = getmPt(1,-1,-1)
-            mB[0,0,:] = getmPt(0,-2,-1)
-            mB[0,1,:] = getmPt(0,-2, 0)
-            mB[1,0,:] = getmPt(1,-2, 0)
-            mB[1,1,:] = getmPt(1,-2,-1)
+        getEdge = self.getEdge
+        if self.mSide==-1:
+            W = getEdge(self.mComp.Qs[2], i=-1, d=1)
+            E = getEdge(self.mComp.Qs[0], i=0, d=1)
+            N = getEdge(self.mComp0.Qs[0], i=-1, d=-1)
+            S = getEdge(self.mComp1.Qs[0], i=-1, d=1)
         elif self.mSide==0:
-            mQT = getmEdge(0, j= 0, d=-1)
-            mQB = getmEdge(1, j= 0, d= 1)
-            mQL = numpy.zeros((1,3),order='F')
-            mQR = numpy.zeros((1,3),order='F')
-            mA[0,0,:] = getmPt(1, 0, 0)
-            mA[0,1,:] = getmPt(1,-1, 0)
-            mA[1,0,:] = getmPt(1, 0, 0)
-            mA[1,1,:] = getmPt(1,-1, 0)
-            mB[0,0,:] = getmPt(1, 0, 1)
-            mB[0,1,:] = getmPt(1,-1, 1)
-            mB[1,0,:] = getmPt(1, 0, 1)
-            mB[1,1,:] = getmPt(1,-1, 1)
+            W = numpy.zeros((1,2,3),order='F')
+            E = numpy.zeros((1,2,3),order='F')
+            N = getEdge(self.mComp.Qs[0], j=0, d=-1)
+            S = getEdge(self.mComp.Qs[1], j=0, d=1)
         elif self.mSide==1:
-            mQT = getmEdge(0, j=-1, d= 1)
-            mQB = getmEdge(1, j=-1, d=-1)
-            mQL = numpy.zeros((1,3),order='F')
-            mQR = numpy.zeros((1,3),order='F')
-            mA[0,0,:] = getmPt(1,-1,-1)
-            mA[0,1,:] = getmPt(1, 0,-1)
-            mA[1,0,:] = getmPt(1,-1,-1)
-            mA[1,1,:] = getmPt(1, 0,-1)
-            mB[0,0,:] = getmPt(1,-1,-2)
-            mB[0,1,:] = getmPt(1, 0,-2)
-            mB[1,0,:] = getmPt(1,-1,-2)
-            mB[1,1,:] = getmPt(1, 0,-2)
+            W = numpy.zeros((1,2,3),order='F')
+            E = numpy.zeros((1,2,3),order='F')
+            N = getEdge(self.mComp.Qs[0], j=-1, d=1)
+            S = getEdge(self.mComp.Qs[1], j=-1, d=-1)
+
+        mu = self.getms(0,0)
+        mv = self.getms(0,1)
+        nu = range(3)
+        nv = range(3)
+        for k in range(3):
+            nu[k] = sum(mu[self.si[k]:self.si[k+1]]) + 1
+            nv[k] = sum(mv[self.sj[k]:self.sj[k+1]]) + 1
 
         v = self.variables
-        self.Qs[0] = PAMlib.computejunction(fQ.shape[0], fQ.shape[1], nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['f0'], v['m0'], mQT, mQB, mQL, mQR, mA, mB, fQ, v['shape'])
+        self.Qs[0] = PAMlib.computejunction(sum(nu)-2, sum(nv)-2, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['f0'], v['m0'], W, E, N, S, fQ, v['shape'])

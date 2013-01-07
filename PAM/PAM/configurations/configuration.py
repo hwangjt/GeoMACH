@@ -36,6 +36,10 @@ class Configuration(object):
             Ps.extend(comp.Ps)
             comp.Ps = []
 
+#        a = PUBS.PUBSexport()
+#        a.write2TecStruct('test.dat',Ps,['x','y','z'])
+#        a.plot(Ps)
+#        exit()
         self.oml0 = PUBS.PUBS(Ps)
 
         for k in range(len(self.comps)):

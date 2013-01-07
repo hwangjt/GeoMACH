@@ -24,65 +24,48 @@ class Component(object):
         Adds to self.Ps and self.Ks
         """
         self.faces.append([du,dv])
+        nP = 10
+        ni = self.ms[abs(du)-1].shape[0]
+        nj = self.ms[abs(dv)-1].shape[0]
+        verts = numpy.zeros((2,2,3),order='F')
+        verts[:,:,:] = d
+        verts[0,:,abs(du)-1] = -ru*numpy.sign(du)
+        verts[1,:,abs(du)-1] = ru*numpy.sign(du)
+        verts[:,0,abs(dv)-1] = -rv*numpy.sign(dv)
+        verts[:,1,abs(dv)-1] = rv*numpy.sign(dv)
+        for j in range(nj):
+            for i in range(ni):
+                self.Ps.append(PAMlib.bilinearinterp(nP, ni, nj, i+1, j+1, verts))
 
-        n = 10
-        nu = self.ms[abs(du)-1].shape[0]
-        nv = self.ms[abs(dv)-1].shape[0]
-        Ps = self.Ps
-        Ks = self.Ks
-        for j in range(nv):
-            for i in range(nu):
-                if du > 0:
-                    u1 = ru*(-1+2*i/nu)
-                    u2 = ru*(-1+2*(i+1)/nu)
-                else:
-                    u1 = ru*(1-2*i/nu)
-                    u2 = ru*(1-2*(i+1)/nu)
-                if dv > 0:
-                    v1 = rv*(-1+2*j/nv)
-                    v2 = rv*(-1+2*(j+1)/nv)
-                else:
-                    v1 = rv*(1-2*j/nv)
-                    v2 = rv*(1-2*(j+1)/nv)
-                P = PAMlib.createsurfaces(n,du,dv,d,u1,u2,v1,v2)
-                Ps.append(P)  
-
-        K = numpy.zeros((nu,nv),int)
-        counter = 0
-        if len(Ks) > 0:
-            counter = numpy.max(Ks[-1]) + 1
-        for j in range(nv):
-            for i in range(nu):
+        if len(self.Ks) > 0:
+            counter = numpy.max(self.Ks[-1]) + 1
+        else:
+            counter = 0
+        K = numpy.zeros((ni,nj),int)
+        for j in range(nj):
+            for i in range(ni):
                 K[i,j] = counter
                 counter += 1
-        Ks.append(K)
+        self.Ks.append(K)
+
+    def averageEdges(self, edge1, edge2):
+        avg = 0.5*edge1 + 0.5*edge2
+        edge1[:,:] = avg
+        edge2[:,:] = avg
 
     def connectEdges(self, f1=0, u1=None, v1=None, f2=0, u2=None, v2=None):
-        def edge(f, u, v, kk, P0=None):
+        def edge(f, u, v, kk):
             Ks = self.Ks
             Ps = self.Ps
             d = 0 if u==None else 1
             r = self.faces[f][d]
             k = kk if r > 0 else -1-kk
             surf = Ks[f][k,v] if d==0 else Ks[f][u,k]
-            if not (P0==None):
-                if d == 0:
-                    if r > 0:
-                        Ps[surf][:,v] = P0
-                    else:
-                        Ps[surf][::-1,v] = P0
-                else:
-                    if r > 0:
-                        Ps[surf][u,:] = P0
-                    else:
-                        Ps[surf][u,::-1] = P0
             P = Ps[surf][:,v] if d == 0 else Ps[surf][u,:]
             return P[::-1] if r < 0 else P                
             
         for k in range(self.Ks[f1].shape[v1==None]):
-            avg = 0.5*edge(f1,u1,v1,k) + 0.5*edge(f2,u2,v2,k)
-            edge(f1,u1,v1,k,P0=avg)
-            edge(f2,u2,v2,k,P0=avg)  
+            self.averageEdges(edge(f1,u1,v1,k), edge(f2,u2,v2,k))
 
     def setC1(self, t, f, i=None, j=None, u=None, v=None, d=None, val=True):
         """ Set C1 continuity 

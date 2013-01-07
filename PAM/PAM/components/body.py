@@ -1,10 +1,10 @@
 from __future__ import division
-from PAM.components import Component, Property
+from PAM.components import Primitive, Property
 import numpy, pylab, time, scipy.sparse
 import PAM.PAMlib as PAMlib
 
 
-class Body(Component):
+class Body(Primitive):
     """ A component used to model blunt bodies. """
 
     def __init__(self, nx=1, ny=1, nz=1, bottom=2):
@@ -22,15 +22,8 @@ class Body(Component):
             2: closed
         """ 
 
-        super(Body,self).__init__() 
+        super(Body,self).__init__(nx,ny,nz)
 
-        self.ms = []
-        self.ms.append(numpy.zeros(nx,int))
-        self.ms.append(numpy.zeros(ny,int))
-        self.ms.append(numpy.zeros(nz,int))
-
-        self.addFace(-2, 3,-0.5)
-        self.addFace(-2,-3, 0.5)
         self.addFace( 2, 1,-0.5)
         self.addFace( 3, 1, 0.5)
         self.addFace(-2, 1, 0.5)
@@ -47,132 +40,53 @@ class Body(Component):
         for f in range(len(self.Ks)):
             self.setC1('surf', f, val=True)
         if self.bottom==0:
-            setC1('surf', 0, i=-1, u=-1, val=False)
-            setC1('edge', 0, i=-1, u=-1, val=True)
-            setC1('surf', 1, i=-1, u=-1, val=False)
-            setC1('edge', 1, i=-1, u=-1, val=True)
-            setC1('surf', 2, i= 0, u= 0, val=False)
-            setC1('edge', 2, i= 0, u= 0, val=True)
-            setC1('surf', 4, i=-1, u=-1, val=False)
-            setC1('edge', 4, i=-1, u=-1, val=True)
+            setC1('surf', 0, i= 0, u= 0, val=False)
+            setC1('edge', 0, i= 0, u= 0, val=True)
+            setC1('surf', 2, i=-1, u=-1, val=False)
+            setC1('edge', 2, i=-1, u=-1, val=True)
 
     def initializeVariables(self):
-        nx = self.Qs[2].shape[1]
-        ny = self.Qs[2].shape[0]
-        nz = self.Qs[3].shape[0]
-        zeros = numpy.zeros
-        ones = numpy.ones
-        self.variables = {
-            'coneL':ones(2),
-            'offset':zeros(3),
-            'radii':ones((nx,3),order='F'),
-            'pos':zeros((nx,3),order='F'),
-            'rot':zeros((nx,3),order='F'),
-            'shapeR':zeros((ny,nx),order='F'),
-            'shapeT':zeros((nz,nx),order='F'),
-            'shapeL':zeros((ny,nx),order='F'),
-            'shapeB':zeros((nz,nx),order='F'),
-            'shapeF':zeros((ny,nz),order='F'),
-            'shapeA':zeros((ny,nz),order='F')
-            }
-        self.parameters = {
-            'nor':ones((nx,3),order='F'),
-            'fillet':zeros((nx,4)),
-            'f0': 1.0,
-            'm0': 1.0
-            }
+        super(Body,self).initializeVariables()
+        nx = self.Qs[0].shape[1]
+        ny = self.Qs[0].shape[0]
+        nz = self.Qs[1].shape[0]
+        self.variables['shapeR'] = numpy.zeros((ny,nx),order='F')
+        self.variables['shapeT'] = numpy.zeros((nz,nx),order='F')
+        self.variables['shapeL'] = numpy.zeros((ny,nx),order='F')
+        self.variables['shapeB'] = numpy.zeros((nz,nx),order='F')
+        self.parameters['fillet'] = numpy.zeros((nx,4),order='F')
         self.setSections()
 
-    def setSections(self, sections=[], t1U=0, t2U=0, t1L=0, t2L=0):
-        Ns = self.Ns
-        v = self.variables
-        p = self.parameters
-        for j in range(Ns[2].shape[1]):
-            for i in range(Ns[2].shape[0]):
-                val = Ns[2][i,j,3]
-                if not val == -1:
-                    break
-            found = False
-            for k in range(len(sections)):
-                found = found or (val==sections[k])
-            if found or sections==[]:
-                p['fillet'][j,0] = t1U
-                p['fillet'][j,1] = t2U
-                p['fillet'][j,2] = t1L
-                p['fillet'][j,3] = t2L
-
     def computeQs(self):
-        r = numpy.zeros(3)
-        nx = self.Qs[2].shape[1]
-        ny = self.Qs[2].shape[0]
-        nz = self.Qs[3].shape[0]
+        nx = self.Qs[0].shape[1]
+        ny = self.Qs[0].shape[0]
+        nz = self.Qs[1].shape[0]
         v = self.variables
         p = self.parameters
         b = self.bottom==2
-        ax1 = self.ax1
-        ax2 = self.ax2
 
-        v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
-        v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
+        #v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
+        #v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
 
-        rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nx, 9*(nx*3-2), v['pos'], p['nor'])
-        self.drot0_dpos = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(nx*3,nx*3))
-        rot = v['rot']*numpy.pi/180.0 + rot0
-        shapes = range(6)
-        shapes[2] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['fillet'], v['shapeR'])
-        shapes[3] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['fillet'], v['shapeT'])
-        shapes[4] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['fillet'], v['shapeL'])
-        shapes[5] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['fillet'], v['shapeB'])
+        rot, self.drot0_dpos = self.computeRotations()
+
+        shapes = range(4)
+        shapes[0] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['fillet'], v['shapeR'])
+        shapes[1] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['fillet'], v['shapeT'])
+        shapes[2] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['fillet'], v['shapeL'])
+        shapes[3] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['fillet'], v['shapeB'])
 
         nQ = nx*(6+6*ny+6*nz) if self.bottom==2 else nx*(6+6*ny+3*nz)
-        self.dQs_dv = range(len(self.Qs))
-
-        counter = 0
-        for f in range(2,len(self.Qs)):
-            ni, nj = self.Qs[f].shape[:2]
-            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, ni, nj, ni*nj*27, counter, r, v['offset'], v['radii'], v['pos'], rot, shapes[f])
-            self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nQ))
-            counter += 3*ni*nj
-
-        if self.bottom==2:
-            nu = int(numpy.ceil(ny/2.0))
-            nv = int(numpy.ceil(nz/2.0))
-        else:
-            nu = ny
-            nv = int(numpy.ceil(nz/2.0))
-
-        self.dQ_drot = range(2)
-        self.dQ_dC = [range(3), range(3)]
-        Qb = 5 if self.bottom==2 else 3
-        eye = numpy.eye(3)
-
-        C = v['offset'] + v['pos'][1,:] + v['coneL'][0]*(v['pos'][0,:] - v['pos'][1,:])
-        hT, vT, dhT_drot, dvT_drot = PAMlib.computetiptangents(ax1, ax2, rot[1,:])
-        self.Qs[0][:,:,:] = PAMlib.computecone(True, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C, -hT, -vT, self.Qs[2][:,1:3,:], self.Qs[3][:,1:3,:], self.Qs[4][:,1:3,:], self.Qs[Qb][:,1:3,:], v['shapeF'])
-        for k in range(3):
-            self.dQ_dC[0][k] = PAMlib.computecone(True, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C + eye[:,k], -hT, -vT, self.Qs[2][:,1:3,:], self.Qs[3][:,1:3,:], self.Qs[4][:,1:3,:], self.Qs[Qb][:,1:3,:], v['shapeF']) - self.Qs[0][:,:,:]
-
-        C = v['offset'] + v['pos'][-2,:] + v['coneL'][1]*(v['pos'][-1,:] - v['pos'][-2,:])
-        hT, vT, dhT_drot, dvT_drot = PAMlib.computetiptangents(ax1, ax2, rot[-2,:])
-        self.Qs[1][:,:,:] = PAMlib.computecone(False, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C, hT, -vT, self.Qs[2][:,-2:-4:-1,:], self.Qs[3][:,-2:-4:-1,:], self.Qs[4][:,-2:-4:-1,:], self.Qs[Qb][:,-2:-4:-1,:], v['shapeA'])
-        for k in range(3):
-            self.dQ_dC[1][k] = PAMlib.computecone(False, self.bottom==2, nu, nv, nz, ny, p['f0'], p['m0'], C + eye[:,k], hT, -vT, self.Qs[2][:,-2:-4:-1,:], self.Qs[3][:,-2:-4:-1,:], self.Qs[4][:,-2:-4:-1,:], self.Qs[Qb][:,-2:-4:-1,:], v['shapeA']) - self.Qs[1][:,:,:]
+        self.computeSections(nQ, rot, shapes)
 
     def setDerivatives(self, var, ind):
-        nx = self.Qs[2].shape[1]
-        ny = self.Qs[2].shape[0]
-        nz = self.Qs[3].shape[0]
+        nx = self.Qs[0].shape[1]
+        ny = self.Qs[0].shape[0]
+        nz = self.Qs[1].shape[0]
         v = self.variables
         if var=='offset':
             for f in range(len(self.Qs)):
                 self.Qs[f][:,:,ind] += 1.0
-        elif var=='coneL':
-            if ind==0:
-                for k in range(3):
-                    self.Qs[0][:,:,:] += self.dQ_dC[0][k]*(v['pos'][0,k] - v['pos'][1,k])
-            else:
-                for k in range(3):
-                    self.Qs[1][:,:,:] += self.dQ_dC[1][k]*(v['pos'][-1,k] - v['pos'][-2,k])
         elif var=='radii':
             j = ind[0]
             k = ind[1]
@@ -215,10 +129,6 @@ class Body(Component):
         elif var=='shapeL':
             p = 0
         elif var=='shapeB':
-            p = 0
-        elif var=='shapeF':
-            p = 0
-        elif var=='shapeA':
             p = 0
 
 

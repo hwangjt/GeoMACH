@@ -1,10 +1,10 @@
 from __future__ import division
-from PAM.components import Component, Property
+from PAM.components import Primitive, Property
 import numpy, pylab, time, scipy.sparse
 import PAM.PAMlib as PAMlib
 
 
-class Shell(Component):
+class Shell(Primitive):
     """ A component used to model hollow bodies. """
 
     def __init__(self, nx=1, ny=1, nz=1, bottom=2):
@@ -22,12 +22,7 @@ class Shell(Component):
             2: closed
         """ 
 
-        super(Shell,self).__init__() 
-
-        self.ms = []
-        self.ms.append(numpy.zeros(nx,int))
-        self.ms.append(numpy.zeros(ny,int))
-        self.ms.append(numpy.zeros(nz,int))
+        super(Shell,self).__init__(nx,ny,nz)
 
         self.addFace( 2, 1,-0.5)
         self.addFace( 3, 1, 0.5)
@@ -64,74 +59,40 @@ class Shell(Component):
             setC1('edge', 2, i=-1, u=-1, val=True)
 
     def initializeVariables(self):
+        super(Shell,self).initializeVariables()
         nx = self.Qs[2].shape[1]
         ny = self.Qs[2].shape[0]
         nz = self.Qs[3].shape[0]
-        zeros = numpy.zeros
-        ones = numpy.ones
-        self.variables = {
-            'offset':zeros(3),
-            'thickness':0.1*ones((nx,3),order='F'),
-            'radii':ones((nx,3),order='F'),
-            'pos':zeros((nx,3),order='F'),
-            'rot':zeros((nx,3),order='F'),
-            'shapeR0':zeros((ny,nx),order='F'),
-            'shapeT0':zeros((nz,nx),order='F'),
-            'shapeL0':zeros((ny,nx),order='F'),
-            'shapeB0':zeros((nz,nx),order='F'),
-            'shapeR1':zeros((ny,nx),order='F'),
-            'shapeT1':zeros((nz,nx),order='F'),
-            'shapeL1':zeros((ny,nx),order='F'),
-            'shapeB1':zeros((nz,nx),order='F')
-            }
-        self.parameters = {
-            'nor':ones((nx,3),order='F'),
-            'fillet':zeros((nx,4))
-            }
+        self.variables['shapeR0'] = numpy.zeros((ny,nx),order='F')
+        self.variables['shapeT0'] = numpy.zeros((nz,nx),order='F')
+        self.variables['shapeL0'] = numpy.zeros((ny,nx),order='F')
+        self.variables['shapeB0'] = numpy.zeros((nz,nx),order='F')
+        self.variables['shapeR1'] = numpy.zeros((ny,nx),order='F')
+        self.variables['shapeT1'] = numpy.zeros((nz,nx),order='F')
+        self.variables['shapeL1'] = numpy.zeros((ny,nx),order='F')
+        self.variables['shapeB1'] = numpy.zeros((nz,nx),order='F')
+        self.variables['thickness'] = 0.1*numpy.ones((nx,3),order='F')
+        self.parameters['fillet'] = numpy.zeros((nx,4),order='F')
         self.setSections()
 
-    def setSections(self, sections=[], t1U=0, t2U=0, t1L=0, t2L=0):
-        Ns = self.Ns
-        v = self.variables
-        p = self.parameters
-        for j in range(Ns[0].shape[1]):
-            for i in range(Ns[0].shape[0]):
-                val = Ns[0][i,j,3]
-                if not val == -1:
-                    break
-            found = False
-            for k in range(len(sections)):
-                found = found or (val==sections[k])
-            if found or sections==[]:
-                p['fillet'][j,0] = t1U
-                p['fillet'][j,1] = t2U
-                p['fillet'][j,2] = t1L
-                p['fillet'][j,3] = t2L
-
     def computeQs(self):
-        r = numpy.zeros(3)
         nx = self.Qs[0].shape[1]
         ny = self.Qs[0].shape[0]
         nz = self.Qs[1].shape[0]
         v = self.variables
         p = self.parameters
         b = self.bottom==2
-        ax1 = self.ax1
-        ax2 = self.ax2
 
-        rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nx, 9*(nx*3-2), v['pos'], p['nor'])
-        drot0_dpos = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(nx*3,nx*3))
-        rot = v['rot']*numpy.pi/180.0 + rot0
-        r0 = v['radii'] + v['thickness']
-        r1 = v['radii'] - v['thickness']
+        rot, self.drot0_dpos = self.computeRotations()
+
+        r0 = v['scale'] + v['thickness']
+        r1 = v['scale'] - v['thickness']
 
         shapes = range(8)
-
         shapes[0] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['fillet'], v['shapeR0'])
         shapes[1] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['fillet'], v['shapeT0'])
         shapes[2] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['fillet'], v['shapeL0'])
         shapes[6] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['fillet'], v['shapeB0'])
-
         shapes[5] = PAMlib.computeshape(ny, nx, 1/4.0,-b/4.0, p['fillet'], v['shapeR1'])
         shapes[4] = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, p['fillet'], v['shapeT1'])
         shapes[3] = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, p['fillet'], v['shapeL1'])
@@ -141,18 +102,8 @@ class Shell(Component):
             nQ = nx*(6+12*ny+12*nz)
         else:
             nQ = nx*(6+12*ny+6*nz)
-        self.dQs_dv = range(len(self.Qs))
-
-        counter = 0
-        for f in range(len(self.Qs)):
-            if f in [0,1,2,6]:
-                radii = r0
-            else:
-                radii = r1
-            ni, nj = self.Qs[f].shape[:2]
-            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, ni, nj, ni*nj*27, counter, r, v['offset'], radii, v['pos'], rot, shapes[f])
-            self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nQ))
-            counter += 3*ni*nj
+        radii = [r0,r0,r0,r1,r1,r1,r0,r1]
+        self.computeSections(nQ, rot, shapes,radii=radii)
 
     def setDerivatives(self, var, ind):
         nx = self.Qs[0].shape[1]

@@ -1,10 +1,10 @@
 from __future__ import division
-from PAM.components import Component, Property, airfoils
+from PAM.components import Primitive, Property, airfoils
 import numpy, pylab, time, scipy.sparse
 import PAM.PAMlib as PAMlib
 
 
-class Wing(Component):
+class Wing(Primitive):
     """ A component used to model lifting surfaces. """
 
     def __init__(self, nx=1, nz=1, left=2, right=2):
@@ -20,12 +20,7 @@ class Wing(Component):
             2: closed tip
         """ 
 
-        super(Wing,self).__init__() 
-
-        self.ms = []
-        self.ms.append(numpy.zeros(nx,int))
-        self.ms.append(None)
-        self.ms.append(numpy.zeros(nz,int))
+        super(Wing,self).__init__(nx,0,nz)
 
         self.addFace(-1, 3, 0.5)
         self.addFace( 1, 3,-0.5)
@@ -58,50 +53,36 @@ class Wing(Component):
                 setCornerC1(f, i=-f, j=0, val=False) #C0 right TE corner
 
     def initializeVariables(self):
+        super(Wing,self).initializeVariables()
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
-        zeros = numpy.zeros
-        ones = numpy.ones
-        self.variables = {
-            'offset':zeros(3),
-            'chord':ones(nj),
-            'pos':zeros((nj,3),order='F'),
-            'rot':zeros((nj,3),order='F'),
-            'shape':zeros((2,ni,nj,3),order='F')
-            }
-        self.parameters = {
-            'nor':ones((nj,3),order='F')
-            }
+        self.variables['shapeU'] = numpy.zeros((ni,nj,3),order='F')
+        self.variables['shapeL'] = numpy.zeros((ni,nj,3),order='F')
+        self.parameters['origin'][0] = 0.25
         self.setAirfoil()
 
     def setAirfoil(self,filename="naca0012"):
         Ps = airfoils.fitAirfoil(self,filename)
         for f in range(len(self.Ks)):
             for j in range(self.Ns[f].shape[1]):
-                self.variables['shape'][f,:,j,:2] = Ps[f][:,:]
+                shape = 'shapeU' if f==0 else 'shapeL'
+                self.variables[shape][:,j,:2] = Ps[f][:,:]
         
     def computeQs(self):
-        r = numpy.array([0.25,0,0])
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
         v = self.variables
         p = self.parameters
-        ax1 = self.ax1
-        ax2 = self.ax2
 
         #if self.left==2:
         #    v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
         #if self.right==2:
         #    v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
-        rot0, Da, Di, Dj = PAMlib.computerotations(ax1, ax2, nj, 9*(nj*3-2), v['pos'], p['nor'])
-        self.drot0_dpos = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(nj*3,nj*3))
-        rot = v['rot']*numpy.pi/180.0 + rot0
-        scl = numpy.vstack([v['chord'],v['chord'],v['chord']]).T
+        rot, self.drot0_dpos = self.computeRotations()
 
-        self.dQs_dv = range(2)
-        for f in range(2):
-            self.Qs[f][:,:,:], Da, Di, Dj = PAMlib.computesections(ax1, ax2, ni, nj, ni*nj*27, f*3*ni*nj, r, v['offset'], scl, v['pos'], rot, v['shape'][f,:,:,:])
-            self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nj*(6+6*ni)))
+        shapes = [v['shapeU'], v['shapeL']]
+        nQ = nj*(6+6*ni)
+        self.computeSections(nQ, rot, shapes)
 
     def setDerivatives(self, var, ind):
         ni = self.Qs[0].shape[0]
@@ -142,6 +123,7 @@ if __name__ == '__main__':
     w = Wing(nx=2,nz=2,left=0)
     import PUBS
     from mayavi import mlab
+
     w.oml0 = PUBS.PUBS(w.Ps)
     w.setDOFs()
     w.oml0.updateBsplines()
@@ -163,3 +145,4 @@ if __name__ == '__main__':
     w.oml0.plot()
     name='wing'
     w.oml0.write2Tec(name)
+    w.oml0.write2TecC(name)
