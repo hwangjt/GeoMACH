@@ -85,8 +85,8 @@ class Shell(Primitive):
 
         rot, self.drot0_dpos = self.computeRotations()
 
-        r0 = v['scale'] + v['thickness']
-        r1 = v['scale'] - v['thickness']
+        r0 = v['scale'] + v['thickness']/2.0
+        r1 = v['scale'] - v['thickness']/2.0
 
         shapes = range(8)
         shapes[0] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['fillet'], v['shapeR0'])
@@ -104,42 +104,6 @@ class Shell(Primitive):
             nQ = nx*(6+12*ny+6*nz)
         radii = [r0,r0,r0,r1,r1,r1,r0,r1]
         self.computeSections(nQ, rot, shapes,radii=radii)
-
-    def setDerivatives(self, var, ind):
-        nx = self.Qs[0].shape[1]
-        ny = self.Qs[0].shape[0]
-        nz = self.Qs[1].shape[0]
-        if var=='offset':
-            for f in range(len(self.Qs)):
-                self.Qs[f][:,:,ind] += 1.0
-        elif var=='thickness':
-            p = 0
-        elif var=='radii':
-            p = 0
-        elif var=='pos':
-            p = 0
-        elif var=='rot':
-            j = ind[0]
-            k = ind[1]
-            for f in range(len(self.Qs)):
-                ni, nj = self.Qs[f].shape[:2]
-                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(3*nj+nj*k+j).todense()*numpy.pi/180.0)
-        elif var=='shapeR0':
-            p = 0
-        elif var=='shapeT0':
-            p = 0
-        elif var=='shapeL0':
-            p = 0
-        elif var=='shapeB0':
-            p = 0
-        elif var=='shapeR1':
-            p = 0
-        elif var=='shapeT1':
-            p = 0
-        elif var=='shapeL1':
-            p = 0
-        elif var=='shapeB1':
-            p = 0
 
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@ subroutine coonsPatch(nu, nv, Pu0, Pu1, P0v, P1v, P, dPdw)
 
   !Working
   double precision P00(3), P01(3), P10(3), P11(3)
-  double precision dPdu(3), dPdv(3), norm
+  double precision dPdu(3), dPdv(3)
   double precision denu, denv
   double precision u, v
   integer i, j
@@ -39,15 +39,28 @@ subroutine coonsPatch(nu, nv, Pu0, Pu1, P0v, P1v, P, dPdw)
         P(i,j,:) = P(i,j,:) - (1-u)*(1-v)*P00 - u*(1-v)*P10 - (1-u)*v*P01 - u*v*P11
         dPdu = -P0v(j,:) + P1v(j,:) + (1-v)*P00 - (1-v)*P10 + v*P01 - v*P11
         dPdv = -Pu0(i,:) + Pu1(i,:) + (1-u)*P00 + u*P10 - (1-u)*P01 - u*P11
+        call normalize(dPdu)
+        call normalize(dPdv)
         call cross_product(dPdu, dPdv, dPdw(i,j,:))
-        norm = dot_product(dPdw(i,j,:),dPdw(i,j,:))**0.5
-        if (norm .gt. 1e-10) then
-           dPdw(i,j,:) = dPdw(i,j,:)/norm
-        end if
+        call normalize(dPdw(i,j,:))
      end do
   end do
 
 end subroutine coonsPatch
+
+
+
+subroutine normalize(v)
+
+  implicit none
+  double precision, intent(inout) ::  v(3)
+  double precision norm
+  norm = dot_product(v,v)**0.5
+  if (norm .gt. 1e-15) then
+     v = v/norm
+  end if
+
+end subroutine normalize
 
 
 

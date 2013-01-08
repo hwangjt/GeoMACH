@@ -68,13 +68,14 @@ class Configuration(object):
         self.propagateQs()
         self.oml0.computePoints()
 
-    def computeQs(self, full=True):
+    def computeQs(self, full=True, comp=None):
         if full:
             for k in range(len(self.comps)):
                 self.comps[self.keys[k]].computeQs()
         else:
             for k in range(self.nprim,len(self.comps)):
-                self.comps[self.keys[k]].computeQs()
+                if self.keys[k] != comp:
+                    self.comps[self.keys[k]].computeQs()
 
     def propagateQs(self):
         self.oml0.Q[:,:3] = 0.0
@@ -91,7 +92,7 @@ class Configuration(object):
             self.comps[comp].variables[var][ind] -= h
         else:
             self.comps[comp].setDerivatives(var,ind)
-            self.computeQs(False)
+            self.computeQs(False, comp)
             h = 1.0
         self.propagateQs()
         res = (self.oml0.Q[:,:3] - Q0)/h
@@ -108,13 +109,16 @@ class Configuration(object):
             dat = self.comps[comp].variables[var]
             for ind,x in numpy.ndenumerate(dat):
                 ind = ind[0] if len(ind)==1 else ind
+                t0 = time.time()
                 d1 = self.getDerivatives(comp,var,ind,clean=False)
+                t1 = time.time()
                 d2 = self.getDerivatives(comp,var,ind,clean=False,FD=True,h=h)
+                t2 = time.time()
                 norm0 = numpy.linalg.norm(d2)
                 norm0 = 1.0 if norm0==0 else norm0
                 error = numpy.linalg.norm(d2-d1)/norm0
                 good = 'O' if error < 1e-4 else 'X'
-                print good, ' ', comp, ' ', var, ' ', ind, ' ', error
+                print good, ' ', comp, ' ', var, ' ', ind, ' ', error #t1-t0, t2-t1
         self.computePoints()
 
 

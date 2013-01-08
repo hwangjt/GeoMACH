@@ -79,58 +79,6 @@ class Body(Primitive):
         nQ = nx*(6+6*ny+6*nz) if self.bottom==2 else nx*(6+6*ny+3*nz)
         self.computeSections(nQ, rot, shapes)
 
-    def setDerivatives(self, var, ind):
-        nx = self.Qs[0].shape[1]
-        ny = self.Qs[0].shape[0]
-        nz = self.Qs[1].shape[0]
-        v = self.variables
-        if var=='offset':
-            for f in range(len(self.Qs)):
-                self.Qs[f][:,:,ind] += 1.0
-        elif var=='radii':
-            j = ind[0]
-            k = ind[1]
-        elif var=='pos':
-            j = ind[0]
-            k = ind[1]
-            A = scipy.sparse.csc_matrix((3*nx,3*nx))
-            B = self.drot0_dpos
-            C = scipy.sparse.csc_matrix((self.dQs_dv[2].shape[1]-6*nx,3*nx))
-            D = scipy.sparse.vstack([A,B,C],format='csc')
-            for f in range(2,len(self.Qs)):
-                ni, nj = self.Qs[f].shape[:2]
-                self.Qs[f][:,j,k] += 1.0
-                Q = self.dQs_dv[f].dot(D).getcol(nj*k+j).todense()
-                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, Q)
-            if j==1:
-                ni, nj = self.Qs[0].shape[:2]
-                self.Qs[0][:,:,:] += 1.0
-                for l in range(3):
-                    self.Qs[0][:,:,:] += self.dQ_drot[0][:,:,:,l]*self.drot0_dpos[nj*l+1,nj*k+j]
-            elif j==nx-2:
-                ni, nj = self.Qs[0].shape[:2]
-                self.Qs[1][:,:,:] += 1.0
-                for l in range(3):
-                    self.Qs[1][:,:,:] += self.dQ_drot[1][:,:,:,l]*self.drot0_dpos[nj*l+1,nj*k+j]
-        elif var=='rot':
-            j = ind[0]
-            k = ind[1]
-            for f in range(2,len(self.Qs)):
-                ni, nj = self.Qs[f].shape[:2]
-                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(3*nj+nj*k+j).todense()*numpy.pi/180.0)
-            #if j==1:
-            #    self.Qs[0][:,:,:] += self.dQ_drot[0][:,:,:,k]*numpy.pi/180.0
-            #elif j==nx-2:
-            #    self.Qs[1][:,:,:] += self.dQ_drot[1][:,:,:,k]*numpy.pi/180.0
-        elif var=='shapeR':
-            p = 0
-        elif var=='shapeT':
-            p = 0
-        elif var=='shapeL':
-            p = 0
-        elif var=='shapeB':
-            p = 0
-
 
 if __name__ == '__main__':
     b = Body(nx=8,ny=4,nz=4,bottom=0)

@@ -31,9 +31,9 @@ class Interpolant(Component):
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
         self.variables = {
-            'scale':0.15,
-            'f0':1.0,
-            'm0':1.0,
+            'scale':numpy.array([0.15]),
+            'f0':numpy.array([1.0]),
+            'm0':numpy.array([1.0]),
             'shape':numpy.zeros((ni,nj),order='F')
             }
 
@@ -61,3 +61,8 @@ class Interpolant(Component):
             return P
         elif d==-1:
             return P[::-1,:,:]
+
+    def setDerivatives(self, var, ind):
+        self.variables[var][ind] += 1
+        self.computeQs()
+        self.variables[var][ind] -= 1

@@ -84,40 +84,6 @@ class Wing(Primitive):
         nQ = nj*(6+6*ni)
         self.computeSections(nQ, rot, shapes)
 
-    def setDerivatives(self, var, ind):
-        ni = self.Qs[0].shape[0]
-        nj = self.Qs[0].shape[1]
-        if var=='offset':
-            for f in range(2):
-                self.Qs[f][:,:,ind] += 1.0
-        elif var=='chord':
-            j = ind
-            for f in range(2):
-                for k in range(3):
-                    self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(nj*k+j).todense())
-        elif var=='pos':
-            j = ind[0]
-            k = ind[1]
-            A = scipy.sparse.csc_matrix((3*nj,3*nj))
-            B = self.drot0_dpos
-            C = scipy.sparse.csc_matrix((self.dQs_dv[0].shape[1]-6*nj,3*nj))
-            D = scipy.sparse.vstack([A,B,C],format='csc')
-            for f in range(2):
-                self.Qs[f][:,j,k] += 1.0
-                Q = self.dQs_dv[f].dot(D).getcol(nj*k+j).todense()
-                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, Q)
-        elif var=='rot':
-            j = ind[0]
-            k = ind[1]
-            for f in range(2):
-                self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(3*nj+nj*k+j).todense()*numpy.pi/180.0)
-        elif var=='shape':
-            f = ind[0]
-            i = ind[1]
-            j = ind[2]
-            k = ind[3]
-            self.Qs[f][:,:,:] += PAMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].getcol(6*nj+f*3*ni*nj+ni*nj*k+ni*j+i).todense())
-
 
 if __name__ == '__main__':
     w = Wing(nx=2,nz=2,left=0)

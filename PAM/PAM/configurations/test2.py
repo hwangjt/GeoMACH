@@ -38,17 +38,17 @@ class Test(Configuration):
         c['wingR'].variables['scale'][:,:] = 0.2
         c['wingR'].variables['pos'][:,2] = numpy.linspace(-1,0,c['wingR'].Qs[0].shape[1])
         c['body'].variables['pos'][:,0] = numpy.linspace(0,1,c['body'].Qs[0].shape[1])
-        c['nose'].variables['scale'] = 0.25
-        c['nose'].variables['f0'] = 3.0
-        c['tail'].variables['scale'] = 0.25
-        c['tail'].variables['f0'] = 3.0
+        c['nose'].variables['scale'][0] = 0.25
+        c['nose'].variables['f0'][0] = 3.0
+        c['tail'].variables['scale'][0] = 0.25
+        c['tail'].variables['f0'][0] = 3.0
         c['body2'].variables['offset'] = [0.5,1.1,0]
         c['body2'].variables['pos'][:,0] = numpy.linspace(-0.2,0.2,c['body2'].Qs[0].shape[1])
         c['body2'].variables['scale'][:,:] = 0.2
-        c['nose2'].variables['scale'] = 0.25
-        c['nose2'].variables['f0'] = 3.0
-        c['tail2'].variables['scale'] = 0.25
-        c['tail2'].variables['f0'] = 3.0
+        c['nose2'].variables['scale'][0] = 0.25
+        c['nose2'].variables['f0'][0] = 3.0
+        c['tail2'].variables['scale'][0] = 0.25
+        c['tail2'].variables['f0'][0] = 3.0
         c['shell'].variables['offset'] = [0.5,-1.5,0]
         c['shell'].variables['pos'][:,0] = numpy.linspace(-0.5,0.5,c['shell'].Qs[0].shape[1])
         c['shell'].variables['pos'][:,2] = numpy.linspace(-0.5,0.5,c['shell'].Qs[0].shape[1])
@@ -61,6 +61,28 @@ if __name__ == '__main__':
 
     name = 'test'
     aircraft = Test()
+
+    if 0:
+        aircraft.oml0.addVars(['dQxdc','dQydc','dQzdc'])
+        aircraft.oml0.addVars(['dQxdc2','dQydc2','dQzdc2'])
+        d1 = aircraft.getDerivatives('bb','shape',(5,10),FD=True)
+        d2 = aircraft.getDerivatives('bb','shape',(5,10),FD=True)
+        print numpy.linalg.norm(d1)
+        print numpy.linalg.norm(d2)
+        print numpy.linalg.norm(d2-d1)
+        aircraft.oml0.Q[:,6:9] = d1
+        aircraft.oml0.Q[:,9:12] = d2
+        aircraft.computePoints()
+        aircraft.oml0.write2Tec(name)
+        exit()
+
+    aircraft.runDerivativeTest('wingL')
+    aircraft.runDerivativeTest('body')
+    aircraft.runDerivativeTest('shell')
+    aircraft.runDerivativeTest('wbL')
+    aircraft.runDerivativeTest('bb')
+    aircraft.runDerivativeTest('nose')
+    aircraft.runDerivativeTest('nose2')
     aircraft.oml0.write2Tec(name)
     aircraft.oml0.write2TecC(name)
     aircraft.oml0.write2STL(name)
