@@ -11,7 +11,7 @@ class Component(object):
     def __init__(self):
         self.Ps = []
         self.Ks = []   
-        self.oml0 = None
+        self.oml0 = []
         self.faces = []
         self.variables = {}
         

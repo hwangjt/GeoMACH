@@ -10,26 +10,23 @@ class Configuration(object):
     
     def __init__(self):
         self.comps = {}
-        self.compKeys = []
+        self.keys = []
 
     def addComp(self, name, comp):
         self.comps[name] = comp
-        self.compKeys.append(name)
+        self.keys.append(name)
 
     def separateComps(self):
         self.nprim = len(self.comps)
         for k in range(len(self.comps)):
-            self.comps[self.compKeys[k]].translatePoints(0,0,k*4)   
+            self.comps[self.keys[k]].translatePoints(0,0,k*4)   
 
     def assembleComponents(self):
-        ncomp = len(self.comps)
-        keys = self.compKeys
-
-        Ps = []        
-        for k in range(ncomp):
-            comp = self.comps[keys[k]]
+        Ps = []
+        for k in range(len(self.comps)):
+            comp = self.comps[self.keys[k]]
             if k > 0:
-                comp0 = self.comps[keys[k-1]]
+                comp0 = self.comps[self.keys[k-1]]
                 maxk = numpy.max(comp0.Ks[-1]) + 1
                 for s in range(len(comp.Ks)):
                     for j in range(comp.Ks[s].shape[1]):
@@ -45,15 +42,15 @@ class Configuration(object):
 #        exit()
         self.oml0 = PUBS.PUBS(Ps)
 
-        for k in range(ncomp):
-            comp = self.comps[keys[k]]
+        for k in range(len(self.comps)):
+            comp = self.comps[self.keys[k]]
             comp.oml0 = self.oml0
             comp.computems()
             comp.setDOFs()
         self.oml0.updateBsplines()
 
-        for k in range(ncomp):
-            comp = self.comps[keys[k]]
+        for k in range(len(self.comps)):
+            comp = self.comps[self.keys[k]]
             comp.initializeDOFmappings()
             comp.initializeVariables()
         self.computePoints()
@@ -61,7 +58,7 @@ class Configuration(object):
     def updateComponents(self):
         self.oml0.updateBsplines()
         for k in range(len(self.comps)):
-            comp = self.comps[self.compKeys[k]]
+            comp = self.comps[self.keys[k]]
             comp.computeDims(self)
             comp.initializeDOFs()
         self.computePoints()
@@ -74,16 +71,16 @@ class Configuration(object):
     def computeQs(self, full=True, comp=None):
         if full:
             for k in range(len(self.comps)):
-                self.comps[self.compKeys[k]].computeQs()
+                self.comps[self.keys[k]].computeQs()
         else:
             for k in range(self.nprim,len(self.comps)):
-                if self.compKeys[k] != comp:
-                    self.comps[self.compKeys[k]].computeQs()
+                if self.keys[k] != comp:
+                    self.comps[self.keys[k]].computeQs()
 
     def propagateQs(self):
         self.oml0.Q[:,:3] = 0.0
         for k in range(len(self.comps)):
-            self.comps[self.compKeys[k]].propagateQs()
+            self.comps[self.keys[k]].propagateQs()
 
     def getDerivatives(self, comp, var, ind, clean=True, FD=False, h=1e-5):
         self.computeQs()

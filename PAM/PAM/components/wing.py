@@ -1,5 +1,5 @@
 from __future__ import division
-from PAM.components import Primitive, Variable, airfoils
+from PAM.components import Primitive, Property, airfoils
 import numpy, pylab, time, scipy.sparse
 import PAM.PAMlib as PAMlib
 
@@ -56,9 +56,8 @@ class Wing(Primitive):
         super(Wing,self).initializeVariables()
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
-        v = self.variables
-        v['shapeU'] = Variable((ni,nj,3))
-        v['shapeL'] = Variable((ni,nj,3))
+        self.variables['shapeU'] = numpy.zeros((ni,nj,3),order='F')
+        self.variables['shapeL'] = numpy.zeros((ni,nj,3),order='F')
         self.setAirfoil()
 
     def setAirfoil(self,filename="naca0012"):
@@ -66,19 +65,20 @@ class Wing(Primitive):
         for f in range(len(self.Ks)):
             for j in range(self.Ns[f].shape[1]):
                 shape = 'shapeU' if f==0 else 'shapeL'
-                self.variables[shape].V[:,j,:2] = Ps[f][:,:]
+                self.variables[shape][:,j,:2] = Ps[f][:,:]
         
     def computeQs(self):
-        val = lambda var: self.variables[var]()
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
+        v = self.variables
+        p = self.parameters
 
         #if self.left==2:
         #    v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
         #if self.right==2:
         #    v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
 
-        shapes = [val('shapeU'), val('shapeL')]
+        shapes = [v['shapeU'], v['shapeL']]
         nQ = nj*(9+6*ni)
         self.computeSections(nQ, shapes)
 
