@@ -83,10 +83,8 @@ class Shell(Primitive):
         p = self.parameters
         b = self.bottom==2
 
-        rot, self.drot0_dpos = self.computeRotations()
-
-        r0 = v['scale'] + v['thickness']/2.0
-        r1 = v['scale'] - v['thickness']/2.0
+        r0 = v['scl'] + v['thickness']/2.0
+        r1 = v['scl'] - v['thickness']/2.0
 
         shapes = range(8)
         shapes[0] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['fillet'], v['shapeR0'])
@@ -97,13 +95,10 @@ class Shell(Primitive):
         shapes[4] = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, p['fillet'], v['shapeT1'])
         shapes[3] = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, p['fillet'], v['shapeL1'])
         shapes[7] = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, p['fillet'], v['shapeB1'])
-
-        if self.bottom==2:
-            nQ = nx*(6+12*ny+12*nz)
-        else:
-            nQ = nx*(6+12*ny+6*nz)
+        
+        nQ = nx*(9+12*ny+12*nz) if self.bottom==2 else nx*(9+12*ny+6*nz)
         radii = [r0,r0,r0,r1,r1,r1,r0,r1]
-        self.computeSections(nQ, rot, shapes,radii=radii)
+        self.computeSections(nQ, shapes, radii=radii)
 
 
 if __name__ == '__main__':

@@ -31,28 +31,39 @@ class Test(Configuration):
 
         c = self.comps
 
-        c['wingL'].variables['offset'] = [0.5,0,1]
-        c['wingL'].variables['scale'][:,:] = 0.2
-        c['wingL'].variables['pos'][:,2] = numpy.linspace(0,1,c['wingL'].Qs[0].shape[1])
-        c['wingR'].variables['offset'] = [0.5,0,-1]
-        c['wingR'].variables['scale'][:,:] = 0.2
-        c['wingR'].variables['pos'][:,2] = numpy.linspace(-1,0,c['wingR'].Qs[0].shape[1])
+        c['wingL'].variables['scl'][:,:] = 0.2
+        c['wingL'].variables['pos'][:,0] = 0.5
+        c['wingL'].variables['pos'][:,1] = 0
+        c['wingL'].variables['pos'][:,2] = 1 + numpy.linspace(0,1,c['wingL'].Qs[0].shape[1])
+        c['wingR'].variables['scl'][:,:] = 0.2
+
+        c['wingR'].variables['pos'][:,0] = 0.5
+        c['wingR'].variables['pos'][:,1] = 0
+        c['wingR'].variables['pos'][:,2] = -1 + numpy.linspace(-1,0,c['wingR'].Qs[0].shape[1])
+
         c['body'].variables['pos'][:,0] = numpy.linspace(0,1,c['body'].Qs[0].shape[1])
+
         c['nose'].variables['scale'][0] = 0.25
         c['nose'].variables['f0'][0] = 3.0
+
         c['tail'].variables['scale'][0] = 0.25
         c['tail'].variables['f0'][0] = 3.0
-        c['body2'].variables['offset'] = [0.5,1.1,0]
-        c['body2'].variables['pos'][:,0] = numpy.linspace(-0.2,0.2,c['body2'].Qs[0].shape[1])
-        c['body2'].variables['scale'][:,:] = 0.2
+
+        c['body2'].variables['pos'][:,0] = 0.5 + numpy.linspace(-0.2,0.2,c['body2'].Qs[0].shape[1])
+        c['body2'].variables['pos'][:,1] = 1.1
+        c['body2'].variables['pos'][:,2] = 0
+        c['body2'].variables['scl'][:,:] = 0.2
+
         c['nose2'].variables['scale'][0] = 0.25
         c['nose2'].variables['f0'][0] = 3.0
+
         c['tail2'].variables['scale'][0] = 0.25
         c['tail2'].variables['f0'][0] = 3.0
-        c['shell'].variables['offset'] = [0.5,-1.5,0]
-        c['shell'].variables['pos'][:,0] = numpy.linspace(-0.5,0.5,c['shell'].Qs[0].shape[1])
+
+        c['shell'].variables['pos'][:,0] = 0.5 + numpy.linspace(-0.5,0.5,c['shell'].Qs[0].shape[1])
+        c['shell'].variables['pos'][:,1] = -1.5
         c['shell'].variables['pos'][:,2] = numpy.linspace(-0.5,0.5,c['shell'].Qs[0].shape[1])
-        c['shell'].variables['scale'][:,:] = 0.2
+        c['shell'].variables['scl'][:,:] = 0.2
 
         self.computePoints()
 

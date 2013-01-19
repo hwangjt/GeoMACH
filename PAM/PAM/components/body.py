@@ -68,16 +68,14 @@ class Body(Primitive):
         #v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
         #v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
 
-        rot, self.drot0_dpos = self.computeRotations()
-
         shapes = range(4)
         shapes[0] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['fillet'], v['shapeR'])
         shapes[1] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['fillet'], v['shapeT'])
         shapes[2] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['fillet'], v['shapeL'])
         shapes[3] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['fillet'], v['shapeB'])
 
-        nQ = nx*(6+6*ny+6*nz) if self.bottom==2 else nx*(6+6*ny+3*nz)
-        self.computeSections(nQ, rot, shapes)
+        nQ = nx*(9+6*ny+6*nz) if self.bottom==2 else nx*(9+6*ny+3*nz)
+        self.computeSections(nQ, shapes)
 
 
 if __name__ == '__main__':

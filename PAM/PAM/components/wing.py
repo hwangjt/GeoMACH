@@ -58,7 +58,6 @@ class Wing(Primitive):
         nj = self.Qs[0].shape[1]
         self.variables['shapeU'] = numpy.zeros((ni,nj,3),order='F')
         self.variables['shapeL'] = numpy.zeros((ni,nj,3),order='F')
-        self.parameters['origin'][0] = 0.25
         self.setAirfoil()
 
     def setAirfoil(self,filename="naca0012"):
@@ -78,11 +77,10 @@ class Wing(Primitive):
         #    v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
         #if self.right==2:
         #    v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
-        rot, self.drot0_dpos = self.computeRotations()
 
         shapes = [v['shapeU'], v['shapeL']]
-        nQ = nj*(6+6*ni)
-        self.computeSections(nQ, rot, shapes)
+        nQ = nj*(9+6*ni)
+        self.computeSections(nQ, shapes)
 
 
 if __name__ == '__main__':
