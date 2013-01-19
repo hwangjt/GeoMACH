@@ -13,6 +13,7 @@ class Component(object):
         self.Ks = []   
         self.oml0 = None
         self.faces = []
+        self.variables = {}
         
     def addFace(self, du, dv, d, ru=0.5, rv=0.5):
         """ Creates a set of rectangular surfaces, their IDs, and face dims.

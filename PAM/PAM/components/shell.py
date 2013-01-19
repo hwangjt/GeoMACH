@@ -1,5 +1,5 @@
 from __future__ import division
-from PAM.components import Primitive, Property
+from PAM.components import Primitive, Variable
 import numpy, pylab, time, scipy.sparse
 import PAM.PAMlib as PAMlib
 
@@ -63,38 +63,38 @@ class Shell(Primitive):
         nx = self.Qs[2].shape[1]
         ny = self.Qs[2].shape[0]
         nz = self.Qs[3].shape[0]
-        self.variables['shapeR0'] = numpy.zeros((ny,nx),order='F')
-        self.variables['shapeT0'] = numpy.zeros((nz,nx),order='F')
-        self.variables['shapeL0'] = numpy.zeros((ny,nx),order='F')
-        self.variables['shapeB0'] = numpy.zeros((nz,nx),order='F')
-        self.variables['shapeR1'] = numpy.zeros((ny,nx),order='F')
-        self.variables['shapeT1'] = numpy.zeros((nz,nx),order='F')
-        self.variables['shapeL1'] = numpy.zeros((ny,nx),order='F')
-        self.variables['shapeB1'] = numpy.zeros((nz,nx),order='F')
-        self.variables['thickness'] = 0.1*numpy.ones((nx,3),order='F')
-        self.parameters['fillet'] = numpy.zeros((nx,4),order='F')
+        v = self.variables
+        v['shapeR0'] = Variable((ny,nx))
+        v['shapeT0'] = Variable((nz,nx))
+        v['shapeL0'] = Variable((ny,nx))
+        v['shapeB0'] = Variable((nz,nx))
+        v['shapeR1'] = Variable((ny,nx))
+        v['shapeT1'] = Variable((nz,nx))
+        v['shapeL1'] = Variable((ny,nx))
+        v['shapeB1'] = Variable((nz,nx))
+        v['thickness'] = Variable((nx,3))
+        v['fillet'] = Variable((nx,4),False)
         self.setSections()
 
     def computeQs(self):
+        val = lambda var: self.variables[var]()
         nx = self.Qs[0].shape[1]
         ny = self.Qs[0].shape[0]
         nz = self.Qs[1].shape[0]
-        v = self.variables
-        p = self.parameters
         b = self.bottom==2
 
-        r0 = v['scl'] + v['thickness']/2.0
-        r1 = v['scl'] - v['thickness']/2.0
+        r0 = val('scl') + val('thickness')/2.0
+        r1 = val('scl') - val('thickness')/2.0
 
         shapes = range(8)
-        shapes[0] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['fillet'], v['shapeR0'])
-        shapes[1] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['fillet'], v['shapeT0'])
-        shapes[2] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['fillet'], v['shapeL0'])
-        shapes[6] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['fillet'], v['shapeB0'])
-        shapes[5] = PAMlib.computeshape(ny, nx, 1/4.0,-b/4.0, p['fillet'], v['shapeR1'])
-        shapes[4] = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, p['fillet'], v['shapeT1'])
-        shapes[3] = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, p['fillet'], v['shapeL1'])
-        shapes[7] = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, p['fillet'], v['shapeB1'])
+        shapes[0] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, val('fillet'), val('shapeR0'))
+        shapes[1] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, val('fillet'), val('shapeT0'))
+        shapes[2] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, val('fillet'), val('shapeL0'))
+        shapes[6] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, val('fillet'), val('shapeB0'))
+        shapes[5] = PAMlib.computeshape(ny, nx, 1/4.0,-b/4.0, val('fillet'), val('shapeR1'))
+        shapes[4] = PAMlib.computeshape(nz, nx, 3/4.0, 1/4.0, val('fillet'), val('shapeT1'))
+        shapes[3] = PAMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, val('fillet'), val('shapeL1'))
+        shapes[7] = PAMlib.computeshape(nz, nx, 7/4.0, 5/4.0, val('fillet'), val('shapeB1'))
         
         nQ = nx*(9+12*ny+12*nz) if self.bottom==2 else nx*(9+12*ny+6*nz)
         radii = [r0,r0,r0,r1,r1,r1,r0,r1]

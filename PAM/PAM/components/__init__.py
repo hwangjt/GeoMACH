@@ -1,4 +1,5 @@
 from component import Component, Property
+from variable import Variable
 from layout import Layout
 from primitive import Primitive
 from wing import Wing
