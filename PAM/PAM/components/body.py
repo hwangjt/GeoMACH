@@ -50,11 +50,21 @@ class Body(Primitive):
         nx = self.Qs[0].shape[1]
         ny = self.Qs[0].shape[0]
         nz = self.Qs[1].shape[0]
-        self.variables['shapeR'] = numpy.zeros((ny,nx),order='F')
-        self.variables['shapeT'] = numpy.zeros((nz,nx),order='F')
-        self.variables['shapeL'] = numpy.zeros((ny,nx),order='F')
-        self.variables['shapeB'] = numpy.zeros((nz,nx),order='F')
-        self.parameters['fillet'] = numpy.zeros((nx,4),order='F')
+        zeros = numpy.zeros
+        v = self.variables
+        a = self.addParam
+
+        v['shR'] = zeros((ny,nx),order='F')
+        v['shT'] = zeros((nz,nx),order='F')
+        v['shL'] = zeros((ny,nx),order='F')
+        v['shB'] = zeros((nz,nx),order='F')
+
+        a('shR','shR',(1,1),P=[0.0])
+        a('shT','shT',(1,1),P=[0.0])
+        a('shL','shL',(1,1),P=[0.0])
+        a('shB','shB',(1,1),P=[0.0])
+        self.params['pos'].setP(P=[[0.,0.,0.],[1.,0.,0.]])
+
         self.setSections()
 
     def computeQs(self):
@@ -62,17 +72,16 @@ class Body(Primitive):
         ny = self.Qs[0].shape[0]
         nz = self.Qs[1].shape[0]
         v = self.variables
-        p = self.parameters
         b = self.bottom==2
 
         #v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
         #v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
 
         shapes = range(4)
-        shapes[0] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['fillet'], v['shapeR'])
-        shapes[1] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['fillet'], v['shapeT'])
-        shapes[2] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['fillet'], v['shapeL'])
-        shapes[3] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['fillet'], v['shapeB'])
+        shapes[0] = PAMlib.computeshape(ny, nx,-b/4.0, 1/4.0, v['flt'], v['shR'])
+        shapes[1] = PAMlib.computeshape(nz, nx, 1/4.0, 3/4.0, v['flt'], v['shT'])
+        shapes[2] = PAMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, v['flt'], v['shL'])
+        shapes[3] = PAMlib.computeshape(nz, nx, 5/4.0, 7/4.0, v['flt'], v['shB'])
 
         nQ = nx*(9+6*ny+6*nz) if self.bottom==2 else nx*(9+6*ny+3*nz)
         self.computeSections(nQ, shapes)

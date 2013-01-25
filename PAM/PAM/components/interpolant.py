@@ -30,12 +30,19 @@ class Interpolant(Component):
     def initializeVariables(self):
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
-        self.variables = {
-            'scale':numpy.array([0.15]),
-            'f0':numpy.array([1.0]),
-            'm0':numpy.array([1.0]),
-            'shape':numpy.zeros((ni,nj),order='F')
-            }
+        zeros = numpy.zeros
+        v = self.variables
+        a = self.addParam
+
+        v['scl'] = zeros((1,1),order='F')
+        v['fC1'] = zeros((1,1),order='F')
+        v['mC1'] = zeros((1,1),order='F')
+        v['shp'] = zeros((ni,nj),order='F')
+
+        a('scl','scl',(1,1),P=[0.15])
+        a('fC1','fC1',(1,1),P=[1.0])
+        a('mC1','mC1',(1,1),P=[1.0])
+        a('shp','shp',(1,1),P=[0.0])
 
     def getEdge(self, Q, i=None, j=None, d=1):
         if j==None:
@@ -62,7 +69,6 @@ class Interpolant(Component):
         elif d==-1:
             return P[::-1,:,:]
 
-    def setDerivatives(self, var, ind):
-        self.variables[var][ind] += 1
+    def setDerivatives(self, var, dV0):
+        self.variables[var] += dV0
         self.computeQs()
-        self.variables[var][ind] -= 1

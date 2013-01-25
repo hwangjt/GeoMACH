@@ -182,4 +182,4 @@ class Junction(Interpolant):
             nv[k] = sum(mv[self.sj[k]:self.sj[k+1]]) + 1
 
         v = self.variables
-        self.Qs[0] = PAMlib.computejunction(sum(nu)-2, sum(nv)-2, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['f0'], v['m0'], W, E, N, S, fQ, v['shape'])
+        self.Qs[0] = PAMlib.computejunction(sum(nu)-2, sum(nv)-2, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['fC1'], v['mC1'], W, E, N, S, fQ, v['shp'])

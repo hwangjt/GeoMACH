@@ -10,6 +10,7 @@ SRC_FILES = PAM/src/layout/addConnectors.f90 \
 	PAM/src/layout/importEdges.f90 \
 	PAM/src/layout/splitPolygons.f90 \
 	PAM/src/component/component.f90 \
+	PAM/src/component/parameter.f90 \
 	PAM/src/component/primitive/computeAngles.f90 \
 	PAM/src/component/primitive/computeRotations.f90 \
 	PAM/src/component/primitive/computeSections.f90 \

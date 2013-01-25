@@ -1,4 +1,5 @@
 from __future__ import division
+from PAM.components import Parameter
 from layout import Layout
 import numpy, pylab, time, copy
 import scipy.sparse
@@ -11,9 +12,21 @@ class Component(object):
     def __init__(self):
         self.Ps = []
         self.Ks = []   
-        self.oml0 = []
+        self.oml0 = None
         self.faces = []
         self.variables = {}
+        self.params = {}
+
+    def computeVs(self):
+        vs = self.variables
+        ps = self.params
+        for v in vs:
+            vs[v][:,:] = 0.0
+        for p in ps:
+            vs[ps[p].var][:,:] += ps[p].compute()
+
+    def addParam(self, name, var, shp, P=None, Tdim=None, T=None, Ddim=None, D=None, Bdim=None, B=None):
+        self.params[name] = Parameter(var, shp, self.variables[var].shape, P, Tdim, T, Ddim, D, Bdim, B)
         
     def addFace(self, du, dv, d, ru=0.5, rv=0.5):
         """ Creates a set of rectangular surfaces, their IDs, and face dims.

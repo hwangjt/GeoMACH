@@ -455,6 +455,9 @@ class PUBS(object):
         elif prop==2:
             return self.group_n[ugroup-1], self.group_n[vgroup-1]
 
+    def exportPjtn(self, Q):
+        return numpy.sum(self.P0[:,3:6]*self.J0.dot(self.M.dot(Q)),1)
+
     def exportPstr(self, surfs=None):
         if surfs==None:
             surfs = range(self.nsurf)

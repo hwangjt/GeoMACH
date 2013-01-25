@@ -56,29 +56,42 @@ class Wing(Primitive):
         super(Wing,self).initializeVariables()
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
-        self.variables['shapeU'] = numpy.zeros((ni,nj,3),order='F')
-        self.variables['shapeL'] = numpy.zeros((ni,nj,3),order='F')
+        zeros = numpy.zeros
+        v = self.variables
+        a = self.addParam
+
+        v['shU'] = zeros((ni,nj),order='F')
+        v['shL'] = zeros((ni,nj),order='F')
+
+        a('shU','shU',(1,1),P=[0.0])
+        a('shL','shL',(1,1),P=[0.0])
+        self.params['pos'].setP([[0.,0.,0.],[0.,0.,1.]])
+        self.params['ogn'].setP([0.25,0.,0.])
+
+        self.shapeU = zeros((ni,nj,3),order='F')
+        self.shapeL = zeros((ni,nj,3),order='F')
         self.setAirfoil()
 
     def setAirfoil(self,filename="naca0012"):
         Ps = airfoils.fitAirfoil(self,filename)
         for f in range(len(self.Ks)):
             for j in range(self.Ns[f].shape[1]):
-                shape = 'shapeU' if f==0 else 'shapeL'
-                self.variables[shape][:,j,:2] = Ps[f][:,:]
+                shape = self.shapeU if f==0 else self.shapeL
+                shape[:,j,:2] = Ps[f][:,:]
         
     def computeQs(self):
         ni = self.Qs[0].shape[0]
         nj = self.Qs[0].shape[1]
         v = self.variables
-        p = self.parameters
 
         #if self.left==2:
         #    v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
         #if self.right==2:
         #    v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
 
-        shapes = [v['shapeU'], v['shapeL']]
+        shapes = [self.shapeU, self.shapeL]
+        shapes[0][:,:,1] += v['shU']
+        shapes[1][:,:,1] += v['shL']
         nQ = nj*(9+6*ni)
         self.computeSections(nQ, shapes)
 

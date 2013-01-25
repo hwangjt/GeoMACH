@@ -64,9 +64,14 @@ class Configuration(object):
         self.computePoints()
 
     def computePoints(self):
+        self.computeVs()
         self.computeQs()
         self.propagateQs()
         self.oml0.computePoints()
+
+    def computeVs(self):
+        for k in range(len(self.comps)):
+            self.comps[self.keys[k]].computeVs()
 
     def computeQs(self, full=True, comp=None):
         if full:
@@ -82,7 +87,64 @@ class Configuration(object):
         for k in range(len(self.comps)):
             self.comps[self.keys[k]].propagateQs()
 
-    def getDerivatives(self, comp, var, ind, clean=True, FD=False, h=1e-5):
+    def getDerivatives(self, c, p, ind, clean=True, FD=False, h=1e-5):
+        comp = self.comps[c]
+        par = comp.params[p]
+        var = par.var
+        self.computeVs()
+        self.computeQs()
+        self.propagateQs()
+        V0 = numpy.array(comp.variables[var])
+        Q0 = numpy.array(self.oml0.Q[:,:3])
+        if FD:
+            par.P[ind] += h
+            self.computeVs()
+            self.computeQs()
+            par.P[ind] -= h
+        else:
+            h = 1.0
+            par.P[ind] += h
+            self.computeVs()
+            par.P[ind] -= h
+            dV = comp.variables[var] - V0
+            self.computeVs()
+            comp.setDerivatives(var,dV)
+            self.computeQs(False, c)
+        self.propagateQs()
+        res = (self.oml0.Q[:,:3] - Q0)/h
+        if clean:
+            self.computePoints()
+        return res
+
+    def runDerivativeTest(self, c, ps=[]):
+        self.computePoints()
+
+        comp = self.comps[c]
+        if ps==[]:
+            ps = comp.params.keys()
+
+        h = 1e-5
+        for p in ps:
+            par = comp.params[p]
+            var = par.var
+            if not (var in ['nor','ogn','flt']):
+                ni,nj = par.P.shape[:2]
+                for i in range(ni):
+                    for j in range(nj):
+                        ind = (i,j)
+                        t0 = time.time()
+                        d1 = self.getDerivatives(c,p,ind,clean=False)
+                        t1 = time.time()
+                        d2 = self.getDerivatives(c,p,ind,clean=False,FD=True,h=h)
+                        t2 = time.time()
+                        norm0 = numpy.linalg.norm(d2)
+                        norm0 = 1.0 if norm0==0 else norm0
+                        error = numpy.linalg.norm(d2-d1)/norm0
+                        good = 'O' if error < 1e-4 else 'X'
+                        print good, ' ', c, ' ', p, ' ', ind, ' ', error #t1-t0, t2-t1
+        self.computePoints()
+
+    def getDerivatives0(self, comp, var, ind, clean=True, FD=False, h=1e-5):
         self.computeQs()
         self.propagateQs()
         Q0 = numpy.array(self.oml0.Q[:,:3])
@@ -100,25 +162,26 @@ class Configuration(object):
             self.computePoints()
         return res
 
-    def runDerivativeTest(self, comp, variables=[]):
+    def runDerivativeTest0(self, comp, variables=[]):
         self.computePoints()
         if variables==[]:
             variables = self.comps[comp].variables.keys()
         h = 1e-5
         for var in variables:
-            dat = self.comps[comp].variables[var]
-            for ind,x in numpy.ndenumerate(dat):
-                ind = ind[0] if len(ind)==1 else ind
-                t0 = time.time()
-                d1 = self.getDerivatives(comp,var,ind,clean=False)
-                t1 = time.time()
-                d2 = self.getDerivatives(comp,var,ind,clean=False,FD=True,h=h)
-                t2 = time.time()
-                norm0 = numpy.linalg.norm(d2)
-                norm0 = 1.0 if norm0==0 else norm0
-                error = numpy.linalg.norm(d2-d1)/norm0
-                good = 'O' if error < 1e-4 else 'X'
-                print good, ' ', comp, ' ', var, ' ', ind, ' ', error #t1-t0, t2-t1
+            if not (var in ['nor','origin','fillet']):
+                dat = self.comps[comp].variables[var]
+                for ind,x in numpy.ndenumerate(dat):
+                    ind = ind[0] if len(ind)==1 else ind
+                    t0 = time.time()
+                    d1 = self.getDerivatives(comp,var,ind,clean=False)
+                    t1 = time.time()
+                    d2 = self.getDerivatives(comp,var,ind,clean=False,FD=True,h=h)
+                    t2 = time.time()
+                    norm0 = numpy.linalg.norm(d2)
+                    norm0 = 1.0 if norm0==0 else norm0
+                    error = numpy.linalg.norm(d2-d1)/norm0
+                    good = 'O' if error < 1e-4 else 'X'
+                    print good, ' ', comp, ' ', var, ' ', ind, ' ', error #t1-t0, t2-t1
         self.computePoints()
 
 
