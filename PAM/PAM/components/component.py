@@ -1,8 +1,7 @@
 from __future__ import division
 from PAM.components import Parameter
 from layout import Layout
-import numpy, pylab, time, copy
-import scipy.sparse
+import numpy, time, scipy.sparse
 import PAM.PAMlib as PAMlib
 
 
@@ -16,6 +15,33 @@ class Component(object):
         self.faces = []
         self.variables = {}
         self.params = {}
+
+    def set(self, p, f, d, val, ind):
+        if len(ind)==0:
+            ind = range(self.getms(f,d).shape[0])
+        if len(val)==1 and len(ind)>1:
+            for i in range(len(ind)-1):
+                val.append(val[0])
+
+        Ks = self.Ks
+        if d==0:
+            for i in range(len(ind)):
+                for j in range(Ks[f].shape[1]):
+                    surf = Ks[f][ind[i],j]
+                    if not surf==-1:
+                        self.oml0.edgeProperty(surf,p,d,val[i])
+        else:
+            for i in range(Ks[f].shape[1]):
+                for j in range(len(ind)):
+                    surf = Ks[f][i,ind[j]]
+                    if not surf==-1:
+                        self.oml0.edgeProperty(surf,p,d,val[j])
+
+    def setm(self, f, d, val, ind=[]):
+        self.set(1, f, d, val, ind)
+
+    def setn(self, f, d, val, ind=[]):
+        self.set(2, f, d, val, ind)
 
     def computeVs(self):
         vs = self.variables
@@ -207,7 +233,7 @@ class Component(object):
                 for i in range(Ks[f].shape[0]):
                     surf = Ks[f][i,j]
                     if surf != -1:
-                        mu,mv = oml0.getEdgeProperty(surf,1)
+                        mu,mv = oml0.edgeProperty(surf,1)
                         for v in range(mv):
                             jj = sum(nj[:j]) + v
                             vType = classify(v,mv)

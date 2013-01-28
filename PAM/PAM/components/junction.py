@@ -1,6 +1,6 @@
 from __future__ import division
 from PAM.components import Interpolant
-import numpy, pylab, time, scipy.sparse
+import numpy, time
 import PAM.PAMlib as PAMlib
         
 

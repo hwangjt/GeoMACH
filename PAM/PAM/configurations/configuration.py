@@ -1,9 +1,6 @@
 from __future__ import division
-import numpy, pylab, time
-import scipy.sparse
+import numpy, time
 import PUBS
-import mpl_toolkits.mplot3d.axes3d as p3
-from mayavi import mlab
 
 
 class Configuration(object):
@@ -36,10 +33,6 @@ class Configuration(object):
             Ps.extend(comp.Ps)
             comp.Ps = []
 
-#        a = PUBS.PUBSexport()
-#        a.write2TecStruct('test.dat',Ps,['x','y','z'])
-#        a.plot(Ps)
-#        exit()
         self.oml0 = PUBS.PUBS(Ps)
 
         for k in range(len(self.comps)):
@@ -55,12 +48,13 @@ class Configuration(object):
             comp.initializeVariables()
         self.computePoints()
 
-    def updateComponents(self):
-        self.oml0.updateBsplines()
+    def update(self):
+        self.oml0.update()
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
-            comp.computeDims(self)
-            comp.initializeDOFs()
+            comp.computems()
+            comp.initializeDOFmappings()
+            comp.initializeVariables()
         self.computePoints()
 
     def computePoints(self):
@@ -229,7 +223,7 @@ class Configuration2(object):
             comp.keys = []
             comp.computeDims(self)
             comp.setDOFs()
-        self.oml0.updateBsplines()
+        self.oml0.updateBsplines(True)
 
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]

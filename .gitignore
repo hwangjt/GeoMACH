@@ -15,3 +15,5 @@
 *.pdf
 *.lay
 *.stl
+*.log
+*.mcr

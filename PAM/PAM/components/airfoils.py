@@ -21,8 +21,8 @@ def getAirfoil(filename):
                     yc[i] = y1[i]
                 else:
                     yc[i] = y2[i]
-        upper = numpy.zeros((n,2))
-        lower = numpy.zeros((n,2))
+        upper = numpy.zeros((n,2),order='F')
+        lower = numpy.zeros((n,2),order='F')
         upper[:,0] = x[::-1]
         lower[:,0] = x
         upper[:,1] = ys[::-1] + yc[::-1]
@@ -42,13 +42,16 @@ def getAirfoil(filename):
     return [upper, lower]
 
 def getP(nP, airfoil):
-    P = numpy.zeros((airfoil.shape[0],4,3))
-    for i in range(4):
-        P[:,i,:2] = airfoil[:,:]
+    P = numpy.zeros((airfoil.shape[0],4,3),order='F')
+    for j in range(4):
+        P[:,j,:2] = airfoil[:,:]
+        P[:,j,2] = j
+
     oml0 = PUBS.PUBS([P])
-    oml0.group_n[1] = nP
+    oml0.edgeProperty(0,2,0,nP)
     oml0.updateEvaluation()
-    P = numpy.zeros((nP,2))
+
+    P = numpy.zeros((nP,2),order='F')
     for i in range(nP):
         P[i,:] = oml0.P[oml0.getIndex(0,i,0,0),:2]
     return P
@@ -56,23 +59,25 @@ def getP(nP, airfoil):
 def getQ(ms, ns, P0):
     Ps = []
     for i in range(ns.shape[0]):
-        P = numpy.zeros((4,ns[i]+1,3))
+        P = numpy.zeros((ns[i]+1,4,3),order='F')
         for j in range(4):
-            P[j,:,:2] = P0[sum(ns[:i]):sum(ns[:i+1])+1,:]
+            P[:,j,:2] = P0[sum(ns[:i]):sum(ns[:i+1])+1,:]
+            P[:,j,2] = j
         Ps.append(P)
+
     oml0 = PUBS.PUBS(Ps)
     for i in range(ms.shape[0]):
-        oml0.group_m[1+i] = ms[i]+1
-    oml0.updateBsplines()
-    Q = numpy.zeros((sum(ms) + 1,2))
+        oml0.edgeProperty(i,1,0,ms[i]+1)
+    oml0.updateBsplines(True)
+
+    Q = numpy.zeros((sum(ms) + 1,2),order='F')
     for i in range(ns.shape[0]):
         for j in range(ms[i]+1):
-            Q[sum(ms[:i])+j] = oml0.Q[oml0.getIndex(i,0,j,2),:2]
+            Q[sum(ms[:i])+j] = oml0.Q[oml0.getIndex(i,j,0,2),:2]
     return Q
 
 def fitAirfoil(wing,filename):
     airfoil = getAirfoil(filename)
-    oml0 = wing.oml0
     Qs = []
     for f in range(2):
         nsurf = wing.Ks[f].shape[0]
@@ -80,10 +85,8 @@ def fitAirfoil(wing,filename):
         ns = numpy.zeros(nsurf,int)
         for i in range(nsurf):
             surf = wing.Ks[f][i,0]
-            edge = abs(oml0.surf_edge[surf,0,0]) - 1
-            group = oml0.edge_group[edge] - 1
-            ms[i] = oml0.group_m[group] - 1
-            ns[i] = oml0.group_n[group] - 1
+            ms[i] = wing.oml0.edgeProperty(surf,1)[0]-1
+            ns[i] = wing.oml0.edgeProperty(surf,2)[0]-1
         nP = sum(ns) + 1
 
         P = getP(nP, airfoil[f])

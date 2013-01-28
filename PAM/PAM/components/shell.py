@@ -1,6 +1,6 @@
 from __future__ import division
-from PAM.components import Primitive, Property
-import numpy, pylab, time, scipy.sparse
+from PAM.components import Primitive
+import numpy, time
 import PAM.PAMlib as PAMlib
 
 

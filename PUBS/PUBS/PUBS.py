@@ -75,14 +75,8 @@ class PUBS(object):
         self.var = ['x','y','z','nx','ny','nz']
         self.symmPlane = 2
         self.__initializeTopology(P_arrays, ratio)
-        self.computeQindices()
-        self.computeCindices()
-        self.computePindices()
-        self.computeDindices()
+        self.update()
         self.__initializePoints(P_arrays)
-        self.computeKnots()
-        self.computeParameters()
-        self.computeJacobian()
         self.computeControlPts()
         self.computePoints()
 
@@ -93,7 +87,16 @@ class PUBS(object):
         self.C = numpy.hstack((self.C, numpy.zeros((self.nC,len(var)),order='F')))
         self.P = numpy.hstack((self.P, numpy.zeros((self.nP,len(var)),order='F')))
 
-    def updateBsplines(self):
+    def update(self):
+        self.computeQindices()
+        self.computeCindices()
+        self.computePindices()
+        self.computeDindices()
+        self.computeKnots()
+        self.computeParameters()
+        self.computeJacobian()
+
+    def updateBsplines(self, refit=False):
         """ Method to call after B-spline order, number of control points, or DOFs
             has been changed along any edge """
 
@@ -103,8 +106,9 @@ class PUBS(object):
         self.computeKnots()
         self.computeParameters()
         self.computeJacobian()
-        self.computeControlPts()
-        self.computePoints()
+        if refit:
+            self.computeControlPts()
+            self.computePoints()
 
     def updateEvaluation(self):
         """ Method to call after number of points has been changed along any edge """
@@ -186,6 +190,7 @@ class PUBS(object):
         self.nQ += max(self.edge_index_Q[:,1])
         self.nQ += self.surf_index_Q[-1,1]
 
+        self.Q = numpy.zeros((self.nQ,self.nvar),order='F')  
         if self.printInfo:
             print '# Degrees of freedom =',self.nQ
 
@@ -249,7 +254,7 @@ class PUBS(object):
         u = numpy.zeros(self.Np0[-1])
         v = numpy.zeros(self.Np0[-1])
         for s in range(self.nsurf):
-            T = PUBSlib.getsurfacet(s, self.Nuv[s,0], self.Nuv[s,1], self.nT, self.nsurf, self.nedge, self.surf_edge, self.surf_index_P, self.edge_index_P, self.T)
+            T = PUBSlib.getsurfacet(s+1, self.Nuv[s,0], self.Nuv[s,1], self.nT, self.nsurf, self.nedge, self.surf_edge, self.surf_index_P, self.edge_index_P, self.T)
             surf[self.Np0[s]:self.Np0[s+1]] = s
             u[self.Np0[s]:self.Np0[s+1]] = T[:,:,0].flatten(order='F')
             v[self.Np0[s]:self.Np0[s+1]] = T[:,:,1].flatten(order='F')
@@ -439,21 +444,29 @@ class PUBS(object):
         surf -= 1
         return surf,u,v
     
-    def getEdgeProperty(self, surf, prop):
+    def edgeProperty(self, surf, p, d=None, val=None):
         """ Get the edge property for the u and v edges
-        prop: (integer)
+        p: (integer)
           0: k
           1: m
           2: n
         """
-        ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1]
-        vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1]
-        if prop==0:
-            return self.group_k[ugroup-1], self.group_k[vgroup-1]
-        elif prop==1:
-            return self.group_m[ugroup-1], self.group_m[vgroup-1]
-        elif prop==2:
-            return self.group_n[ugroup-1], self.group_n[vgroup-1]
+        ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1] - 1
+        vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1] - 1
+
+        if p==0:
+            prop = self.group_k
+        elif p==1:
+            prop = self.group_m
+        elif p==2:
+            prop = self.group_n
+
+        if d==0:
+            prop[ugroup] = val
+        elif d==1:
+            prop[vgroup] = val
+
+        return prop[ugroup], prop[vgroup]
 
     def exportPjtn(self, Q):
         return numpy.sum(self.P0[:,3:6]*self.J0.dot(self.M.dot(Q)),1)
@@ -525,11 +538,15 @@ class PUBS(object):
         Ps = self.exportPstr()
         self.export.write2TecStruct(filename, Ps, self.var)
 
+    def write2TecP(self, filename):
+        if not filename[-4:]=='_P.dat':
+            filename = filename + '_P.dat'
+        self.export.write2TecScatter(filename, self.P, self.var)
+
     def write2TecC(self, filename):
         if not filename[-4:]=='_C.dat':
             filename = filename + '_C.dat'
-        C = self.C
-        self.export.write2TecScatter(filename, C, self.var)
+        self.export.write2TecScatter(filename, self.C, self.var)
 
     def write2STL(self, filename):
         if not filename[-4:]=='.stl':

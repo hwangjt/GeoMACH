@@ -68,10 +68,8 @@ subroutine getSurfaceT(surf, nu, nv, nT, nsurf, nedge, surf_edge, &
      end do
   end do
   do v=1,2
-     iT1 = edge_index_P(abs(surf_edge(surf,1,v)),1)
+     iT1 = edge_index_P(abs(surf_edge(surf,1,v)),1) + 1
      iT2 = edge_index_P(abs(surf_edge(surf,1,v)),2)
-     iT1 = iT1 + 1
-     iT2 = iT2
      if (surf_edge(surf,1,v) .gt. 0) then
         bufferT(2:nu-1,1+(v-1)*(nv-1),1) = T(iT1:iT2)
      else
@@ -79,10 +77,8 @@ subroutine getSurfaceT(surf, nu, nv, nT, nsurf, nedge, surf_edge, &
      end if
   end do
   do u=1,2
-     iT1 = edge_index_P(abs(surf_edge(surf,2,u)),1)
+     iT1 = edge_index_P(abs(surf_edge(surf,2,u)),1) + 1
      iT2 = edge_index_P(abs(surf_edge(surf,2,u)),2)
-     iT1 = iT1 + 1
-     iT2 = iT2
      if (surf_edge(surf,2,u) .gt. 0) then
         bufferT(1+(u-1)*(nu-1),2:nv-1,2) = T(iT1:iT2)
      else

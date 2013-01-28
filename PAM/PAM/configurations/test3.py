@@ -29,7 +29,10 @@ class Test(Configuration):
         c['wing'].addParam('winglet','pos',[3,3],P=[[0,0,0],[0,0,0],[0,1,0]],Tdim=0,T=[0,0.8,1],Ddim=0,D=[[0,0,1],[0,0,1],[0,1,0]],Bdim=0,B=numpy.ones((3,3),bool))
 
         self.computePoints()
-        print c['wing'].variables['pos']
+
+        c['wing'].setm(0,0,[14])
+        c['wing'].setn(0,0,[30])
+        self.update()
 
 
 if __name__ == '__main__':
@@ -51,7 +54,7 @@ if __name__ == '__main__':
     aircraft.oml0.write2STL(name)
     aircraft.oml0.write2IGES(name)
 
-    if 0:
+    if 1:
         t = Tecplot()
         t.importDataSet(name)
         t.setTransparency(False)
