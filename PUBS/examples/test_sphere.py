@@ -1,7 +1,6 @@
 from __future__ import division
 import PUBS
-import numpy, pylab
-import copy, time
+import numpy, pylab, time
 import mpl_toolkits.mplot3d.axes3d as p3
 
 n = [20,40]
@@ -62,7 +61,6 @@ for k in range(2):
             P0[k+3][i,j,2] = z*dz
 
 oml1 = PUBS.PUBS(P0)
-
 oml1.computePoints()
 
 n = 1000
@@ -70,9 +68,6 @@ P0 = numpy.zeros((n,3),order='F')
 P0[:,0] = numpy.linspace(-0.5, 0.5, n)
 P0[:,1] = -0.2
 P0[:,2] = 0.4
-#P0[0] = [0.5,-1,0.1]
-#P0[1] = [-0.5,0.5,0.3]
-#P0[2] = [0.2,0.1,-0.1]
 Q = numpy.zeros((n,3),order='F')
 for i in range(n):
     Q[i] = [0,0,1]
@@ -98,8 +93,5 @@ print oml1.evaluatePoint(0,0.1,0.4,0,2)
 for i in range(oml1.ngroup):
     oml1.group_n[i] -= 4
 oml1.updateEvaluation()
-fig = pylab.figure()
-ax = oml1.plot(fig,False)
-for i in range(P.shape[0]):
-    ax.scatter([P[i,0],P0[i,0]],[P[i,1],P0[i,1]],[P[i,2],P0[i,2]])
-pylab.show()
+
+oml1.plot()

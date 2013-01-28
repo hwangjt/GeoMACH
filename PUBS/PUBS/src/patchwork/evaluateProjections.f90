@@ -242,10 +242,10 @@ subroutine evaluatePjtnAlongQ(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
      nu = group_n(ugroup)
      nv = group_n(vgroup)
      allocate(bufferT(nu,nv,2))
-     allocate(bufferP(nu,nv,3))     
+     allocate(bufferP(nu,nv,3)) 
      call getSurfaceT(surf, nu, nv, nT, nsurf, nedge, surf_edge, &
           surf_index_P, edge_index_P, T, bufferT)
-     call getSurfaceP(surf, nP, nu, nv, nsurf, nedge, nvert, surf_vert, &
+     call getSurfaceP(surf, nP, nu, nv, 3, nsurf, nedge, nvert, surf_vert, &
           surf_edge, surf_index_P, edge_index_P, P, bufferP)
      do k=1,nP0
         R(:) = Q(k,:)
