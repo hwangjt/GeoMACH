@@ -172,18 +172,17 @@ class Component(object):
         self.setC1('edge', f, i=i, j=j, v=j, d=i, val=val)
 
     def computeEdgeInfo(self):
-        oml0 = self.oml0
+        edgeProperty = self.oml0.edgeProperty
         Ks = self.Ks
         for f in range(len(Ks)):
             for i in range(Ks[f].shape[0]):
                 for j in range(Ks[f].shape[1]):
                     surf = Ks[f][i,j]
-                    if not surf==-1:
-                        self.getms(f,0)[i] = self.oml0.edgeProperty(surf,1)[0] - 1
-                        self.getms(f,1)[j] = self.oml0.edgeProperty(surf,1)[1] - 1
-                        self.getns(f,0)[i] = self.oml0.edgeProperty(surf,2)[0] - 1
-                        self.getns(f,1)[j] = self.oml0.edgeProperty(surf,2)[1] - 1
-                        #print 'L',surf,f, i, j, self.oml0.edgeProperty(surf,1), self.getms(f,0)
+                    if surf != -1:
+                        self.getms(f,0)[i] = edgeProperty(surf,1)[0] - 1
+                        self.getms(f,1)[j] = edgeProperty(surf,1)[1] - 1
+                        self.getns(f,0)[i] = edgeProperty(surf,2)[0] - 1
+                        self.getns(f,1)[j] = edgeProperty(surf,2)[1] - 1
 
     def getms(self, f, d):
         dim = self.faces[f][d]
