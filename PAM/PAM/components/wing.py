@@ -91,9 +91,11 @@ class Wing(Primitive):
 
         shapes = [self.shapeU, self.shapeL]
         shapes[0][:,:,1] += v['shU']
-        shapes[1][:,:,1] += v['shL']
+        shapes[1][:,:,1] -= v['shL']
         nQ = nj*(9+6*ni)
         self.computeSections(nQ, shapes)
+        shapes[0][:,:,1] -= v['shU']
+        shapes[1][:,:,1] += v['shL']
 
 
 if __name__ == '__main__':

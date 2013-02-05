@@ -60,9 +60,9 @@ class Shell(Primitive):
 
     def initializeVariables(self):
         super(Shell,self).initializeVariables()
-        nx = self.Qs[2].shape[1]
-        ny = self.Qs[2].shape[0]
-        nz = self.Qs[3].shape[0]
+        nx = self.Qs[0].shape[1]
+        ny = self.Qs[0].shape[0]
+        nz = self.Qs[1].shape[0]
         zeros = numpy.zeros
         v = self.variables
         a = self.addParam

@@ -15,33 +15,32 @@ class Component(object):
         self.faces = []
         self.variables = {}
         self.params = {}
+        self.Cv0 = 2
+        self.Cv1 = 2
+
+    def setm(self, f, d, val, ind=[], both=True):
+        self.set(1, f, d, val, ind)
+        if both:
+            self.set(2, f, d, [x*3 for x in val], ind)
+
+    def setn(self, f, d, val, ind=[], both=True):
+        self.set(2, f, d, val, ind)
+        if both:
+            self.set(1, f, d, [max(4,int(x/3.0)) for x in val], ind)
 
     def set(self, p, f, d, val, ind):
-        if len(ind)==0:
-            ind = range(self.getms(f,d).shape[0])
-        if len(val)==1 and len(ind)>1:
-            for i in range(len(ind)-1):
-                val.append(val[0])
+        ind = range(self.getms(f,d).shape[0]) if len(ind)==0 else ind
+        val = [val[0] for x in range(len(ind))] if len(val) < len(ind) else val
 
         Ks = self.Ks
-        if d==0:
-            for i in range(len(ind)):
-                for j in range(Ks[f].shape[1]):
-                    surf = Ks[f][ind[i],j]
-                    if not surf==-1:
-                        self.oml0.edgeProperty(surf,p,d,val[i])
-        else:
-            for i in range(Ks[f].shape[1]):
-                for j in range(len(ind)):
-                    surf = Ks[f][i,ind[j]]
-                    if not surf==-1:
-                        self.oml0.edgeProperty(surf,p,d,val[j])
-
-    def setm(self, f, d, val, ind=[]):
-        self.set(1, f, d, val, ind)
-
-    def setn(self, f, d, val, ind=[]):
-        self.set(2, f, d, val, ind)
+        ilist = range(Ks[f].shape[0]) if d==1 else ind
+        jlist = range(Ks[f].shape[1]) if d==0 else ind
+        for i in range(len(ilist)):
+            for j in range(len(jlist)):
+                surf = Ks[f][ilist[i],jlist[j]]
+                pos = i if d==0 else j
+                if not surf==-1:
+                    self.oml0.edgeProperty(surf,p,d,val[pos])
 
     def computeVs(self):
         vs = self.variables
@@ -51,8 +50,8 @@ class Component(object):
         for p in ps:
             vs[ps[p].var][:,:] += ps[p].compute()
 
-    def addParam(self, name, var, shp, P=None, Tdim=None, T=None, Ddim=None, D=None, Bdim=None, B=None):
-        self.params[name] = Parameter(var, shp, self.variables[var].shape, P, Tdim, T, Ddim, D, Bdim, B)
+    def addParam(self, name, var, shp, P=None, T=None, Tdim=0, D=None, Ddim=0, B=None, Bdim=0):
+        self.params[name] = Parameter(var, shp, self.variables[var].shape, P, T, Tdim, D, Ddim, B, Bdim)
         
     def addFace(self, du, dv, d, ru=0.5, rv=0.5):
         """ Creates a set of rectangular surfaces, their IDs, and face dims.
@@ -172,7 +171,7 @@ class Component(object):
         self.setC1('edge', f, i=i, j=j, u=i, d=j, val=val)
         self.setC1('edge', f, i=i, j=j, v=j, d=i, val=val)
 
-    def computems(self):
+    def computeEdgeInfo(self):
         oml0 = self.oml0
         Ks = self.Ks
         for f in range(len(Ks)):
@@ -180,14 +179,11 @@ class Component(object):
                 for j in range(Ks[f].shape[1]):
                     surf = Ks[f][i,j]
                     if not surf==-1:
-                        for k in range(2):
-                            edge = oml0.surf_edge[surf,k,0]
-                            group = oml0.edge_group[abs(edge)-1] - 1
-                            m = oml0.group_m[group] - 1
-                            if k==0:
-                                self.getms(f,k)[i] = int(m)
-                            else:
-                                self.getms(f,k)[j] = int(m)
+                        self.getms(f,0)[i] = self.oml0.edgeProperty(surf,1)[0] - 1
+                        self.getms(f,1)[j] = self.oml0.edgeProperty(surf,1)[1] - 1
+                        self.getns(f,0)[i] = self.oml0.edgeProperty(surf,2)[0] - 1
+                        self.getns(f,1)[j] = self.oml0.edgeProperty(surf,2)[1] - 1
+                        #print 'L',surf,f, i, j, self.oml0.edgeProperty(surf,1), self.getms(f,0)
 
     def getms(self, f, d):
         dim = self.faces[f][d]
@@ -195,6 +191,13 @@ class Component(object):
             return self.ms[abs(dim)-1]
         else:
             return self.ms[abs(dim)-1][::-1]
+
+    def getns(self, f, d):
+        dim = self.faces[f][d]
+        if dim > 0:
+            return self.ns[abs(dim)-1]
+        else:
+            return self.ns[abs(dim)-1][::-1]
 
     def initializeDOFmappings(self):
         def classify(i, n):

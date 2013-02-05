@@ -47,7 +47,7 @@ class Conventional(Configuration):
         c['lt'].setm(0,1,[15])
         c['rt'].setm(0,1,[15])
         c['vt'].setm(0,1,[15])
-        #c['ln'].setm(0,1,[7])
+        #c['ln'].setm(0,1,[7,7],[0,1])
         c['ln'].setm(0,0,[7])
         c['ln'].setm(2,0,[7])
         c['rn'].setm(0,0,[7])

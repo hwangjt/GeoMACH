@@ -16,6 +16,10 @@ class Interpolant(Component):
         self.ms.append(numpy.zeros(sum(self.ni),int))
         self.ms.append(numpy.zeros(sum(self.nj),int))
         self.ms.append(None)
+        self.ns = []
+        self.ns.append(numpy.zeros(sum(self.ni),int))
+        self.ns.append(numpy.zeros(sum(self.nj),int))
+        self.ns.append(None)
         self.faces.append([1,2])
 
         self.si = numpy.zeros(4,int)
@@ -72,3 +76,4 @@ class Interpolant(Component):
     def setDerivatives(self, var, dV0):
         self.variables[var] += dV0
         self.computeQs()
+        self.variables[var] -= dV0

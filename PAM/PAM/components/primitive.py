@@ -15,6 +15,11 @@ class Primitive(Component):
         self.ms.append(numpy.zeros(ny,int))
         self.ms.append(numpy.zeros(nz,int))
 
+        self.ns = []
+        self.ns.append(numpy.zeros(nx,int))
+        self.ns.append(numpy.zeros(ny,int))
+        self.ns.append(numpy.zeros(nz,int))
+
     def initializeVariables(self):
         n = self.Qs[0].shape[1]
         zeros = numpy.zeros
@@ -100,3 +105,4 @@ class Primitive(Component):
         else:
             self.variables[var] += dV0
             self.computeQs()
+            self.variables[var] -= dV0

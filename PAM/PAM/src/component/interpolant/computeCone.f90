@@ -69,7 +69,8 @@ subroutine computeCone(nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
   Q(iu(3),:,:) = Q(iu(2),:,:)
   Q(:,iv(3),:) = Q(:,iv(2),:)
 
-  call interpolateFrames(nu, nv, iu, iv, Q, dQdw)
+  call interpolateFrames(1, nu, nv, iu, iv, Q, dQdw)
+  call interpolateFrames(3, nu, nv, iu, iv, Q, dQdw)
 
   do k=1,3
      Q(:,:,k) = Q(:,:,k) + shape0(:,:)*dQdw(:,:,k)

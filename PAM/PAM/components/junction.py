@@ -87,6 +87,24 @@ class Junction(Interpolant):
         return verts
 
     def initializeSurfaces(self):
+        def get(P, u, v, d):
+            edge = P[u,:,:] if not u==None else P[:,v,:]
+            return edge if d==1 else edge[::-1,:]
+
+        getM = lambda f, i, j: self.mComp.Ps[self.mComp.Ks[f][i,j]]
+        getI = lambda i, j: self.Ps[self.Ks[0][i,j]]
+        getF = lambda i, j: self.rotate(self.fComp.Ps[self.fK[i,j]])
+
+        def copy(iI, jI, fM, iM, jM, uI=None, vI=None, uM=None, vM=None, d=1):
+            edgeI = get(getI(iI, jI), uI, vI, 1)
+            edgeM = get(getM(fM, iM, jM), uM, vM, d)
+            edgeI[:,:] = edgeM[:,:]
+
+        def copy2(i, j, u=None, v=None):
+            edgeI = get(getI(i, j), u, v, 1)
+            edgeF = get(getF(i, j), u, v, 1)
+            edgeI[:,:] = edgeF[:,:]
+
         verts = self.initializeVerts()
         
         nP = self.nP
@@ -114,22 +132,29 @@ class Junction(Interpolant):
                         if not self.Ks[0][ii,jj]==-1:
                             self.Ps[self.Ks[0][ii,jj]][:,:,:] = PAMlib.bilinearinterp(nP, ni[a], nj[b], i+1, j+1, verts[a:a+2,b:b+2,:])
 
+        for i in [0,-1]:
+            for j in range(self.Ks[0].shape[1]):
+                copy2(i, j, u=i)
+        for j in [0,-1]:
+            for i in range(self.Ks[0].shape[0]):
+                copy2(i, j, v=j)
+
         if not self.mSide==-1:
             mComp = self.mComp
             ii = si[1] - 1
             for j in range(nj[1]):
                 jj = sj[1] + j
                 if self.mSide==0:
-                    self.averageEdges(self.Ps[self.Ks[0][ii,jj]][-1,:,:], mComp.Ps[mComp.Ks[0][-1-j,0]][::-1,0,:])
+                    copy(ii, jj, 0, -1-j, 0, uI=-1, vM=0, d=-1)
                 else:
-                    self.averageEdges(self.Ps[self.Ks[0][ii,jj]][-1,:,:], mComp.Ps[mComp.Ks[0][j,-1]][:,-1,:])
+                    copy(ii, jj, 0, j, -1, uI=-1, vM=-1, d=1)
             ii = si[2]
             for j in range(nj[1]):
                 jj = sj[1] + j
                 if self.mSide==0:
-                    self.averageEdges(self.Ps[self.Ks[0][ii,jj]][0,:,:], mComp.Ps[mComp.Ks[1][j,0]][:,0,:])
+                    copy(ii, jj, 1, j, 0, uI=0, vM=0, d=1)
                 else:
-                    self.averageEdges(self.Ps[self.Ks[0][ii,jj]][0,:,:], mComp.Ps[mComp.Ks[1][j,-1]][::-1,-1,:])
+                    copy(ii, jj, 1, -1-j, -1, uI=0, vM=-1, d=-1)
 
     def removeSurfaces(self):
         fPs = self.fComp.Ps

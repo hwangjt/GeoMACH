@@ -10,7 +10,7 @@ class Tecplot(object):
         self.lines.append('# Created by Tecplot 360 build 13.1.0.15185')
         self.lines.append('$!VarSet |pwd| = \'' + os.getcwd() + '\'')
 
-    def importDataSet(self, filename, new=False):
+    def importDataSet(self, filename, variables, new=False):
         if not filename[-4:]=='.dat':
             filename = filename + '.dat'
         self.lines.append('$!READDATASET  \'"|pwd|/' + filename + '" \'')
@@ -26,7 +26,11 @@ class Tecplot(object):
         self.lines.append('  VARLOADMODE = BYNAME')
         self.lines.append('  ASSIGNSTRANDIDS = YES')
         self.lines.append('  INITIALPLOTTYPE = CARTESIAN3D')
-        self.lines.append('  VARNAMELIST = \'"x" "y" "z"\'')
+        line = '  VARNAMELIST = \''
+        for var in variables:
+            line = line + '"' + var + '" '
+        line = line + '\''
+        self.lines.append(line)
 
     def setTransparency(self, transparent):
         if transparent:
@@ -41,6 +45,29 @@ class Tecplot(object):
         self.lines.append('$!CREATEMIRRORZONES')
         self.lines.append('  SOURCEZONES =  ['+str(s1)+'-'+str(s2)+']')
         self.lines.append('  MIRRORVARS =  ['+str(axis)+']')
+
+    def plotContours(self, varID, continuous=True, edge=False):
+        self.lines.append('$!GLOBALCONTOUR 1  VAR = '+str(varID))
+        self.lines.append('$!CONTOURLEVELS RESETTONICE')
+        self.lines.append('  CONTOURGROUP = 1')
+        self.lines.append('  APPROXNUMVALUES = 15')
+        self.lines.append('$!FIELDLAYERS SHOWCONTOUR = YES')
+        if continuous:
+            self.lines.append('$!GLOBALCONTOUR 1  COLORMAPFILTER{COLORMAPDISTRIBUTION = CONTINUOUS}')
+        if not edge:
+            self.lines.append('$!FIELDLAYERS SHOWEDGE = NO')
+
+    def setCamera(self, psi, theta, alpha, x, y, z):
+        self.lines.append('$!THREEDVIEW')
+        self.lines.append('  PSIANGLE = '+str(psi))
+        self.lines.append('  THETAANGLE = '+str(theta))
+        self.lines.append('  ALPHAANGLE = '+str(alpha))
+        self.lines.append('  VIEWERPOSITION')
+        self.lines.append('    {')
+        self.lines.append('    X = '+str(x))
+        self.lines.append('    Y = '+str(y))
+        self.lines.append('    Z = '+str(z))
+        self.lines.append('    }')
 
     def setRelCameraPosition(self, x, y, z, twist):
         def arctan(x,y):
@@ -75,18 +102,9 @@ class Tecplot(object):
         v = e2 - n*numpy.dot(e2,n)/numpy.dot(n,n)
         alpha = arctan(v[2],(v[0]**2+v[1]**2)**0.5)
         if numpy.dot(n,numpy.cross(e3,v)) > 0:
-            alpha *= -1           
-
-        self.lines.append('$!THREEDVIEW')
-        self.lines.append('  PSIANGLE = '+str(psi))
-        self.lines.append('  THETAANGLE = '+str(theta))
-        self.lines.append('  ALPHAANGLE = '+str(twist))
-        self.lines.append('  VIEWERPOSITION')
-        self.lines.append('    {')
-        self.lines.append('    X = '+str(x))
-        self.lines.append('    Y = '+str(y))
-        self.lines.append('    Z = '+str(z))
-        self.lines.append('    }')
+            alpha *= -1      
+     
+        self.setCameraAngle(psi, theta, twist, x, y, z)
         
 
     def writeMcr(self, filename):

@@ -95,7 +95,13 @@ subroutine computeJunction(nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
           Q(iu(i),iv(j):iv(j+1),:))
   end do
 
-  call interpolateFrames(nu, nv, iu, iv, Q, dQdw)
+  call interpolateFrames(1, nu, nv, iu, iv, Q, dQdw)
+  call interpolateFrames(2, nu, nv, iu, iv, Q, dQdw)
+  call interpolateFrames(3, nu, nv, iu, iv, Q, dQdw)
+  if (nu2 .eq. 1) then
+     Q(iu(2),iv(2):iv(3),:) = N(:,1,:)
+     call interpolateFrames(1, nu, nv, iu, iv, Q, dQdw)
+  end if
 
   do k=1,3
      Q(:,:,k) = Q(:,:,k) + shape0(:,:)*dQdw(:,:,k)

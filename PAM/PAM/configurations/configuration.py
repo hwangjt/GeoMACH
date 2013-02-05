@@ -38,24 +38,21 @@ class Configuration(object):
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
             comp.oml0 = self.oml0
-            comp.computems()
             comp.setDOFs()
         self.oml0.updateBsplines()
+        self.updateParametrization()
 
+    def updateParametrization(self):
         for k in range(len(self.comps)):
             comp = self.comps[self.keys[k]]
+            comp.computeEdgeInfo()
             comp.initializeDOFmappings()
             comp.initializeVariables()
         self.computePoints()
 
     def update(self):
         self.oml0.update()
-        for k in range(len(self.comps)):
-            comp = self.comps[self.keys[k]]
-            comp.computems()
-            comp.initializeDOFmappings()
-            comp.initializeVariables()
-        self.computePoints()
+        self.updateParametrization()
 
     def computePoints(self):
         self.computeVs()
@@ -91,15 +88,15 @@ class Configuration(object):
         V0 = numpy.array(comp.variables[var])
         Q0 = numpy.array(self.oml0.Q[:,:3])
         if FD:
-            par.P[ind] += h
+            par.P[ind[0],ind[1],0] += h
             self.computeVs()
             self.computeQs()
-            par.P[ind] -= h
+            par.P[ind[0],ind[1],0] -= h
         else:
             h = 1.0
-            par.P[ind] += h
+            par.P[ind[0],ind[1],0] += h
             self.computeVs()
-            par.P[ind] -= h
+            par.P[ind[0],ind[1],0] -= h
             dV = comp.variables[var] - V0
             self.computeVs()
             comp.setDerivatives(var,dV)
@@ -117,6 +114,7 @@ class Configuration(object):
         if ps==[]:
             ps = comp.params.keys()
 
+        self.computePoints()
         h = 1e-5
         for p in ps:
             par = comp.params[p]

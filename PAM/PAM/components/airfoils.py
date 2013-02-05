@@ -81,12 +81,8 @@ def fitAirfoil(wing,filename):
     Qs = []
     for f in range(2):
         nsurf = wing.Ks[f].shape[0]
-        ms = numpy.zeros(nsurf,int)
-        ns = numpy.zeros(nsurf,int)
-        for i in range(nsurf):
-            surf = wing.Ks[f][i,0]
-            ms[i] = wing.oml0.edgeProperty(surf,1)[0]-1
-            ns[i] = wing.oml0.edgeProperty(surf,2)[0]-1
+        ms = wing.getms(f,0)
+        ns = wing.getns(f,0)
         nP = sum(ns) + 1
 
         P = getP(nP, airfoil[f])

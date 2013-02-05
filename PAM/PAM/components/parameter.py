@@ -6,25 +6,23 @@ import PAM.PAMlib as PAMlib
 
 class Parameter(object):
 
-    def __init__(self, var, shp, shp0, P, Tdim, T, Ddim, D, Bdim, B):
+    def __init__(self, var, shp, shp0, P, T, Tdim, D, Ddim, B, Bdim):
 
         mu,mv = shp
         zeros = numpy.zeros
         self.var = var
         self.shp0 = shp0
-        self.P = zeros(shp, order='F')
-        self.Ts = [numpy.linspace(0,1,mu), numpy.linspace(0,1,mv)]
-        self.Ds = [zeros(shp,order='F'), zeros(shp,order='F')]
-        self.Bs = [zeros(shp,dtype=bool,order='F'), zeros(shp,dtype=bool,order='F')]
+        self.P = zeros((shp[0],shp[1],5), order='F')
+        self.T = [numpy.linspace(0,1,mu), numpy.linspace(0,1,mv)]
 
         if P != None:
             self.setP(P)
         if T != None:
-            self.setT(Tdim, T)
+            self.setT(T, Tdim)
         if D != None:
-            self.setD(Ddim, D)
+            self.setD(D, Ddim)
         if B != None:
-            self.setB(Bdim, B)
+            self.setB(B, Bdim)
 
     def set(self, A, B, dim):
         B = numpy.array(B,order='F')
@@ -39,24 +37,20 @@ class Parameter(object):
             A[:,:] = B.reshape(A.shape)
 
     def setP(self, P):
-        self.P[:,:] = numpy.array(P,order='F').reshape(self.P.shape)
+        self.P[:,:,0] = numpy.array(P,order='F').reshape(self.P.shape[:2])
 
-    def setT(self, dim, T):
-        self.Ts[dim][:] = numpy.array(T,order='F').reshape(self.Ts[dim].shape)
+    def setT(self, T, dim=0):
+        self.T[dim][:] = numpy.array(T,order='F').reshape(self.T[dim].shape)
 
-    def setD(self, dim, D):
-        self.set(self.Ds[dim], D, dim)
+    def setD(self, D, dim=0):
+        self.set(self.P[:,:,1+dim], D, dim)
 
-    def setB(self, dim, B):
-        self.set(self.Bs[dim], B, dim)
+    def setB(self, B, dim=0):
+        self.set(self.P[:,:,3+dim], B, dim)
 
     def compute(self):
-        mu,mv = self.P.shape
+        mu,mv = self.P.shape[:2]
         nu,nv = self.shp0
         P = self.P
-        Tu,Tv = self.Ts
-        Du,Dv = self.Ds
-        Bu,Bv = self.Bs
-        return PAMlib.computeparameter(mu, mv, nu, nv, P, Tu, Tv, Du, Dv, Bu, Bv)
-
-
+        Tu,Tv = self.T
+        return PAMlib.computeparameter(mu, mv, nu, nv, P, Tu, Tv)

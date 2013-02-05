@@ -86,6 +86,7 @@ class PUBS(object):
         self.Q = numpy.hstack((self.Q, numpy.zeros((self.nQ,len(var)),order='F')))
         self.C = numpy.hstack((self.C, numpy.zeros((self.nC,len(var)),order='F')))
         self.P = numpy.hstack((self.P, numpy.zeros((self.nP,len(var)),order='F')))
+        self.P0 = numpy.hstack((self.P0, numpy.zeros((self.Np0[-1],len(var)),order='F')))
 
     def update(self):
         self.computeQindices()
@@ -299,9 +300,12 @@ class PUBS(object):
         self.C = self.M.dot(self.Q)
         self.P = self.J.dot(self.C)
         self.P0 = self.J0.dot(self.C)
-        self.Pu = self.Ju.dot(self.C)
-        self.Pv = self.Jv.dot(self.C)
-        nor = numpy.cross(self.Pu[:,:3],self.Pv[:,:3])
+        self.computeNormals()
+
+    def computeNormals(self):
+        self.Pu = self.Ju.dot(self.C[:,:3])
+        self.Pv = self.Jv.dot(self.C[:,:3])
+        nor = numpy.cross(self.Pu,self.Pv)
         norms = numpy.sum(nor**2,axis=1)**0.5
         for k in range(3):
             self.P0[:,3+k] = nor[:,k]/norms
@@ -445,14 +449,13 @@ class PUBS(object):
         return surf,u,v
     
     def edgeProperty(self, surf, p, d=None, val=None):
-        """ Get the edge property for the u and v edges
+        """ Get/set the edge property for the u and v edges
         p: (integer)
           0: k
           1: m
           2: n
         """
-        ugroup = self.edge_group[abs(self.surf_edge[surf,0,0])-1] - 1
-        vgroup = self.edge_group[abs(self.surf_edge[surf,1,0])-1] - 1
+        group = [self.edge_group[abs(self.surf_edge[surf,i,0])-1] - 1 for i in range(2)]
 
         if p==0:
             prop = self.group_k
@@ -461,12 +464,10 @@ class PUBS(object):
         elif p==2:
             prop = self.group_n
 
-        if d==0:
-            prop[ugroup] = val
-        elif d==1:
-            prop[vgroup] = val
+        if not d==None:
+            prop[group[d]] = val
 
-        return prop[ugroup], prop[vgroup]
+        return [prop[group[i]] for i in range(2)]
 
     def exportPjtn(self, Q):
         return numpy.sum(self.P0[:,3:6]*self.J0.dot(self.M.dot(Q)),1)

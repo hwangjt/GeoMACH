@@ -1,32 +1,30 @@
-subroutine interpolateFrames(nu0, nv0, iu, iv, Q, dQdw)
+subroutine interpolateFrames(i, nu0, nv0, iu, iv, Q, dQdw)
 
   implicit none
 
   !Input
-  integer, intent(in) ::  nu0, nv0, iu(4), iv(4)
+  integer, intent(in) ::  i, nu0, nv0, iu(4), iv(4)
 
   !Output
   double precision, intent(inout) ::  Q(nu0,nv0,3)
   double precision, intent(out) ::  dQdw(nu0,nv0,3)
 
   !Working
-  integer i, j, nu, nv
+  integer j, nu, nv
   
   dQdw(:,:,:) = 0.0
   do j=1,3
      nv = iv(j+1)-iv(j)
-     do i=1,3
-        nu = iu(i+1)-iu(i)
-        if ((nu.gt.0) .and. (nv.gt.0)) then
-           call coonsPatch(nu+1, nv+1, &
-                Q(iu(i):iu(i+1),iv(j),:), &
-                Q(iu(i):iu(i+1),iv(j+1),:), &
-                Q(iu(i),iv(j):iv(j+1),:), &
-                Q(iu(i+1),iv(j):iv(j+1),:), &
-                Q(iu(i):iu(i+1),iv(j):iv(j+1),:), &
-                dQdw(iu(i):iu(i+1),iv(j):iv(j+1),:))
-        end if
-     end do
+     nu = iu(i+1)-iu(i)
+     if ((nu.gt.0) .and. (nv.gt.0)) then
+        call coonsPatch(nu+1, nv+1, &
+             Q(iu(i):iu(i+1),iv(j),:), &
+             Q(iu(i):iu(i+1),iv(j+1),:), &
+             Q(iu(i),iv(j):iv(j+1),:), &
+             Q(iu(i+1),iv(j):iv(j+1),:), &
+             Q(iu(i):iu(i+1),iv(j):iv(j+1),:), &
+             dQdw(iu(i):iu(i+1),iv(j):iv(j+1),:))
+     end if
   end do  
 
 end subroutine interpolateFrames
