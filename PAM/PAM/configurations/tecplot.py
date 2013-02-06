@@ -138,6 +138,7 @@ class Tecplot(object):
     def makeVideo(self, fps=10):
 #	os.system('jpegoptim *.jpg --max=50')
         os.system('mencoder mf://*.png -mf fps='+str(fps)+':type=png -ovc x264 -x264encopts bitrate=32000 -o output.avi')
+        os.system('ffmpeg -i output.avi -b 2028k -s 640x480 -r '+str(fps)+' output.flv')
         #os.system('mencoder mf://*.jpg -mf w=800:h=600:fps=15:type=png -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell -oac copy -o output.avi')
 if __name__ == '__main__':
 
