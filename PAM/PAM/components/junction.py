@@ -23,6 +23,23 @@ class Junction(Interpolant):
         self.initializeSurfaces()
         self.removeSurfaces()
 
+    def setDOFs(self):
+        self.setC1('surf', 0, val=True)
+
+        si = self.si
+        sj = self.sj
+        for j in range(sj[1],sj[2]):
+            self.setC1('surf', 0, i=si[1]-1, j=j, u=-1, val=False)
+            self.setC1('surf', 0, i=si[2], j=j, u=0, val=False)
+        for i in range(si[1],si[2]):
+            self.setC1('surf', 0, i=i, j=sj[1]-1, v=-1, val=False)
+            self.setC1('surf', 0, i=i, j=sj[2], v=0, val=False)
+
+        self.setC1('surf', 0, i=si[1]-1, j=sj[1]-1, u=-1, v=-1, val=False)
+        self.setC1('surf', 0, i=si[2], j=sj[1]-1, u=0, v=-1, val=False)
+        self.setC1('surf', 0, i=si[1]-1, j=sj[2], u=-1, v=0, val=False)
+        self.setC1('surf', 0, i=si[2], j=sj[2], u=0, v=0, val=False)
+
     def initializeIndices(self, ni, nj):
         if not ni==None:
             self.ni = numpy.array(ni,int)
@@ -170,6 +187,21 @@ class Junction(Interpolant):
                             if (fKs[f][i,j] > fK0[i0,j0]) and (fKs[f][i,j] != -1):
                                 fKs[f][i,j] -= 1
                 fK0[i0,j0] = -1
+
+    def initializeDOFmappings(self):
+        super(Junction,self).initializeDOFmappings()
+        mu = self.getms(0,0)
+        mv = self.getms(0,1)
+        nu = range(4)
+        nv = range(4)
+        for k in range(4):
+            nu[k] = sum(mu[:self.si[k]])
+            nv[k] = sum(mv[:self.sj[k]])
+        N = self.Ns[0]
+        N[nu[1],nv[1]:nv[2]+1,0] = -1
+        N[nu[2],nv[1]:nv[2]+1,0] = -1
+        N[nu[1]:nu[2]+1,nv[1],0] = -1
+        N[nu[1]:nu[2]+1,nv[2],0] = -1
         
     def computeQs(self):
         fu = self.fComp.getms(self.fFace,0)

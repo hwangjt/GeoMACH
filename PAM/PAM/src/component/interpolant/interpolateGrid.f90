@@ -31,73 +31,67 @@ end subroutine interpolateFrames
 
 
 
-subroutine bezierCurve(n, A, S, B, T, P)
+subroutine bezierCurve(n, P0, D0, P1, D1, P)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) n, A, S, B, T
+  !f2py intent(in) n, P0, D0, P1, D1
   !f2py intent(out) P
   !f2py depend(n) P
 
   !Input
   integer, intent(in) ::  n
-  double precision, intent(in) ::  A(3), S(3), B(3), T(3)
+  double precision, intent(in) ::  P0(3), D0(3), P1(3), D1(3)
 
   !Output
   double precision, intent(out) ::  P(n,3)
 
   !Working
   double precision den, u
-  double precision P0(3), P1(3), P2(3), P3(3)
-  logical Sgiven, Tgiven
+  double precision A(3), B(3), C(3), D(3)
+  logical given0, given1
   integer i
 
   den = 1.0/(n-1)
 
-  if (dot_product(S,S)**0.5 .lt. 1e-10) then
-     Sgiven = .false.
+  if (dot_product(D0,D0)**0.5 .lt. 1e-10) then
+     given0 = .False.
   else
-     Sgiven = .true.
+     given0 = .True.
   end if
 
-  if (dot_product(T,T)**0.5 .lt. 1e-10) then
-     Tgiven = .false.
+  if (dot_product(D1,D1)**0.5 .lt. 1e-10) then
+     given1 = .False.
   else
-     Tgiven = .true.
+     given1 = .True.
   end if
 
-  if ((.not. Sgiven) .and. (.not. Tgiven)) then
-     P0 = A
-     P1 = B
-     P2 = 0
-     P3 = 0
-  elseif ((Sgiven) .and. (.not. Tgiven)) then
-     P0 = A
-     P1 = S/2.0 + A
-     P2 = B
-     P3 = 0
-  elseif ((.not. Sgiven) .and. (Tgiven)) then
-     P0 = A
-     P1 = T/2.0 + B
-     P2 = B
-     P3 = 0
+  if (given0 .and. given1) then
+     A = P0
+     B = D0/3.0 + P0
+     C = D1/3.0 + P1
+     D = P1
+  elseif (given0 .and. (.not. given1)) then
+     A = P0
+     B = D0/3.0 + P0
+     C = D0/3.0 + 2.0/3.0*P0 + P1/3.0
+     D = P1
+  elseif ((.not. given0) .and. given1) then
+     A = P0
+     B = D1/3.0 + 2.0/3.0*P1 + P0/3.0
+     C = D1/3.0 + P1
+     D = P1
   else
-     P0 = A
-     P1 = S/3.0 + A
-     P2 = T/3.0 + B
-     P3 = B
+     A = P0
+     B = 2.0/3.0*P0 + P1/3.0
+     C = 2.0/3.0*P1 + P0/3.0
+     D = P1
   end if
 
   do i=1,n
      u = (i-1)*den
-     if ((.not. Sgiven) .and. (.not. Tgiven)) then
-        P(i,:) = (1-u)*P0 + u*P1
-     elseif (Sgiven .and. Tgiven) then
-        P(i,:) = (1-u)**3*P0 + 3*u*(1-u)**2*P1 + 3*u**2*(1-u)*P2 + u**3*P3
-     else
-        P(i,:) = (1-u)**2*P0 + 2*u*(1-u)*P1 + u**2*P2
-     end if
+     P(i,:) = (1-u)**3*A + 3*u*(1-u)**2*B + 3*u**2*(1-u)*C + u**3*D
   end do
 
 end subroutine bezierCurve

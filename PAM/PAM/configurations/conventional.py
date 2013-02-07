@@ -13,15 +13,15 @@ class Conventional(Configuration):
         c = self.comps
 
         self.addComp('fu', Body(nx=12, ny=4, nz=2))
-        self.addComp('lw', Wing(nx=4, nz=4, right=1))
-        self.addComp('rw', Wing(nx=4, nz=4, left=1))
-        self.addComp('lp', Wing(left=1, right=1))
-        self.addComp('rp', Wing(left=1, right=1))
+        self.addComp('lw', Wing(nx=4, nz=4, right=0))
+        self.addComp('rw', Wing(nx=4, nz=4, left=0))
+        self.addComp('lp', Wing(left=0, right=0))
+        self.addComp('rp', Wing(left=0, right=0))
         self.addComp('ln', Shell(nx=4, ny=1, nz=4))
         self.addComp('rn', Shell(nx=4, ny=1, nz=4))
-        self.addComp('lt', Wing(right=1))
-        self.addComp('rt', Wing(left=1))
-        self.addComp('vt', Wing(nx=2,right=1))
+        self.addComp('lt', Wing(right=0))
+        self.addComp('rt', Wing(left=0))
+        self.addComp('vt', Wing(nx=2,right=0))
 
         self.separateComps()
 
@@ -156,8 +156,10 @@ class Conventional(Configuration):
         c['rn'].addParam('offset','pos',[1,3],P=[15,-2.2,-9])
         c['rn'].addParam('thk1','thk',[3,1],P=[0.15,0.4,0.15],B=[False,True,False])
 
-        c['lw_fu'].params['mC1'].setP([0.1])
-        c['lw_fu'].params['fC1'].setP([0.1])
+        c['lw_fu'].params['mC1'].setP([1.5])
+        c['lw_fu'].params['fC1'].setP([0.5])
+        c['rw_fu'].params['mC1'].setP([1.5])
+        c['rw_fu'].params['fC1'].setP([0.5])
         c['lt_fu'].params['mC1'].setP([0.1])
         c['lt_fu'].params['fC1'].setP([0.1])
         c['rt_fu'].params['mC1'].setP([0.1])
@@ -165,6 +167,7 @@ class Conventional(Configuration):
         c['vt_fu'].params['mC1'].setP([0.01])
         c['vt_fu'].params['fC1'].setP([0.1])
         c['lp_ln'].params['mC1'].setP([0])
+        c['rp_rn'].params['mC1'].setP([0])
         c['fu_n'].params['scl'].setP([0.02])
         c['fu_t'].params['scl'].setP([0.02])
 

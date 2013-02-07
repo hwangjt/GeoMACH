@@ -65,10 +65,10 @@ subroutine computeJunction(nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
   do j=2,3
      verts(i,j,2,:) = f0*(Q(iu(i)-1,iv(j),:) - Q(iu(i),iv(j),:))
   end do
-  verts(2,2,2,:) = m0*(N(1,2,:) - N(1,1,:))
-  verts(2,3,2,:) = m0*(N(nv2,2,:) - N(nv2,1,:))
-  verts(3,2,2,:) = m0*(S(1,2,:) - S(1,1,:))
-  verts(3,3,2,:) = m0*(S(nv2,2,:) - S(nv2,1,:))
+  verts(2,2,2,:) = m0*(N(1,1,:) - N(1,2,:))
+  verts(2,3,2,:) = m0*(N(nv2,1,:) - N(nv2,2,:))
+  verts(3,2,2,:) = m0*(S(1,1,:) - S(1,2,:))
+  verts(3,3,2,:) = m0*(S(nv2,1,:) - S(nv2,2,:))
 
   i = 1
   do j=2,3
