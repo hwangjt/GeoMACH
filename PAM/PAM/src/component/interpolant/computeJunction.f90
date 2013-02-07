@@ -24,15 +24,15 @@ subroutine computeJunction(nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
   integer i, j, k, iu(4), iv(4)
   double precision verts(4,4,2,3), dQdw(nu,nv,3)
 
-  iu(1) = 1
+  iu(1) = 2
   iu(2) = (nu1-1) + 1
   iu(3) = (nu1-1) + (nu2-1) + 1
-  iu(4) = (nu1-1) + (nu2-1) + (nu3-1) + 1
+  iu(4) = (nu1-1) + (nu2-1) + (nu3-1) + 0
 
-  iv(1) = 1
+  iv(1) = 2
   iv(2) = (nv1-1) + 1
   iv(3) = (nv1-1) + (nv2-1) + 1
-  iv(4) = (nv1-1) + (nv2-1) + (nv3-1) + 1
+  iv(4) = (nv1-1) + (nv2-1) + (nv3-1) + 0
 
   Q = fQ
   Q(iu(2),iv(2):iv(3),:) = N(:,1,:)
@@ -51,19 +51,19 @@ subroutine computeJunction(nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
   end do
   j = 1
   do i=2,3
-     verts(i,j,2,:) = f0*(Q(iu(i),iv(j)+1,:) - Q(iu(i),iv(j),:))
+     verts(i,j,2,:) = f0*(Q(iu(i),iv(j),:) - Q(iu(i),iv(j)-1,:))
   end do
   j = 4
   do i=2,3
-     verts(i,j,2,:) = f0*(Q(iu(i),iv(j)-1,:) - Q(iu(i),iv(j),:))
+     verts(i,j,2,:) = f0*(Q(iu(i),iv(j),:) - Q(iu(i),iv(j)+1,:))
   end do
   i = 1
   do j=2,3
-     verts(i,j,2,:) = f0*(Q(iu(i)+1,iv(j),:) - Q(iu(i),iv(j),:))
+     verts(i,j,2,:) = f0*(Q(iu(i),iv(j),:) - Q(iu(i)-1,iv(j),:))
   end do
   i = 4
   do j=2,3
-     verts(i,j,2,:) = f0*(Q(iu(i)-1,iv(j),:) - Q(iu(i),iv(j),:))
+     verts(i,j,2,:) = f0*(Q(iu(i),iv(j),:) - Q(iu(i)+1,iv(j),:))
   end do
   verts(2,2,2,:) = m0*(N(1,1,:) - N(1,2,:))
   verts(2,3,2,:) = m0*(N(nv2,1,:) - N(nv2,2,:))
@@ -72,25 +72,25 @@ subroutine computeJunction(nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
 
   i = 1
   do j=2,3
-     call bezierCurve(nu1, verts(i,j,1,:), verts(i,j,2,:), &
+     call bezierCurve(nu1-1, verts(i,j,1,:), verts(i,j,2,:), &
           verts(i+1,j,1,:), verts(i+1,j,2,:), &
           Q(iu(i):iu(i+1),iv(j),:))
   end do
   i = 3
   do j=2,3
-     call bezierCurve(nu3, verts(i,j,1,:), verts(i,j,2,:), &
+     call bezierCurve(nu3-1, verts(i,j,1,:), verts(i,j,2,:), &
           verts(i+1,j,1,:), verts(i+1,j,2,:), &
           Q(iu(i):iu(i+1),iv(j),:))
   end do
   j = 1
   do i=2,3
-     call bezierCurve(nv1, verts(i,j,1,:), verts(i,j,2,:), &
+     call bezierCurve(nv1-1, verts(i,j,1,:), verts(i,j,2,:), &
           verts(i,j+1,1,:), verts(i,j+1,2,:), &
           Q(iu(i),iv(j):iv(j+1),:))
   end do
   j = 3
   do i=2,3
-     call bezierCurve(nv3, verts(i,j,1,:), verts(i,j,2,:), &
+     call bezierCurve(nv3-1, verts(i,j,1,:), verts(i,j,2,:), &
           verts(i,j+1,1,:), verts(i,j+1,2,:), &
           Q(iu(i),iv(j):iv(j+1),:))
   end do
