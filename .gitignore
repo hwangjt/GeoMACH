@@ -1,8 +1,8 @@
 *.pyc
 *~
-*/build/*
-*/dist/*
-*/temp/*
+*build/*
+*dist/*
+*temp/*
 *.so
 *.egg-info
 *.phy
