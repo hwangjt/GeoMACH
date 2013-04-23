@@ -45,8 +45,10 @@ PAMsources = [
 
 entry_points = """
 [openmdao.parametric_geometry]
-openmdao.lib.geometry.diamond.GEMParametricGeometry = GeoMACH.
+GeoMACH.PAM.configurations.conventional.Conventional = GeoMACH.PAM.configurations.conventional:Conventional
 
+[openmdao.binpub]
+GeoMACH.PAM.configurations.configuration.GeoMACHSender = GeoMACH.PAM.configurations.configuration:GeoMACHSender
 """
 
 config = Configuration(name='GeoMACH')
