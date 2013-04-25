@@ -6,7 +6,6 @@ from GeoMACH.PUBS import PUBS
 from pyV3D.handlers import WV_Sender
 from openmdao.main.interfaces import IParametricGeometry, implements, IStaticGeometry
 
-
 class Configuration(object):
 
     implements(IParametricGeometry)
@@ -23,6 +22,8 @@ class Configuration(object):
         self.computePoints()
 
     def list_parameters(self):
+        self.tris = self.oml0.exportPtri()
+
         params = []
         for k in range(len(self.comps)):
             c = self.keys[k]
@@ -41,7 +42,9 @@ class Configuration(object):
         c = name[:i]
         p = name[i+2:]
         self.comps[c].params[p].setP(value[:])
-        self.computePoints()
+        t0 = time.time()
+        self.regen_model()
+        print 'T1', time.time()-t0
 
     def get_parameters(self, names):
         vals = []
@@ -55,6 +58,7 @@ class Configuration(object):
 
     def get_static_geometry(self):
         g = GeoMACHGeometry()
+        g.tris = self.tris
         g._model = self
         return g
     
@@ -127,10 +131,12 @@ class Configuration(object):
         self.updateParametrization()
 
     def computePoints(self):
+        t0 = time.time()
         self.computeVs()
         self.computeQs()
         self.propagateQs()
         self.oml0.computePoints()
+        print time.time()-t0
 
     def computeVs(self):
         for k in range(len(self.comps)):
@@ -375,8 +381,9 @@ class GeoMACHGeometry(object):
         if self._model is None:
             return []
 
+        t0 = time.time()
         xyzs = self._model.oml0.P0[:,:3]
-        tris = self._model.oml0.exportPtri()
+        tris = self.tris
 
         mins = numpy.min(xyzs, axis=0)
         maxs = numpy.max(xyzs, axis=0)
@@ -398,6 +405,7 @@ class GeoMACHGeometry(object):
 
             wv.set_face_data(new_a.astype(numpy.float32).flatten(order='C'), 
                              new_tri.astype(numpy.int32).flatten(order='C'), bbox=box, name="oml_surf%d" % i)
+        print 'T2', time.time()-t0
 
             # for j in range(1, nedge+1):
             #     points = drep.getDiscrete(i+1, j)
