@@ -1,5 +1,5 @@
 from __future__ import division
-import numpy, pylab, copy
+import numpy
 
 from GeoMACH.PUBS import PUBS
 

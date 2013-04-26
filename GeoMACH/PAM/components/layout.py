@@ -1,5 +1,9 @@
 from __future__ import division
-import numpy, pylab, time
+import numpy
+try:
+    import pylab
+except ImportError:  
+    pass
 
 from GeoMACH.PAM import PAMlib
 

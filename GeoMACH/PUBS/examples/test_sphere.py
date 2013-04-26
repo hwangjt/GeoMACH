@@ -1,5 +1,6 @@
 from __future__ import division
-import numpy, pylab, time
+import numpy
+import time
 
 from GeoMACH.PUBS import PUBS
 
