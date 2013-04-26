@@ -485,6 +485,36 @@ class PUBS(object):
 
         return Ps
 
+    def exportPtri0(self, surfs=None):
+        if surfs==None:
+            surfs = range(self.nsurf)
+
+        index = lambda i,j,ni: ni*j + i
+
+        nTri = 0
+        for s in surfs:
+            nu, nv = self.Nuv[s,:]
+            nTri += 2*(nu-1)*(nv-1)
+
+        Tri = numpy.zeros((nTri,3),int,order='F')
+        iT = 0
+        for s in surfs:
+            nu, nv = self.Nuv[s,:]
+            for j in range(nv-1):
+                for i in range(nu-1):
+                    Tri[iT,:] = self.Np0[s]
+                    Tri[iT,0] += index(i,j+1,nu)
+                    Tri[iT,1] += index(i,j,nu)
+                    Tri[iT,2] += index(i+1,j,nu)
+                    iT += 1
+                    Tri[iT,:] = self.Np0[s]
+                    Tri[iT,0] += index(i+1,j,nu)
+                    Tri[iT,1] += index(i+1,j+1,nu)
+                    Tri[iT,2] += index(i,j+1,nu)
+                    iT += 1
+
+        return Tri
+
     def exportPtri(self, surfs=None):
         if surfs==None:
             surfs = range(self.nsurf)

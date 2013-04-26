@@ -42,9 +42,6 @@ class Configuration(object):
         c = name[:i]
         p = name[i+2:]
         self.comps[c].params[p].setP(value[:])
-        t0 = time.time()
-        self.regen_model()
-        print 'T1', time.time()-t0
 
     def get_parameters(self, names):
         vals = []
@@ -395,6 +392,9 @@ class GeoMACHGeometry(object):
 
         print 'len(tris) = ',len(tris)
 
+#        wv.set_face_data(xyzs.astype(numpy.float32).flatten(order='C'), 
+#                             tris.astype(numpy.int32).flatten(order='C'), bbox=box, name="oml_surf")
+
         for i,tri in enumerate(tris):
             min_idx = int(numpy.min(tri))
             max_idx = int(numpy.max(tri))
@@ -405,15 +405,7 @@ class GeoMACHGeometry(object):
 
             wv.set_face_data(new_a.astype(numpy.float32).flatten(order='C'), 
                              new_tri.astype(numpy.int32).flatten(order='C'), bbox=box, name="oml_surf%d" % i)
-        print 'T2', time.time()-t0
-
-            # for j in range(1, nedge+1):
-            #     points = drep.getDiscrete(i+1, j)
-            #     if len(points) < 2:
-            #         continue
-            #     wv.set_edge_data(points.astype(np.float32).flatten(),
-            #                     bbox=box,
-            #                     name="Body %d Edge %d"%(i+1,j))
+#        print 'T2', time.time()-t0
 
 
 class GeoMACHSender(WV_Sender):
