@@ -1,6 +1,5 @@
 from __future__ import division
-import numpy, pylab, time, copy
-import scipy.sparse
+import numpy
 
 from GeoMACH.PAM import PAMlib
 
@@ -16,13 +15,13 @@ class Parameter(object):
         self.P = zeros((shp[0],shp[1],5), order='F')
         self.T = [numpy.linspace(0,1,mu), numpy.linspace(0,1,mv)]
 
-        if P != None:
+        if P is not None:
             self.setP(P)
-        if T != None:
+        if T is not None:
             self.setT(T, Tdim)
-        if D != None:
+        if D is not None:
             self.setD(D, Ddim)
-        if B != None:
+        if B is not None:
             self.setB(B, Bdim)
 
     def set(self, A, B, dim):
