@@ -1,9 +1,10 @@
 from __future__ import division
-import numpy, time
+import numpy
+import time
 
 from GeoMACH.PUBS import PUBS
 
-from pyV3D.handlers import WV_Sender
+from pyV3D.sender import WV_Sender
 from openmdao.main.interfaces import IParametricGeometry, implements, IStaticGeometry
 
 class Configuration(object):
