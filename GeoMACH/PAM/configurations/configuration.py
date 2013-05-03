@@ -200,11 +200,11 @@ class Configuration(object):
                 for i in range(ni):
                     for j in range(nj):
                         ind = (i,j)
-                        #t0 = time.time()
+                        t0 = time.time()
                         d1 = self.getDerivatives(c,p,ind,clean=False)
-                        #t1 = time.time()
+                        t1 = time.time()
                         d2 = self.getDerivatives(c,p,ind,clean=False,FD=True,h=h)
-                        #t2 = time.time()
+                        t2 = time.time()
                         norm0 = numpy.linalg.norm(d2)
                         norm0 = 1.0 if norm0==0 else norm0
                         error = numpy.linalg.norm(d2-d1)/norm0
@@ -240,11 +240,11 @@ class Configuration(object):
                 dat = self.comps[comp].variables[var]
                 for ind,x in numpy.ndenumerate(dat):
                     ind = ind[0] if len(ind)==1 else ind
-                    #t0 = time.time()
+                    t0 = time.time()
                     d1 = self.getDerivatives(comp,var,ind,clean=False)
-                    #t1 = time.time()
+                    t1 = time.time()
                     d2 = self.getDerivatives(comp,var,ind,clean=False,FD=True,h=h)
-                    #t2 = time.time()
+                    t2 = time.time()
                     norm0 = numpy.linalg.norm(d2)
                     norm0 = 1.0 if norm0==0 else norm0
                     error = numpy.linalg.norm(d2-d1)/norm0
@@ -379,7 +379,7 @@ class GeoMACHGeometry(object):
         if self._model is None:
             return []
 
-        #t0 = time.time()
+        t0 = time.time()
         xyzs = self._model.oml0.P0[:,:3]
         tris = self.tris
 
