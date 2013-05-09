@@ -15,8 +15,6 @@ class Configuration(object):
         self.comps = {}
         self.keys = []
 
-
-
         self._callbacks = []
 
     def regen_model(self):
@@ -35,21 +33,17 @@ class Configuration(object):
                 meta['value'] = par.P[:,:,0]
                 meta['iotype'] = 'in'
                 meta['shape'] = par.P.shape[:2]
-                params.append(((c+'__'+p),meta))
+                params.append(((c+'.'+p),meta))
         return params
 
     def set_parameter(self, name, value):
-        i = name.find('__')
-        c = name[:i]
-        p = name[i+2:]
+        c, p = name.split('.', 1)
         self.comps[c].params[p].setP(value[:])
 
     def get_parameters(self, names):
         vals = []
         for name in names:
-            i = name.find('__')
-            c = name[:i]
-            p = name[i+2:]
+            c, p = name.split('.', 1)
             val = self.comps[c].params[p].P[:,:,0]
             vals.append(val)
         return vals
@@ -79,9 +73,6 @@ class Configuration(object):
         
         return {
         }
-
-
-
 
     def addComp(self, name, comp):
         self.comps[name] = comp
