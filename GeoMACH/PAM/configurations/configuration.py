@@ -33,7 +33,7 @@ class Configuration(object):
                 meta['value'] = par.P[:,:,0]
                 meta['iotype'] = 'in'
                 meta['shape'] = par.P.shape[:2]
-                params.append(((c+'.'+p),meta))
+                params.append((c+'.'+p, meta))
         return params
 
     def set_parameter(self, name, value):
