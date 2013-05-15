@@ -4,12 +4,18 @@ import time
 
 from GeoMACH.PUBS import PUBS
 
-from pyV3D.sender import WV_Sender
-from openmdao.main.interfaces import IParametricGeometry, implements, IStaticGeometry
+try: 
+    from pyV3D.sender import WV_Sender
+    from openmdao.main.interfaces import IParametricGeometry, implements, IStaticGeometry
+    USE_OPENDMAO = True
+
+except ImportError: 
+    USE_OPENDMAO = False
 
 class Configuration(object):
 
-    implements(IParametricGeometry)
+    if USE_OPENDMAO: 
+        implements(IParametricGeometry)
     
     def __init__(self):
         self.comps = {}
@@ -358,7 +364,8 @@ class GeoMACHGeometry(object):
     This object is able to provide data for visualization.
     '''  
 
-    implements(IStaticGeometry)
+    if USE_OPENDMAO: 
+        implements(IStaticGeometry)
         
     def get_visualization_data(self, wv):
         '''Fills the given WV_Wrapper object with data for faces,
@@ -399,30 +406,30 @@ class GeoMACHGeometry(object):
                              new_tri.astype(numpy.int32).flatten(order='C'), bbox=box, name="oml_surf%d" % i)
 #        print 'T2', time.time()-t0
 
+if USE_OPENDMAO: 
+    class GeoMACHSender(WV_Sender):
 
-class GeoMACHSender(WV_Sender):
+        def initialize(self, **kwargs):
+            eye    = numpy.array([0.0, 0.0, 7.0], dtype=numpy.float32)
+            center = numpy.array([0.0, 0.0, 0.0], dtype=numpy.float32)
+            up     = numpy.array([0.0, 1.0, 0.0], dtype=numpy.float32)
+            fov   = 30.0
+            zNear = 1.0
+            zFar  = 10.0
 
-    def initialize(self, **kwargs):
-        eye    = numpy.array([0.0, 0.0, 7.0], dtype=numpy.float32)
-        center = numpy.array([0.0, 0.0, 0.0], dtype=numpy.float32)
-        up     = numpy.array([0.0, 1.0, 0.0], dtype=numpy.float32)
-        fov   = 30.0
-        zNear = 1.0
-        zFar  = 10.0
+            bias  = 0
+            self.wv.createContext(bias, fov, zNear, zFar, eye, center, up)
 
-        bias  = 0
-        self.wv.createContext(bias, fov, zNear, zFar, eye, center, up)
+        @staticmethod
+        def supports(obj):
+            return isinstance(obj, GeoMACHGeometry) or isinstance(obj, Configuration)
 
-    @staticmethod
-    def supports(obj):
-        return isinstance(obj, GeoMACHGeometry) or isinstance(obj, Configuration)
-
-    def geom_from_obj(self, obj):
-        if isinstance(obj, Configuration):
-            obj = obj.get_geometry()
-            if obj is None:
-                raise RuntimeError("can't get Geometry object from GeoMACHParametricGeometry")
-        elif not isinstance(obj, GeoMACHGeometry):
-            raise TypeError("object must be a GeoMACHParametricGeometry or GeoMACHGeometry but is a '%s' instead" %
-                str(type(obj)))
-        obj.get_visualization_data(self.wv)
+        def geom_from_obj(self, obj):
+            if isinstance(obj, Configuration):
+                obj = obj.get_geometry()
+                if obj is None:
+                    raise RuntimeError("can't get Geometry object from GeoMACHParametricGeometry")
+            elif not isinstance(obj, GeoMACHGeometry):
+                raise TypeError("object must be a GeoMACHParametricGeometry or GeoMACHGeometry but is a '%s' instead" %
+                    str(type(obj)))
+            obj.get_visualization_data(self.wv)
