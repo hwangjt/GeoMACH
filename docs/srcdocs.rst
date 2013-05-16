@@ -9,12 +9,12 @@ Source Documentation
         
 .. index:: airfoils.py
 
-.. _PAM.components.airfoils.py:
+.. _GeoMACH.PAM.components.airfoils.py:
 
 airfoils.py
 -----------
 
-.. automodule:: PAM.components.airfoils
+.. automodule:: GeoMACH.PAM.components.airfoils
    :members:
    :undoc-members:
    :show-inheritance:
@@ -22,12 +22,12 @@ airfoils.py
         
 .. index:: body.py
 
-.. _PAM.components.body.py:
+.. _GeoMACH.PAM.components.body.py:
 
 body.py
 -------
 
-.. automodule:: PAM.components.body
+.. automodule:: GeoMACH.PAM.components.body
    :members:
    :undoc-members:
    :show-inheritance:
@@ -35,12 +35,12 @@ body.py
         
 .. index:: component.py
 
-.. _PAM.components.component.py:
+.. _GeoMACH.PAM.components.component.py:
 
 component.py
 ------------
 
-.. automodule:: PAM.components.component
+.. automodule:: GeoMACH.PAM.components.component
    :members:
    :undoc-members:
    :show-inheritance:
@@ -48,12 +48,12 @@ component.py
         
 .. index:: cone.py
 
-.. _PAM.components.cone.py:
+.. _GeoMACH.PAM.components.cone.py:
 
 cone.py
 -------
 
-.. automodule:: PAM.components.cone
+.. automodule:: GeoMACH.PAM.components.cone
    :members:
    :undoc-members:
    :show-inheritance:
@@ -61,12 +61,12 @@ cone.py
         
 .. index:: interpolant.py
 
-.. _PAM.components.interpolant.py:
+.. _GeoMACH.PAM.components.interpolant.py:
 
 interpolant.py
 --------------
 
-.. automodule:: PAM.components.interpolant
+.. automodule:: GeoMACH.PAM.components.interpolant
    :members:
    :undoc-members:
    :show-inheritance:
@@ -74,12 +74,12 @@ interpolant.py
         
 .. index:: junction.py
 
-.. _PAM.components.junction.py:
+.. _GeoMACH.PAM.components.junction.py:
 
 junction.py
 -----------
 
-.. automodule:: PAM.components.junction
+.. automodule:: GeoMACH.PAM.components.junction
    :members:
    :undoc-members:
    :show-inheritance:
@@ -87,12 +87,12 @@ junction.py
         
 .. index:: layout.py
 
-.. _PAM.components.layout.py:
+.. _GeoMACH.PAM.components.layout.py:
 
 layout.py
 ---------
 
-.. automodule:: PAM.components.layout
+.. automodule:: GeoMACH.PAM.components.layout
    :members:
    :undoc-members:
    :show-inheritance:
@@ -100,12 +100,12 @@ layout.py
         
 .. index:: parameter.py
 
-.. _PAM.components.parameter.py:
+.. _GeoMACH.PAM.components.parameter.py:
 
 parameter.py
 ------------
 
-.. automodule:: PAM.components.parameter
+.. automodule:: GeoMACH.PAM.components.parameter
    :members:
    :undoc-members:
    :show-inheritance:
@@ -113,12 +113,12 @@ parameter.py
         
 .. index:: primitive.py
 
-.. _PAM.components.primitive.py:
+.. _GeoMACH.PAM.components.primitive.py:
 
 primitive.py
 ------------
 
-.. automodule:: PAM.components.primitive
+.. automodule:: GeoMACH.PAM.components.primitive
    :members:
    :undoc-members:
    :show-inheritance:
@@ -126,12 +126,12 @@ primitive.py
         
 .. index:: shell.py
 
-.. _PAM.components.shell.py:
+.. _GeoMACH.PAM.components.shell.py:
 
 shell.py
 --------
 
-.. automodule:: PAM.components.shell
+.. automodule:: GeoMACH.PAM.components.shell
    :members:
    :undoc-members:
    :show-inheritance:
@@ -139,12 +139,12 @@ shell.py
         
 .. index:: wing.py
 
-.. _PAM.components.wing.py:
+.. _GeoMACH.PAM.components.wing.py:
 
 wing.py
 -------
 
-.. automodule:: PAM.components.wing
+.. automodule:: GeoMACH.PAM.components.wing
    :members:
    :undoc-members:
    :show-inheritance:
@@ -152,12 +152,12 @@ wing.py
         
 .. index:: configuration.py
 
-.. _PAM.configurations.configuration.py:
+.. _GeoMACH.PAM.configurations.configuration.py:
 
 configuration.py
 ----------------
 
-.. automodule:: PAM.configurations.configuration
+.. automodule:: GeoMACH.PAM.configurations.configuration
    :members:
    :undoc-members:
    :show-inheritance:
@@ -165,12 +165,12 @@ configuration.py
         
 .. index:: conventional.py
 
-.. _PAM.configurations.conventional.py:
+.. _GeoMACH.PAM.configurations.conventional.py:
 
 conventional.py
 ---------------
 
-.. automodule:: PAM.configurations.conventional
+.. automodule:: GeoMACH.PAM.configurations.conventional
    :members:
    :undoc-members:
    :show-inheritance:
@@ -178,12 +178,12 @@ conventional.py
         
 .. index:: movie.py
 
-.. _PAM.configurations.movie.py:
+.. _GeoMACH.PAM.configurations.movie.py:
 
 movie.py
 --------
 
-.. automodule:: PAM.configurations.movie
+.. automodule:: GeoMACH.PAM.configurations.movie
    :members:
    :undoc-members:
    :show-inheritance:
@@ -191,12 +191,12 @@ movie.py
         
 .. index:: tecplot.py
 
-.. _PAM.configurations.tecplot.py:
+.. _GeoMACH.PAM.configurations.tecplot.py:
 
 tecplot.py
 ----------
 
-.. automodule:: PAM.configurations.tecplot
+.. automodule:: GeoMACH.PAM.configurations.tecplot
    :members:
    :undoc-members:
    :show-inheritance:
@@ -204,12 +204,12 @@ tecplot.py
         
 .. index:: PUBS.py
 
-.. _PUBS.PUBS.py:
+.. _GeoMACH.PUBS.PUBS.py:
 
 PUBS.py
 -------
 
-.. automodule:: PUBS.PUBS
+.. automodule:: GeoMACH.PUBS.PUBS
    :members:
    :undoc-members:
    :show-inheritance:
@@ -217,12 +217,12 @@ PUBS.py
         
 .. index:: PUBSexport.py
 
-.. _PUBS.PUBSexport.py:
+.. _GeoMACH.PUBS.PUBSexport.py:
 
 PUBSexport.py
 -------------
 
-.. automodule:: PUBS.PUBSexport
+.. automodule:: GeoMACH.PUBS.PUBSexport
    :members:
    :undoc-members:
    :show-inheritance:
@@ -230,12 +230,12 @@ PUBSexport.py
         
 .. index:: test_cube.py
 
-.. _PUBS.examples.test_cube.py:
+.. _GeoMACH.PUBS.examples.test_cube.py:
 
 test_cube.py
 ------------
 
-.. automodule:: PUBS.examples.test_cube
+.. automodule:: GeoMACH.PUBS.examples.test_cube
    :members:
    :undoc-members:
    :show-inheritance:
@@ -243,12 +243,12 @@ test_cube.py
         
 .. index:: test_sphere.py
 
-.. _PUBS.examples.test_sphere.py:
+.. _GeoMACH.PUBS.examples.test_sphere.py:
 
 test_sphere.py
 --------------
 
-.. automodule:: PUBS.examples.test_sphere
+.. automodule:: GeoMACH.PUBS.examples.test_sphere
    :members:
    :undoc-members:
    :show-inheritance:
