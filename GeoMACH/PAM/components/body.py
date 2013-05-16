@@ -1,5 +1,5 @@
 from __future__ import division
-import numpy, time
+import numpy
 
 from GeoMACH.PAM import PAMlib
 from GeoMACH.PAM.components import Primitive
@@ -37,7 +37,6 @@ class Body(Primitive):
 
     def setDOFs(self):
         setC1 = self.setC1
-        setCornerC1 = self.setCornerC1
         for f in range(len(self.Ks)):
             self.setC1('surf', f, val=True)
         if self.bottom==0:
