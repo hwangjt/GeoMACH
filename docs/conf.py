@@ -17,7 +17,7 @@ def _sys_path_add(toadd=None):
         distdir = os.path.dirname(os.path.dirname(__file__))
         sys.path = [distdir] + [os.path.join(distdir, p) for p in toadd] + sys.path
 
-_sys_path_add(['GeoMACH', 'src', 'GeoMACH/PUBS', 'GeoMACH/PAM', 'GeoMACH/PUBS/examples', 'GeoMACH/PAM/configurations', 'GeoMACH/PAM/components', 'GeoMACH/PAM/configurations/_old', 'GeoMACH/PAM/components/airfoils', 'src/PUBS', 'src/PAM', 'src/PUBS/fileIO', 'src/PUBS/tensor', 'src/PUBS/bspline', 'src/PUBS/patchwork', 'src/PAM/layout', 'src/PAM/component', 'src/PAM/component/structures', 'src/PAM/component/interpolant', 'src/PAM/component/primitive'])
+_sys_path_add(['GeoMACH', 'src', 'dist', 'GeoMACH/PUBS', 'GeoMACH/PAM', 'GeoMACH/PUBS/examples', 'GeoMACH/PAM/configurations', 'GeoMACH/PAM/components', 'GeoMACH/PAM/configurations/_old', 'GeoMACH/PAM/components/airfoils', 'src/PUBS', 'src/PAM', 'src/PUBS/fileIO', 'src/PUBS/tensor', 'src/PUBS/bspline', 'src/PUBS/patchwork', 'src/PAM/layout', 'src/PAM/component', 'src/PAM/component/structures', 'src/PAM/component/interpolant', 'src/PAM/component/primitive'])
 
 # General configuration
 # ---------------------
