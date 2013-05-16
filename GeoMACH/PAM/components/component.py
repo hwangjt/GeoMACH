@@ -1,6 +1,7 @@
 from __future__ import division
 from layout import Layout
-import numpy, time, scipy.sparse
+import numpy
+import scipy.sparse
 
 from GeoMACH.PAM import PAMlib
 from GeoMACH.PAM.components import Parameter
@@ -108,18 +109,22 @@ class Component(object):
             self.averageEdges(edge(f1,u1,v1,k), edge(f2,u2,v2,k))
 
     def setC1(self, t, f, i=None, j=None, u=None, v=None, d=None, val=True):
-        """ Set C1 continuity 
-        t: {string} surface or edge C1
-        f: face index
-        i,j: surface index
-            both given: only consider [i,j] surface
-            one given: loop through and apply to all of the other index
-            none given: apply to all surfaces
-        u,v: edge/vert index (for surfC1)
-            both given: only consider [u,v] corner/side
-            one given: loop through and apply to all of the other index
-            none given: apply to all corners/sides
-        u,v,d: side index (for edgeC1)
+        """Set C1 continuity 
+
+          ::
+
+                t: {string} surface or edge C1
+                f: face index
+                i,j: surface index
+                   both given: only consider [i,j] surface
+                    one given: loop through and apply to all of the other index
+                    none given: apply to all surfaces
+                u,v: edge/vert index (for surfC1)
+                    both given: only consider [u,v] corner/side
+                    one given: loop through and apply to all of the other index
+                    none given: apply to all corners/sides
+                u,v,d: side index (for edgeC1)
+
         """
 
         def setSurfC1(f, i, j, u, v, d, val):

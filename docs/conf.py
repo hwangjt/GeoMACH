@@ -12,6 +12,13 @@
 
 import sys, os
 
+def _sys_path_add(toadd=None):
+    if toadd:
+        distdir = os.path.dirname(os.path.dirname(__file__))
+        sys.path = [distdir] + [os.path.join(distdir, p) for p in toadd] + sys.path
+
+_sys_path_add(['GeoMACH', 'src', 'GeoMACH/GeoMACH', 'GeoMACH/PAM', 'GeoMACH/PUBS', 'GeoMACH/PAM/components', 'GeoMACH/PAM/configurations', 'GeoMACH/PAM/components/airfoils', 'GeoMACH/PUBS/examples', 'src/PAM', 'src/PUBS', 'src/PAM/component', 'src/PAM/layout', 'src/PAM/component/interpolant', 'src/PAM/component/primitive', 'src/PAM/component/structures', 'src/PUBS/bspline', 'src/PUBS/fileIO', 'src/PUBS/patchwork', 'src/PUBS/tensor'])
+
 # General configuration
 # ---------------------
 
@@ -141,5 +148,4 @@ todo_include_todos = True
 intersphinx_mapping = {'http://docs.python.org/dev': None}
 
 autodoc_member_order = 'groupwise'
-
 

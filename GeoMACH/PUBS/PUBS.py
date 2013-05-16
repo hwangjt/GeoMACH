@@ -438,11 +438,11 @@ class PUBS(object):
 
         """
 
-        if surfs==None:
+        if surfs is None:
             surfs = numpy.linspace(1,self.nsurf,self.nsurf)
         else:
             surfs = numpy.array(surfs) + 1
-        if Q==None:
+        if Q is None:
             surf,u,v = PUBSlib.evaluateprojection(P0.shape[0],surfs.shape[0],self.nD,self.nT,self.nC,self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,surfs,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.knot_index,self.T,self.C[:,:3],self.P[:,:3],P0)
         else:
             surf,u,v = PUBSlib.evaluatepjtnalongq(P0.shape[0],surfs.shape[0],self.nD,self.nT,self.nC,self.nP,self.nsurf,self.nedge,self.ngroup,self.nvert,surfs,self.surf_vert,self.surf_edge,self.edge_group,self.group_k,self.group_m,self.group_n,self.group_d,self.surf_index_P,self.edge_index_P,self.surf_index_C,self.edge_index_C,self.knot_index,self.T,self.C[:,:3],self.P[:,:3],P0,Q)
@@ -465,7 +465,7 @@ class PUBS(object):
         elif p==2:
             prop = self.group_n
 
-        if not d==None:
+        if not d is None:
             prop[group[d]] = val
 
         return [prop[group[i]] for i in range(2)]
@@ -474,7 +474,7 @@ class PUBS(object):
         return numpy.sum(self.P0[:,3:6]*self.J0.dot(self.M.dot(Q)),1)
 
     def exportPstr(self, surfs=None):
-        if surfs==None:
+        if surfs is None:
             surfs = range(self.nsurf)
 
         Ps = []
@@ -486,7 +486,7 @@ class PUBS(object):
         return Ps
 
     def exportPtri0(self, surfs=None):
-        if surfs==None:
+        if surfs is None:
             surfs = range(self.nsurf)
 
         index = lambda i,j,ni: ni*j + i
@@ -516,7 +516,7 @@ class PUBS(object):
         return Tri
 
     def exportPtri(self, surfs=None):
-        if surfs==None:
+        if surfs is None:
             surfs = range(self.nsurf)
 
         index = lambda i,j,ni: ni*j + i
