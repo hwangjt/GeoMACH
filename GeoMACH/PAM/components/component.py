@@ -111,19 +111,21 @@ class Component(object):
     def setC1(self, t, f, i=None, j=None, u=None, v=None, d=None, val=True):
         """Set C1 continuity 
 
-          ::
+        t: {string} surface or edge C1
 
-                t: {string} surface or edge C1
-                f: face index
-                i,j: surface index
-                   both given: only consider [i,j] surface
-                    one given: loop through and apply to all of the other index
-                    none given: apply to all surfaces
-                u,v: edge/vert index (for surfC1)
-                    both given: only consider [u,v] corner/side
-                    one given: loop through and apply to all of the other index
-                    none given: apply to all corners/sides
-                u,v,d: side index (for edgeC1)
+        f: face index
+
+        i,j: surface index
+            both given: only consider [i,j] surface
+            one given: loop through and apply to all of the other index
+            none given: apply to all surfaces
+
+        u,v: edge/vert index (for surfC1)
+            both given: only consider [u,v] corner/side
+            one given: loop through and apply to all of the other index
+            none given: apply to all corners/sides
+
+        u,v,d: side index (for edgeC1)
 
         """
 
@@ -410,17 +412,22 @@ class Component2(object):
             return self.dims[d][::-1]
 
     def setC1(self, t, f, i=None, j=None, u=None, v=None, d=None, val=True):
-        """ Set C1 continuity 
+        """ Set C1 continuity
+
         t: {string} surface or edge C1
+
         f: face index
+
         i,j: surface index
             both given: only consider [i,j] surface
             one given: loop through and apply to all of the other index
             none given: apply to all surfaces
+
         u,v: edge/vert index (for surfC1)
             both given: only consider [u,v] corner/side
             one given: loop through and apply to all of the other index
             none given: apply to all corners/sides
+            
         u,v,d: side index (for edgeC1)
         """
 

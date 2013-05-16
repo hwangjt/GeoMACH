@@ -60,11 +60,14 @@ class PUBS(object):
     def __init__(self, P_arrays, ratio=3.0, printInfo=False):
         """ Create an instance by specifying a list of surfaces
 
-        * Input *
+        Input
+
         P_arrays: list of ndarrays (nu,nv,3)
             Each element of the list is an nu x nv array of x-y-z coordinates
+
         ratio: integer
             Target ratio of points to control points for all edges  
+
         printInfo: boolean
             Whether to print output
 
@@ -124,7 +127,8 @@ class PUBS(object):
         """ Determine connectivities - mappings from surfaces to vertices and edges; from edges to groups
             Initialize order (k), # control points (m), and # points (n) for each edge 
 
-        * Input *
+        Input
+
         P_arrays: list of doubles(nu,nv,3)
             Each element of the list is an nu x nv array of x-y-z coordinates
 
@@ -166,7 +170,8 @@ class PUBS(object):
     def __initializePoints(self, P_arrays):
         """ Rearrange the list of surfaces into a single vector of unique points 
 
-        * Input *
+        Input
+
         P_arrays: list of ndarrays (nu,nv,3)
             Each element of the list is an nu x nv array of x-y-z coordinates
 
@@ -319,17 +324,22 @@ class PUBS(object):
     def getIndex(self, surf, u, v, quantity):
         """ Return the index of a Q, C, or P entry in the global list 
 
-        * Input *
+        Input
+
         surf: integer
             0-based surface index
+
         u: double
             Parametric coordinate [0,1]
+
         v: double
             Parametric coordinate [0,1]
+
         quantity: integer
             0 for P; 1 for C; 2 for Q
 
-        * Output *
+        Output
+
         return: integer
             0-based index in the Q, C, or P vector corresponding to (surf,u,v)
 
@@ -367,19 +377,25 @@ class PUBS(object):
     def evaluatePoint(self,surf,u,v,uder=0,vder=0):
         """ Return point or 1st or 2nd parametric derivative 
 
-        * Input *
+        Input
+
         surf: integer
             0-based surface index
+
         u: double
             Parametric coordinate [0,1]
+
         v: double
             Parametric coordinate [0,1]
+
         uder: integer
             Order of the desired derivative in the u direction
+
         vder: integer
             Order of the desired derivative in the v direction
 
-        * Output *
+        Output
+
         return: double(3)
             x-y-z values of the point or derivative requested
 
@@ -395,17 +411,22 @@ class PUBS(object):
         return P
 
     def evaluateBases(self, surf, u, v, uder=0, vder=0):
-        """ Return matrix that multiples with C to give n points corresponding to (s,u,v)
+        """ Return matrix that multiples with C to give n points 
+        corresponding to (s,u,v).
 
-        * Input *
+        Input
+
         surf: integer(n)
             0-based surface index
+
         u: double(n)
             Parametric coordinate [0,1]
+
         v: double(n)
             Parametric coordinate [0,1]
 
-        * Output *
+        Output
+
         B: double(n,nC)
             Matrix whose rows correspond to the requested points
 
@@ -420,19 +441,25 @@ class PUBS(object):
         """ Computes projections from P0 to the supplied list of surfaces
             and returns the parametric coordinates of the closest point
 
-        * Input *
+        Input
+
         P0: double(n,3)
             List of n points to project onto the B-spline surface model
+
         surfs: integer(n)
             List of surfaces (0-based) to check
+
         Q: double(n,3)
             Optional list of directions along which to evaluate projection
 
-        * Output *
+        Output
+
         surf: integer(n)
             0-based list of surfaces of the projected points
+
         u: double(n)
             List of parametric coordinates in u of the projected points
+            
         v: double(n)
             List of parametric coordinates in v of the projected points
 
