@@ -59,7 +59,22 @@ kwds = {'install_requires':['numpy','scipy'],
         'version': '0.1',
         'zip_safe': False,
         'license': 'LGPL',
-	'packages': setuptools.find_packages('.'),
+        'include_package_data': True,
+        'package_dir': {'': '.'},
+        'packages': setuptools.find_packages('.'),
+        'package_data': {
+            'GeoMACH': [
+                'sphinx_build/html/*.html',
+                'sphinx_build/html/*.js',
+                'sphinx_build/html/*.inv',
+                'sphinx_build/html/_static/*',
+                'sphinx_build/html/_sources/*.txt',
+                'sphinx_build/html/_modules/index.html',
+                'sphinx_build/html/_modules/GeoMACH/PAM/components/*.html',
+                'sphinx_build/html/_modules/GeoMACH/PAM/configurations/*.html',
+                'sphinx_build/html/_modules/GeoMACH/PUBS/*.html',
+            ]
+        },
         'entry_points': entry_points
         }
 kwds.update(config.todict())

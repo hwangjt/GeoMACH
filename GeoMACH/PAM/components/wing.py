@@ -1,7 +1,6 @@
 from __future__ import division
-import numpy, time
+import numpy
 
-from GeoMACH.PAM import PAMlib
 from GeoMACH.PAM.components import Primitive, airfoils
 
 
