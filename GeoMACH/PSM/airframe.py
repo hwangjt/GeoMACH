@@ -12,6 +12,7 @@ class Airframe(object):
 
     def __init__(self, geometry, members, maxL):
         self.geometry = geometry
+        self.maxL = maxL
         self.nmem = len(members)
         self.quad = QUAD()
 
@@ -20,16 +21,15 @@ class Airframe(object):
         self.importMembers(members)
         self.computePreviewMembers()
 
+        self.geometry.oml0.export.write2TecQuads('previewSurfs.dat',self.nodesS,self.quadsS-1)
+        self.geometry.oml0.export.write2TecQuads('previewMembers.dat',self.nodesM,self.quadsM-1)
+
+    def mesh(self):
         self.computeTopology()
         self.computeAdjoiningEdges()
         self.computeGroupIntersections()
         self.computeFaces()
-        self.computeSurfaces(maxL)
-
-        self.geometry.oml0.export.write2TecQuads('previewSurfs.dat',self.nodesS,self.quadsS-1)
-        self.geometry.oml0.export.write2TecQuads('previewMembers.dat',self.nodesM,self.quadsM-1)
-
-        exit()
+        self.computeSurfaces()
 
     def computePreviewSurfaces(self):
         oml0 = self.geometry.oml0
@@ -207,7 +207,7 @@ class Airframe(object):
                     quad.plot(verts, edges, 111, pt=False, pq=False)
                     pylab.show()
 
-    def computeSurfaces(self, maxL):
+    def computeSurfaces(self):
         geometry = self.geometry
         oml0 = geometry.oml0
         quad = self.quad
@@ -231,7 +231,7 @@ class Airframe(object):
                         surf = comp.Ks[f][i,j]
                         nedge1 = PSMlib.countsurfaceedges(nvert, nedge, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
                         edges1 = PSMlib.computesurfaceedges(nvert, nedge, nedge1, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
-                        nodes, quads = quad.mesh(edges1, maxL, self.surfEdgeLengths[surf,:,:])
+                        nodes, quads = quad.mesh(edges1, self.maxL, self.surfEdgeLengths[surf,:,:])
 
                         mu, mv = oml0.edgeProperty(surf,1)
                         for u in range(mu):
@@ -242,7 +242,7 @@ class Airframe(object):
                         P0, Q = PSMlib.computesurfaceprojections(nodes.shape[0], nodes)
                         s,u,v = oml0.evaluateProjection(P0, [surf], Q)
                         B0.append(oml0.evaluateBases(s,u,v))
-                        quads0.append(quads + nquad0 - 1)
+                        quads0.append(quads + nquad0)
                         nquad0 += P0.shape[0]
 
                         if k==1 and f==0 and i==0 and j==3 and 0:
@@ -253,7 +253,8 @@ class Airframe(object):
         geometry.computePoints()
         P = scipy.sparse.vstack(B0).dot(oml0.C[:,:3])
         quads0 = numpy.vstack(quads0)
-        self.geometry.oml0.export.write2TecQuads('structure.dat', P, quads0, loop=True)
+
+        self.geometry.oml0.export.write2TecQuads('structure.dat', P, quads0-1, loop=True)
         print P.shape[0]
 
 

@@ -196,6 +196,7 @@ class Conventional(Configuration):
             ]
 
         afm = Airframe(self, members, 1.0)
+        #afm.mesh()
 
         #self.meshStructure(members, lengths)
 
@@ -206,7 +207,6 @@ if __name__ == '__main__':
 
     name = 'conventional'
     aircraft = Conventional()
-    aircraft.oml0.plot()
 
     der = aircraft.getDerivatives('lw', 'scl1', (1,0), FD=False)
     aircraft.oml0.addVars(['der'])
@@ -214,3 +214,5 @@ if __name__ == '__main__':
 
     aircraft.oml0.write2Tec(name)
     aircraft.oml0.write2TecC(name)
+
+    #aircraft.oml0.plot()
