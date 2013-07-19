@@ -70,7 +70,7 @@ subroutine evaluateProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
      allocate(bufferP(nu,nv,3))     
      call getSurfaceT(surf, nu, nv, nT, nsurf, nedge, surf_edge, &
           surf_index_P, edge_index_P, T, bufferT)
-     call getSurfaceP(surf, nP, nu, nv, nsurf, nedge, nvert, surf_vert, &
+     call getSurfaceP(surf, nP, nu, nv, 3, nsurf, nedge, nvert, surf_vert, &
           surf_edge, surf_index_P, edge_index_P, P, bufferP)
      do k=1,nP0
         mind = 1e10

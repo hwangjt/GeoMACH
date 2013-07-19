@@ -42,6 +42,20 @@ class PUBSexport(object):
                     self.writeLine(f, Ps[s][u,v,:])
         f.close()
 
+    def write2TecQuads(self, filename, P, Qs, variables=['x','y','z'], title="PUBS output", loop=False):
+        f = self.writeTecHeader(filename,title,variables) 
+        for q in range(Qs.shape[0]):
+            f.write('zone i=2, j=2, DATAPACKING=POINT\n')
+            self.writeLine(f, P[Qs[q,0],:3])
+            self.writeLine(f, P[Qs[q,1],:3])
+            if loop:
+                self.writeLine(f, P[Qs[q,3],:3])
+                self.writeLine(f, P[Qs[q,2],:3])
+            else:
+                self.writeLine(f, P[Qs[q,2],:3])
+                self.writeLine(f, P[Qs[q,3],:3])
+        f.close()
+
     def write2TecScatter(self, filename, C, variables, title="PUBS output"):
         f = self.writeTecHeader(filename,title,variables) 
         f.write('zone i='+str(C.shape[0])+', DATAPACKING=POINT\n')

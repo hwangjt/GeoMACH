@@ -83,6 +83,7 @@ class PUBS(object):
         self.__initializePoints(P_arrays)
         self.computeControlPts()
         self.computePoints()
+        self.visible = numpy.ones(len(P_arrays),bool)
 
     def addVars(self, var):
         self.var.extend(var)
@@ -320,6 +321,7 @@ class PUBS(object):
         """ Compute matrix-vector product to find P from C """
 
         self.P = self.J.dot(self.C)
+        self.P0 = self.J0.dot(self.C)
 
     def getIndex(self, surf, u, v, quantity):
         """ Return the index of a Q, C, or P entry in the global list 
@@ -497,6 +499,15 @@ class PUBS(object):
 
         return [prop[group[i]] for i in range(2)]
 
+    def visible2(self, s):
+        nu, nv = self.Nuv[s,:]
+        avg = 0
+        avg += self.evaluatePoint(s,0.1,0.1)[2]
+        avg += self.evaluatePoint(s,0.1,0.9)[2]
+        avg += self.evaluatePoint(s,0.9,0.1)[2]
+        avg += self.evaluatePoint(s,0.9,0.9)[2]
+        return self.visible[s] and avg > 0
+
     def exportPjtn(self, Q):
         return numpy.sum(self.P0[:,3:6]*self.J0.dot(self.M.dot(Q)),1)
 
@@ -506,9 +517,10 @@ class PUBS(object):
 
         Ps = []
         for s in surfs:
-            nu, nv = self.Nuv[s,:]
-            P = PUBSlib.inflatevector(nu, nv, self.nvar, nu*nv, self.P0[self.Np0[s]:self.Np0[s+1],:])
-            Ps.append(P)
+            if self.visible2(s) or True:
+                nu, nv = self.Nuv[s,:]
+                P = PUBSlib.inflatevector(nu, nv, self.nvar, nu*nv, self.P0[self.Np0[s]:self.Np0[s+1],:])
+                Ps.append(P)
 
         return Ps
 
@@ -520,25 +532,27 @@ class PUBS(object):
 
         nTri = 0
         for s in surfs:
-            nu, nv = self.Nuv[s,:]
-            nTri += 2*(nu-1)*(nv-1)
+            if self.visible2(s):
+                nu, nv = self.Nuv[s,:]
+                nTri += 2*(nu-1)*(nv-1)
 
         Tri = numpy.zeros((nTri,3),int,order='F')
         iT = 0
         for s in surfs:
-            nu, nv = self.Nuv[s,:]
-            for j in range(nv-1):
-                for i in range(nu-1):
-                    Tri[iT,:] = self.Np0[s]
-                    Tri[iT,0] += index(i,j+1,nu)
-                    Tri[iT,1] += index(i,j,nu)
-                    Tri[iT,2] += index(i+1,j,nu)
-                    iT += 1
-                    Tri[iT,:] = self.Np0[s]
-                    Tri[iT,0] += index(i+1,j,nu)
-                    Tri[iT,1] += index(i+1,j+1,nu)
-                    Tri[iT,2] += index(i,j+1,nu)
-                    iT += 1
+            if self.visible2(s):
+                nu, nv = self.Nuv[s,:]
+                for j in range(nv-1):
+                    for i in range(nu-1):
+                        Tri[iT,:] = self.Np0[s]
+                        Tri[iT,0] += index(i,j+1,nu)
+                        Tri[iT,1] += index(i,j,nu)
+                        Tri[iT,2] += index(i+1,j,nu)
+                        iT += 1
+                        Tri[iT,:] = self.Np0[s]
+                        Tri[iT,0] += index(i+1,j,nu)
+                        Tri[iT,1] += index(i+1,j+1,nu)
+                        Tri[iT,2] += index(i,j+1,nu)
+                        iT += 1
 
         return Tri
 
@@ -550,21 +564,22 @@ class PUBS(object):
 
         Tris = []
         for s in surfs:
-            nu, nv = self.Nuv[s,:]
-            ntri = 2*(nu-1)*(nv-1)
-            Tri = self.Np0[s]*numpy.ones((ntri,3),int,order='F')
-            iT = 0
-            for j in range(nv-1):
-                for i in range(nu-1):
-                    Tri[iT,0] += index(i,j+1,nu)
-                    Tri[iT,1] += index(i,j,nu)
-                    Tri[iT,2] += index(i+1,j,nu)
-                    iT += 1
-                    Tri[iT,0] += index(i+1,j,nu)
-                    Tri[iT,1] += index(i+1,j+1,nu)
-                    Tri[iT,2] += index(i,j+1,nu)
-                    iT += 1
-            Tris.append(Tri)
+            if self.visible2(s):
+                nu, nv = self.Nuv[s,:]
+                ntri = 2*(nu-1)*(nv-1)
+                Tri = self.Np0[s]*numpy.ones((ntri,3),int,order='F')
+                iT = 0
+                for j in range(nv-1):
+                    for i in range(nu-1):
+                        Tri[iT,0] += index(i,j+1,nu)
+                        Tri[iT,1] += index(i,j,nu)
+                        Tri[iT,2] += index(i+1,j,nu)
+                        iT += 1
+                        Tri[iT,0] += index(i+1,j,nu)
+                        Tri[iT,1] += index(i+1,j+1,nu)
+                        Tri[iT,2] += index(i,j+1,nu)
+                        iT += 1
+                Tris.append(Tri)
 
         return Tris
 
@@ -575,16 +590,17 @@ class PUBS(object):
         ds = [[],[]]
         Cs = []
         for s in range(nsurf):
-            for d in range(2):
-                group = self.edge_group[abs(self.surf_edge[s,d,0])-1]
-                ks[s,d] = self.group_k[group-1]
-                ms[s,d] = self.group_m[group-1]
-                ds[d].append(self.group_d[self.knot_index[group-1,0]:self.knot_index[group-1,1]])
-            C = numpy.zeros((ms[s,0],ms[s,1],3),order='F')
-            for j in range(ms[s,1]):
-                for i in range(ms[s,0]):
-                    C[i,j,:] = self.C[self.getIndex(s,i,j,1),:3]
-            Cs.append(C)
+            if self.visible2(s):
+                for d in range(2):
+                    group = self.edge_group[abs(self.surf_edge[s,d,0])-1]
+                    ks[s,d] = self.group_k[group-1]
+                    ms[s,d] = self.group_m[group-1]
+                    ds[d].append(self.group_d[self.knot_index[group-1,0]:self.knot_index[group-1,1]])
+                C = numpy.zeros((ms[s,0],ms[s,1],3),order='F')
+                for j in range(ms[s,1]):
+                    for i in range(ms[s,0]):
+                        C[i,j,:] = self.C[self.getIndex(s,i,j,1),:3]
+                    Cs.append(C)
         return ks, ms, ds, Cs
 
     def plot(self):
