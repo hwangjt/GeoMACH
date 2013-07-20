@@ -35,7 +35,6 @@ PGMsources = [
     ]
 
 PSMsources = [
-    'src/PSM/computeMemberEdges.f90',
     'src/PSM/computeProjtnInputs.f90',
     'src/PSM/computePreviewSurfaces.f90',
     'src/PSM/computeEdgeLengths.f90',
@@ -49,6 +48,9 @@ PSMsources = [
     'src/PSM/computeIntersectionVerts.f90',
     'src/PSM/computeSurfaces.f90',
     'src/PSM/computeSurfaceProjections.f90',
+    'src/PSM/computeMemberEdges.f90',
+    'src/PSM/computeMemberNodes.f90',
+    'src/PSM/computeMembers.f90',
     ]
 
 QUADsources = [

@@ -517,7 +517,7 @@ class PUBS(object):
 
         Ps = []
         for s in surfs:
-            if self.visible2(s) or True:
+            if self.visible2(s):
                 nu, nv = self.Nuv[s,:]
                 P = PUBSlib.inflatevector(nu, nv, self.nvar, nu*nv, self.P0[self.Np0[s]:self.Np0[s+1],:])
                 Ps.append(P)

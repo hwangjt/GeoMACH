@@ -42,6 +42,20 @@ class PUBSexport(object):
                     self.writeLine(f, Ps[s][u,v,:])
         f.close()
 
+    def write2TecFEquads(self, filename, zones, variables=['x','y','z'], title="PUBS output"):
+        f = self.writeTecHeader(filename,title,variables) 
+        for z in range(len(zones)):
+            name, nodes, quads = zones[z]
+            f.write('ZONE T=\"' + name +'\",')
+            f.write('N=' + str(nodes.shape[0]) + ',')
+            f.write('E=' + str(quads.shape[0]) + ',')
+            f.write('DATAPACKING=POINT, ZONETYPE = FEQUADRILATERAL\n')
+            for i in range(nodes.shape[0]):
+                self.writeLine(f, nodes[i,:])
+            for i in range(quads.shape[0]):
+                self.writeLine(f, quads[i,:])
+        f.close()        
+
     def write2TecQuads(self, filename, P, Qs, variables=['x','y','z'], title="PUBS output", loop=False):
         f = self.writeTecHeader(filename,title,variables) 
         for q in range(Qs.shape[0]):

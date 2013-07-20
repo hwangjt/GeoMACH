@@ -136,8 +136,8 @@ class Conventional(Configuration):
         c['lp'].params['pos'].setP([[0,0,0],[-2,-0.3,0]])
         c['lp'].params['scl'].setP([0])
         c['lp'].addParam('nor1','nor',[1,3],P=[1,0,0])
-        c['lp'].addParam('offset','pos',[1,3],P=[20,-0.5,9])
-        c['lp'].addParam('scl1','scl',[2,1],P=[4,3])
+        c['lp'].addParam('offset','pos',[1,3],P=[20.2,-0.7,9])
+        c['lp'].addParam('scl1','scl',[2,1],P=[2.1,3])
 
         c['ln'].params['pos'].setP([[0,0,0],[4.5,0,0]])
         c['ln'].params['scl'].setP([1.25])
@@ -149,8 +149,8 @@ class Conventional(Configuration):
         c['rp'].params['pos'].setP([[0,0,0],[-2,-0.3,0]])
         c['rp'].params['scl'].setP([0])
         c['rp'].addParam('nor1','nor',[1,3],P=[1,0,0])
-        c['rp'].addParam('offset','pos',[1,3],P=[20,-0.5,-9])
-        c['rp'].addParam('scl1','scl',[2,1],P=[4,3])
+        c['rp'].addParam('offset','pos',[1,3],P=[20.2,-0.7,-9])
+        c['rp'].addParam('scl1','scl',[2,1],P=[2.1,3])
 
         c['rn'].params['pos'].setP([[0,0,0],[4.5,0,0]])
         c['rn'].params['scl'].setP([1.25])
@@ -193,12 +193,14 @@ class Conventional(Configuration):
                 [[ind['lw'], 0,0], [1,0.2,0.5], [1,0.5,0.5], [0,0.2,0.5], [0,0.5,0.5]],
                 [[ind['lw'], 1,0], [0,0.8,0.5], [0,0.5,0.5], [1,0.8,0.5], [1,0.5,0.5]],
                 ],
+            [
+                [[ind['lw'], 0,0], [1,0.2,0.5], [1,0.5,0.5], [0,0.2,0.5], [0,0.5,0.5]],
+                [[ind['lw'], 1,0], [0,0.8,0.5], [0,0.5,0.5], [1,0.8,0.5], [1,0.5,0.5]],
+                ],
             ]
 
-        afm = Airframe(self, members, 1.0)
-        #afm.mesh()
-
-        #self.meshStructure(members, lengths)
+        afm = Airframe(self, members, 0.5)
+        afm.mesh()
 
 if __name__ == '__main__':
 

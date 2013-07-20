@@ -182,7 +182,7 @@ class Junction(Interpolant):
 
         for j in range(fK0.shape[1]):
             for i in range(fK0.shape[0]):
-                self.oml0.visible[fK0[i,j]] = True#False
+                self.oml0.visible[fK0[i,j]] = False
 
         #for j0 in range(fK0.shape[1]):
         #    for i0 in range(fK0.shape[0]):

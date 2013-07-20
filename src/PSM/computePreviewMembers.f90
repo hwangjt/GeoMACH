@@ -100,7 +100,7 @@ subroutine computePreviewMemberWeights(nmem, nnode, membersFlt, quads, W)
 
   do imem=1,nmem
      index = 4*imem - 4
-     quads(imem,:) = (/ index+1, index+2, index+3, index+4 /)
+     quads(imem,:) = (/ index+1, index+2, index+4, index+3 /)
      do isrc=1,4
         do ic=1,2
            do jc=1,2

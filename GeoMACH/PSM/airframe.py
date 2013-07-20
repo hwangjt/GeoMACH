@@ -16,31 +16,40 @@ class Airframe(object):
         self.nmem = len(members)
         self.quad = QUAD()
 
+        self.preview = []
+
         self.computePreviewSurfaces()
         self.computeFaceDimensions()
         self.importMembers(members)
         self.computePreviewMembers()
 
-        self.geometry.oml0.export.write2TecQuads('previewSurfs.dat',self.nodesS,self.quadsS-1)
-        self.geometry.oml0.export.write2TecQuads('previewMembers.dat',self.nodesM,self.quadsM-1)
+        self.geometry.oml0.export.write2TecFEquads('preview.dat',self.preview)
 
     def mesh(self):
+        self.mesh = []
+
         self.computeTopology()
         self.computeAdjoiningEdges()
         self.computeGroupIntersections()
         self.computeFaces()
         self.computeSurfaces()
+        self.computeMembers()
+
+        self.geometry.computePoints()
+        for k in range(len(self.mesh)):
+            self.mesh[k][1] = self.mesh[k][1].dot(self.geometry.oml0.C[:,:3])
+        self.geometry.oml0.export.write2TecFEquads('structure.dat',self.mesh)
 
     def computePreviewSurfaces(self):
         oml0 = self.geometry.oml0
         nsurf = oml0.nsurf
 
-        quadsS,s,u,v = PSMlib.computepreviewsurfaces(4*nsurf,nsurf)
+        quads,s,u,v = PSMlib.computepreviewsurfaces(4*nsurf,nsurf)
         B = oml0.evaluateBases(s,u,v)
+        nodes = B.dot(oml0.C[:,:3])
+        self.surfEdgeLengths = PSMlib.computeedgelengths(4*nsurf,nsurf,nodes,quads)
 
-        self.nodesS = B.dot(oml0.C[:,:3])
-        self.quadsS = quadsS
-        self.surfEdgeLengths = PSMlib.computeedgelengths(4*nsurf,nsurf,self.nodesS,self.quadsS)
+        self.preview.append(['surfs', nodes, quads])
 
     def computeFaceDimensions(self):
         geometry = self.geometry
@@ -108,10 +117,10 @@ class Airframe(object):
                     B0 = B0 + W.dot(T.dot(B))
 
         self.geometry.computePoints()
+        nodes = B0.dot(oml0.C[:,:3])
+        self.memEdgeLengths = PSMlib.computeedgelengths(4*nmem,nmem,nodes,quads)
 
-        self.nodesM = B0.dot(oml0.C[:,:3])
-        self.quadsM = quads
-        self.memEdgeLengths = PSMlib.computeedgelengths(4*nmem,nmem,self.nodesM,self.quadsM)
+        self.preview.append(['members', nodes, quads])
 
     def computeTopology(self):
         nmem = self.nmem
@@ -226,42 +235,102 @@ class Airframe(object):
                 nedge = edges.shape[0]
                 ni, nj = comp.Ks[f].shape
                 idims, jdims = self.faceDims[k][f]
+                print 'Computing skin elements:', geometry.keys[k], f
                 for i in range(ni):
                     for j in range(nj):
                         surf = comp.Ks[f][i,j]
-                        nedge1 = PSMlib.countsurfaceedges(nvert, nedge, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
-                        edges1 = PSMlib.computesurfaceedges(nvert, nedge, nedge1, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
-                        nodes, quads = quad.mesh(edges1, self.maxL, self.surfEdgeLengths[surf,:,:])
+                        if oml0.visible[surf]:
+                            nedge1 = PSMlib.countsurfaceedges(nvert, nedge, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
+                            edges1 = PSMlib.computesurfaceedges(nvert, nedge, nedge1, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
+                            verts1, edges1 = quad.importEdges(edges1)
+                            nodes, quads = quad.mesh(verts1, edges1, self.maxL, self.surfEdgeLengths[surf,:,:])
+                            
+                            mu, mv = oml0.edgeProperty(surf,1)
+                            for u in range(mu):
+                                for v in range(mv):
+                                    oml0.C[oml0.getIndex(surf,u,v,1),:3] = [u/(mu-1), v/(mv-1), 0]
+                            oml0.computePointsC()
 
-                        mu, mv = oml0.edgeProperty(surf,1)
-                        for u in range(mu):
-                            for v in range(mv):
-                                oml0.C[oml0.getIndex(surf,u,v,1),:3] = [u/(mu-1), v/(mv-1), 0]
-                        oml0.computePointsC()
+                            P0, Q = PSMlib.computesurfaceprojections(nodes.shape[0], nodes)
+                            s,u,v = oml0.evaluateProjection(P0, [surf], Q)
 
-                        P0, Q = PSMlib.computesurfaceprojections(nodes.shape[0], nodes)
-                        s,u,v = oml0.evaluateProjection(P0, [surf], Q)
-                        B0.append(oml0.evaluateBases(s,u,v))
-                        quads0.append(quads + nquad0)
-                        nquad0 += P0.shape[0]
+                            B = oml0.evaluateBases(s,u,v)
 
-                        if k==1 and f==0 and i==0 and j==3 and 0:
-                            quad.plot(verts1, edges1, 111, pt=False, pq=False)
-                            pylab.show()
-                            exit()
+                            name = geometry.keys[k] + ':' + str(f) + '-' + str(i) + '-' + str(j)
+                            self.mesh.append([name, B, quads])
 
-        geometry.computePoints()
-        P = scipy.sparse.vstack(B0).dot(oml0.C[:,:3])
-        quads0 = numpy.vstack(quads0)
+    def computeMembers(self):
+        nmem = self.nmem
+        geometry = self.geometry
+        oml0 = geometry.oml0
+        groupIntPtr = self.groupIntPtr
+        groupInts = self.groupInts
+        quad = self.quad
+        ngroup = self.ngroupS + self.ngroupM
+        nint = groupIntPtr[-1,-1]
 
-        self.geometry.oml0.export.write2TecQuads('structure.dat', P, quads0-1, loop=True)
-        print P.shape[0]
+        nodesInt0 = []
+        nodesFlt0 = []
+        quads0 = []
+        nquad0 = 0
+        for imem in range(nmem):
+            print 'Computing internal members:', imem
+            edges, edge_group = PSMlib.computememberedges(imem+1, nmem, self.mem_group)
+            verts, edges = quad.importEdges(edges)
+            nvert = PSMlib.countintersectionverts(edges.shape[0], ngroup, edge_group, groupIntPtr)
+            verts = PSMlib.computeintersectionverts(verts.shape[0], edges.shape[0], ngroup, nint, nvert + verts.shape[0], verts, edges, edge_group, groupIntPtr, groupInts)
+            verts, edges = quad.deleteDuplicateVerts(verts, edges)
+            verts, edges = quad.splitEdges(verts, edges)
+            verts, edges = quad.deleteDuplicateEdges(verts, edges)
+            nodes, quads = quad.mesh(verts, edges, self.maxL, self.memEdgeLengths[imem,:,:])
+            nodesInt, nodesFlt = PSMlib.computemembernodes(imem+1, nmem, nodes.shape[0], self.membersInt, self.membersFlt, nodes)
+            nodesInt0.append(nodesInt)
+            nodesFlt0.append(nodesFlt)
+            quads0.append(quads + nquad0)
+            nquad0 += nodes.shape[0]
+            
+        nodesInt = numpy.array(numpy.vstack(nodesInt0),order='F')
+        nodesFlt = numpy.array(numpy.vstack(nodesFlt0),order='F')
+        nnode = nodesInt.shape[0]
+        quads = numpy.vstack(quads0)
+
+        for k in range(len(geometry.comps)):
+            comp = geometry.comps[geometry.keys[k]]
+            for f in range(len(comp.Ks)):
+                ni, nj = comp.Ks[f].shape
+                idims, jdims = self.faceDims[k][f]
+                PSMlib.computememberlocalcoords(k+1, f+1, ni, nj, nnode, idims, jdims, comp.Ks[f]+1, nodesInt, nodesFlt)
+
+        linW = numpy.linspace(0,nnode-1,nnode)
+        B0 = scipy.sparse.csr_matrix((nnode,oml0.C.shape[0]))
+        for src in range(4):
+            W = scipy.sparse.csr_matrix((nodesFlt[:,src,0],(linW,linW)))
+            for surf in range(oml0.nsurf):
+                npts = PSMlib.countmembers(surf+1, src+1, nnode, nodesInt)
+                if npts is not 0:
+                    inds, P, Q = PSMlib.computememberproj(surf+1, src+1, nnode, npts, nodesInt, nodesFlt)
+                    Ta = numpy.ones(npts)
+                    Ti = inds - 1
+                    Tj = numpy.linspace(0,npts-1,npts)
+                    T = scipy.sparse.csr_matrix((Ta,(Ti,Tj)),shape=(nnode,npts))
+
+                    mu, mv = oml0.edgeProperty(surf,1)
+                    for u in range(mu):
+                        for v in range(mv):
+                            oml0.C[oml0.getIndex(surf,u,v,1),:3] = [u/(mu-1), v/(mv-1), 0]
+                    oml0.computePointsC()
+
+                    s,u,v = oml0.evaluateProjection(P, [surf], Q)
+                    B = oml0.evaluateBases(s, u, v)
+                    B0 = B0 + W.dot(T.dot(B))
+
+        self.mesh.append(['members', B0, quads])
+
 
 
 class QUAD(object):
 
-    def mesh(self, lines, maxL, lengths):
-        verts, edges = self.importEdges(lines)
+    def mesh(self, verts, edges, maxL, lengths):
         verts, edges = self.computeDivisions(verts, edges, maxL, lengths)
         verts, edges = self.computeGrid(verts, edges, maxL, lengths)
         verts, edges = self.deleteDuplicateVerts(verts, edges)

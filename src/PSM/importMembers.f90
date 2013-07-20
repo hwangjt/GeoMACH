@@ -27,8 +27,8 @@ subroutine importMembers(nmem, members, membersInt, membersFlt)
            membersInt(imem,isrc,1) = int(members(imem,isrc,1,1)) + 1
            membersInt(imem,isrc,2) = int(members(imem,isrc,1,2)) + 1
            membersFlt(imem,isrc,1,1,1:3) = members(imem,isrc,2,:)
-           membersFlt(imem,isrc,1,2,1:3) = members(imem,isrc,3,:)
-           membersFlt(imem,isrc,2,1,1:3) = members(imem,isrc,4,:)
+           membersFlt(imem,isrc,2,1,1:3) = members(imem,isrc,3,:)
+           membersFlt(imem,isrc,1,2,1:3) = members(imem,isrc,4,:)
            membersFlt(imem,isrc,2,2,1:3) = members(imem,isrc,5,:)
         end if
      end do

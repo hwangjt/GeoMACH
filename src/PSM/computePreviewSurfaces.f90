@@ -25,7 +25,7 @@ subroutine computePreviewSurfaces(nnode, nsurf, quads, s, u, v)
   i1 = 1
   i2 = 4
   do isurf=1,nsurf
-     quads(isurf,:) = (/ i1, i1+1, i1+2, i1+3 /)
+     quads(isurf,:) = (/ i1, i1+1, i1+3, i1+2 /)
      s(i1:i2) = isurf - 1
      u(i1:i2) = (/ dble(0), dble(1), dble(0), dble(1) /)
      v(i1:i2) = (/ dble(0), dble(0), dble(1), dble(1) /)
