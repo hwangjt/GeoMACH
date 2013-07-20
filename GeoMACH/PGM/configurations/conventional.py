@@ -181,9 +181,9 @@ class Conventional(Configuration):
         #c['rw'].addParam('scl1','scl',[3,1],P=[10,5,0.8],T=[0,0.35,1.0])
 
         self.computePoints()
+
+    def meshStructure(self):
         ind = self.inds
-
-
         members = [
             [
                 [[ind['lw'], 0,0], [1,0.5,0], [1,0.5,0.5], [0,0.5,0], [0,0.5,0.5]],
@@ -192,6 +192,12 @@ class Conventional(Configuration):
             [
                 [[ind['lw'], 0,0], [1,0.2,0.5], [1,0.5,0.5], [0,0.2,0.5], [0,0.5,0.5]],
                 [[ind['lw'], 1,0], [0,0.8,0.5], [0,0.5,0.5], [1,0.8,0.5], [1,0.5,0.5]],
+                ],
+            [
+                [[ind['lw'], 0,0], [1.0,0.5,0.0], [0.0,0.5,0.0], [0.0,0.5,0.0], [0.0,0.5,0.0]],
+                [[ind['lw'], 1,0], [0.0,0.5,0.0], [1.0,0.5,0.0], [0.0,0.5,0.0], [0.0,0.5,0.0]],
+                [[ind['rw'], 0,0], [0.0,0.5,1.0], [0.0,0.5,1.0], [1.0,0.5,1.0], [0.0,0.5,1.0]],
+                [[ind['rw'], 1,0], [0.0,0.5,1.0], [0.0,0.5,1.0], [0.0,0.5,1.0], [1.0,0.5,1.0]],
                 ],
             ]
 
@@ -206,11 +212,14 @@ if __name__ == '__main__':
     name = 'conventional'
     aircraft = Conventional()
 
-    der = aircraft.getDerivatives('lw', 'scl1', (1,0), FD=False)
+    der = aircraft.getDerivatives('lw', 'scl1', (0,0), FD=False)
     aircraft.oml0.addVars(['der'])
-    aircraft.oml0.P0[:,6] = aircraft.oml0.exportPjtn(der)
-
+    #aircraft.oml0.addVars(['dx','dy','dz'])
+    #aircraft.oml0.P0[:,6] = aircraft.oml0.exportPjtn(der)
+    aircraft.oml0.Q[:,6] = numpy.sum(der*der,1)**0.5
+    aircraft.oml0.computePoints()
     aircraft.oml0.write2Tec(name)
     aircraft.oml0.write2TecC(name)
+    aircraft.meshStructure()
 
     #aircraft.oml0.plot()
