@@ -23,8 +23,8 @@ subroutine computeEdgeLengths(nnode, nquad, nodes, quads, lengths)
   do iquad=1,nquad
      lengths(iquad,1,1) = getEdgeLength(quads(iquad,2),quads(iquad,1),nnode,nodes)
      lengths(iquad,1,2) = getEdgeLength(quads(iquad,4),quads(iquad,3),nnode,nodes)
-     lengths(iquad,2,1) = getEdgeLength(quads(iquad,3),quads(iquad,1),nnode,nodes)
-     lengths(iquad,2,2) = getEdgeLength(quads(iquad,4),quads(iquad,2),nnode,nodes)
+     lengths(iquad,2,1) = getEdgeLength(quads(iquad,4),quads(iquad,1),nnode,nodes)
+     lengths(iquad,2,2) = getEdgeLength(quads(iquad,3),quads(iquad,2),nnode,nodes)
   end do
 
 end subroutine computeEdgeLengths
