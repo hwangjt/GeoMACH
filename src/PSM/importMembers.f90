@@ -23,7 +23,7 @@ subroutine importMembers(nmem, members, membersInt, membersFlt)
 
   do imem=1,nmem
      do isrc=1,4
-        if (members(imem,isrc,1,1) .gt. 0) then
+        if (members(imem,isrc,1,1) .ge. 0) then
            membersInt(imem,isrc,1) = int(members(imem,isrc,1,1)) + 1
            membersInt(imem,isrc,2) = int(members(imem,isrc,1,2)) + 1
            membersFlt(imem,isrc,1,1,1:3) = members(imem,isrc,2,:)

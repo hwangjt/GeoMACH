@@ -10,23 +10,60 @@ from GeoMACH.PSM import PSMlib, QUADlib, CDTlib
 
 class Airframe(object):
 
-    def __init__(self, geometry, members, maxL):
+    def __init__(self, geometry, maxL):
         self.geometry = geometry
         self.maxL = maxL
-        self.nmem = len(members)
         self.quad = QUAD()
+        self.members = []
+        self.memberNames = []
 
+    def addMember(self, name, member):
+        self.members.append(member)
+        self.memberNames.append(name)
+
+    def addVertFlip(self, name, comp, p1, p2, w=[1,0], i=[0,1]):
+        ind = self.geometry.inds
+        self.addMember(name,[
+                [[ind[comp],i[0],0], [w[0],p1[0],p1[1]], [w[0],p2[0],p2[1]], [w[1],p1[0],p1[1]], [w[1],p2[0],p2[1]]],
+                [[ind[comp],i[1],0], [1-w[0],1-p1[0],p1[1]], [1-w[0],1-p2[0],p2[1]], [1-w[1],1-p1[0],p1[1]], [1-w[1],1-p2[0],p2[1]]],
+                ])
+
+    def addVert(self, name, comp, p1, p2, w=[1,0], i=[0,1]):
+        ind = self.geometry.inds
+        self.addMember(name,[
+                [[ind[comp],i[0],0], [w[0],p1[0],p1[1]], [w[0],p2[0],p2[1]], [w[1],p1[0],p1[1]], [w[1],p2[0],p2[1]]],
+                [[ind[comp],i[1],0], [1-w[0],p1[0],p1[1]], [1-w[0],p2[0],p2[1]], [1-w[1],p1[0],p1[1]], [1-w[1],p2[0],p2[1]]],
+                ])
+
+    def addCtrVert(self, name, comp1, comp2, p, w=[1,0]):
+        ind = self.geometry.inds
+        self.addMember(name,[
+                [[ind[comp1], 0,0], [w[0],p,0.0], [w[1],p,0.0], [0.0,p,0.0], [0.0,p,0.0]],
+                [[ind[comp1], 1,0], [1-w[0],1-p,0.0], [1-w[1],1-p,0.0], [0.0,1-p,0.0], [0.0,1-p,0.0]],
+                [[ind[comp2], 0,0], [0.0,p,1.0], [0.0,p,1.0], [w[0],p,1.0], [w[1],p,1.0]],
+                [[ind[comp2], 1,0], [0.0,1-p,1.0], [0.0,1-p,1.0], [1-w[0],1-p,1.0], [1-w[1],1-p,1.0]],
+                ])
+
+    def addCtr(self, name, comp1, comp2, i, p):
+        ind = self.geometry.inds
+        self.addMember(name,[
+                [[ind[comp1], i,0], [1,p[0],0.0], [1,p[1],0.0], [0,p[0],0.0], [0,p[1],0.0]],
+                [[ind[comp2], i,0], [0,p[0],1.0], [0,p[1],1.0], [1,p[0],1.0], [1,p[1],1.0]],
+                ])
+
+    def preview(self):
         self.preview = []
 
         self.computePreviewSurfaces()
         self.computeFaceDimensions()
-        self.importMembers(members)
+        self.importMembers()
         self.computePreviewMembers()
 
         self.geometry.oml0.export.write2TecFEquads('preview.dat',self.preview,self.geometry.oml0.var)
 
     def mesh(self):
-        self.mesh = []
+        self.meshS = []
+        self.meshM = []
 
         self.computeTopology()
         self.computeAdjoiningEdges()
@@ -35,7 +72,22 @@ class Airframe(object):
         self.computeSurfaces()
         self.computeMembers()
 
-        self.geometry.oml0.export.write2TecFEquads('structure.dat',self.mesh,self.geometry.oml0.var)
+    def computeMesh(self):
+        oml0 = self.geometry.oml0
+
+        oml0.computePoints()
+
+        mesh = []
+        B1, quads1, nnode1 = self.meshS
+        B2, quads2, nnode2 = self.meshM
+        nodes1 = B1.dot(oml0.C)
+        nodes2 = B2.dot(oml0.C)
+        for i in range(len(self.surfaceNames)):
+            mesh.append([self.surfaceNames[i], nodes1[nnode1[i]:nnode1[i+1]], quads1[i]])
+        for i in range(self.nmem):
+            mesh.append([self.memberNames[i], nodes2[nnode2[i]:nnode2[i+1]], quads2[i]])
+
+        self.geometry.oml0.export.write2TecFEquads('structure.dat',mesh,self.geometry.oml0.var)
 
     def computePreviewSurfaces(self):
         oml0 = self.geometry.oml0
@@ -56,22 +108,29 @@ class Airframe(object):
         for k in range(len(geometry.comps)):
             comp = geometry.comps[geometry.keys[k]]
             faceDimsComp = []
+            jdim0 = numpy.zeros(comp.Ks[0].shape[1]+1)
             for f in range(len(comp.Ks)):
                 ni, nj = comp.Ks[f].shape
                 idims, jdims = PSMlib.computefacedimensions(ni,nj,nsurf,comp.Ks[f]+1,self.surfEdgeLengths)
+                jdim0 += jdims
                 faceDimsComp.append([idims,jdims])
+            jdim0 /= len(comp.Ks)
+            for f in range(len(comp.Ks)):
+                faceDimsComp[f][1][:] = jdim0[:]
             faceDims.append(faceDimsComp)
 
         self.faceDims = faceDims
 
-    def importMembers(self, members):
+    def importMembers(self):
+        self.nmem = len(self.members)
+
         geometry = self.geometry
         nmem = self.nmem
 
         for imem in range(nmem):
-            if len(members[imem]) is 2:
-                members[imem].extend([[[-1,-1,-1] for j in range(5)] for i in range(2)])
-        members = numpy.array(members, order='F')
+            if len(self.members[imem]) is 2:
+                self.members[imem].extend([[[-1,-1,-1] for j in range(5)] for i in range(2)])
+        members = numpy.array(self.members, order='F')
         membersInt, membersFlt = PSMlib.importmembers(nmem, members)
 
         for k in range(len(geometry.comps)):
@@ -219,9 +278,10 @@ class Airframe(object):
         quad = self.quad
         premeshFaces = self.premeshFaces
 
+        self.surfaceNames = []
         B0 = []
         quads0 = []
-        nquad0 = 0
+        nnode0 = [0]
         iList = 0
         for k in range(len(geometry.comps)):
             comp = geometry.comps[geometry.keys[k]]
@@ -254,11 +314,15 @@ class Airframe(object):
                             B = oml0.evaluateBases(s,u,v)
 
                             name = geometry.keys[k] + ':' + str(f) + '-' + str(i) + '-' + str(j)
-                            self.mesh.append([name, B, quads])
 
-        oml0.computePoints()
-        for k in range(len(self.mesh)):
-            self.mesh[k][1] = self.mesh[k][1].dot(self.geometry.oml0.C)
+                            self.surfaceNames.append(name)
+                            B0.append(B)
+                            nnode0.append(nnode0[-1] + P0.shape[0])
+                            quads0.append(quads)
+
+        B0 = scipy.sparse.vstack(B0)
+
+        self.meshS = [B0, quads0, nnode0]
 
     def computeMembers(self):
         nmem = self.nmem
@@ -275,7 +339,7 @@ class Airframe(object):
         quads0 = []
         nnode0 = [0]
         for imem in range(nmem):
-            print 'Computing internal members:', imem
+            print 'Computing internal members:', self.memberNames[imem]
             edges, edge_group = PSMlib.computememberedges(imem+1, nmem, self.mem_group)
             verts, edges = quad.importEdges(edges)
             nvert = PSMlib.countintersectionverts(edges.shape[0], ngroup, edge_group, groupIntPtr)
@@ -324,10 +388,7 @@ class Airframe(object):
                     B = oml0.evaluateBases(s, u, v)
                     B0 = B0 + W.dot(T.dot(B))
 
-        oml0.computePoints()
-        nodes = B0.dot(oml0.C)
-        for imem in range(nmem):
-            self.mesh.append(['mem'+str(imem), nodes[nnode0[imem]:nnode0[imem+1]], quads0[imem]])
+        self.meshM = [B0, quads0, nnode0]
 
 
 

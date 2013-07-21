@@ -41,7 +41,7 @@ class Conventional(Configuration):
 
         self.assembleComponents()
 
-        c['fu'].setm(0,1,[17,4,4,4,4,7,4,13,4,4,10,4])
+        c['fu'].setm(0,1,[18,4,4,4,4,8,4,15,4,4,10,4])
         c['fu'].setm(0,0,[4,4,4,4])
         c['fu'].setm(1,0,[8,8])
         c['lw'].setm(0,1,[6,4,4,20])
@@ -49,14 +49,14 @@ class Conventional(Configuration):
         c['lt'].setm(0,1,[15])
         c['rt'].setm(0,1,[15])
         c['vt'].setm(0,1,[15])
-        c['ln'].setm(0,1,[7])
-        c['ln'].setm(5,1,[7])
-        c['rn'].setm(0,1,[7])
-        c['rn'].setm(5,1,[7])
-        c['ln'].setm(0,0,[7])
-        c['ln'].setm(2,0,[7])
-        c['rn'].setm(0,0,[7])
-        c['rn'].setm(2,0,[7])
+        c['ln'].setm(0,1,[4])
+        c['ln'].setm(5,1,[4])
+        c['rn'].setm(0,1,[4])
+        c['rn'].setm(5,1,[4])
+        c['ln'].setm(0,0,[4])
+        c['ln'].setm(2,0,[4])
+        c['rn'].setm(0,0,[4])
+        c['rn'].setm(2,0,[4])
 
         self.update()
 
@@ -70,7 +70,7 @@ class Conventional(Configuration):
         c['lw'].params['pos'].setP([[0,0,0],[0,3,0]])
         c['lw'].params['ogn'].setP([0,0,0])
         c['lw'].params['scl'].setP([0])
-        c['lw'].addParam('offset','pos',[1,3],P=[15,-1,3])
+        c['lw'].addParam('offset','pos',[1,3],P=[16,-1,3])
         c['lw'].addParam('pos1','pos',[2,3],P=[[0,0,0],[19,0,24]],T=[0,1.0])
         c['lw'].addParam('scl1','scl',[3,1],P=[10,4.5,1.8],T=[0,0.35,1.0])
         c['lw'].addParam('rakedp1','pos',[2,3],P=[[0,0,0],[3,2,0]],T=[0.85,1.0],B=[[True,True,False],[False,False,False]])
@@ -90,7 +90,7 @@ class Conventional(Configuration):
         c['rw'].params['pos'].setP([[0,3,0],[0,0,0]])
         c['rw'].params['ogn'].setP([0,0,0])
         c['rw'].params['scl'].setP([0])
-        c['rw'].addParam('offset','pos',[1,3],P=[15,-1,-3])
+        c['rw'].addParam('offset','pos',[1,3],P=[16,-1,-3])
         c['rw'].addParam('pos1','pos',[2,3],P=[[19,0,-24],[0,0,0]],T=[0,1.0])
         c['rw'].addParam('scl1','scl',[3,1],P=[1.8,4.5,10],T=[0,0.65,1.0])
         c['rw'].addParam('rakedp1','pos',[2,3],P=[[3,2,0],[0,0,0]],T=[0,0.15],B=[[False,False,False],[True,True,False]])
@@ -136,26 +136,26 @@ class Conventional(Configuration):
         c['lp'].params['pos'].setP([[0,0,0],[-2,-0.3,0]])
         c['lp'].params['scl'].setP([0])
         c['lp'].addParam('nor1','nor',[1,3],P=[1,0,0])
-        c['lp'].addParam('offset','pos',[1,3],P=[20.2,-0.7,9])
+        c['lp'].addParam('offset','pos',[1,3],P=[21.2,-0.7,9])
         c['lp'].addParam('scl1','scl',[2,1],P=[2.1,3])
 
         c['ln'].params['pos'].setP([[0,0,0],[4.5,0,0]])
         c['ln'].params['scl'].setP([1.25])
         c['ln'].params['thk'].setP([0])
-        c['ln'].addParam('offset','pos',[1,3],P=[15,-2.2,9])
+        c['ln'].addParam('offset','pos',[1,3],P=[16,-2.4,9])
         c['ln'].addParam('thk1','thk',[3,1],P=[0.15,0.4,0.15],B=[False,True,False])
 
         c['rp'].params['nor'].setP([0])
         c['rp'].params['pos'].setP([[0,0,0],[-2,-0.3,0]])
         c['rp'].params['scl'].setP([0])
         c['rp'].addParam('nor1','nor',[1,3],P=[1,0,0])
-        c['rp'].addParam('offset','pos',[1,3],P=[20.2,-0.7,-9])
+        c['rp'].addParam('offset','pos',[1,3],P=[21.2,-0.7,-9])
         c['rp'].addParam('scl1','scl',[2,1],P=[2.1,3])
 
         c['rn'].params['pos'].setP([[0,0,0],[4.5,0,0]])
         c['rn'].params['scl'].setP([1.25])
         c['rn'].params['thk'].setP([0])
-        c['rn'].addParam('offset','pos',[1,3],P=[15,-2.2,-9])
+        c['rn'].addParam('offset','pos',[1,3],P=[16,-2.4,-9])
         c['rn'].addParam('thk1','thk',[3,1],P=[0.15,0.4,0.15],B=[False,True,False])
 
         c['lw_fu'].params['mC1'].setP([1.5])
@@ -183,26 +183,84 @@ class Conventional(Configuration):
         self.computePoints()
 
     def meshStructure(self):
-        ind = self.inds
-        members = [
-            [
-                [[ind['lw'], 0,0], [1,0.5,0], [1,0.5,0.5], [0,0.5,0], [0,0.5,0.5]],
-                [[ind['lw'], 1,0], [0,0.5,0], [0,0.5,0.5], [1,0.5,0], [1,0.5,0.5]],
-                ],
-            [
-                [[ind['lw'], 0,0], [1,0.2,0.5], [1,0.5,0.5], [0,0.2,0.5], [0,0.5,0.5]],
-                [[ind['lw'], 1,0], [0,0.8,0.5], [0,0.5,0.5], [1,0.8,0.5], [1,0.5,0.5]],
-                ],
-            [
-                [[ind['lw'], 0,0], [1.0,0.5,0.0], [0.0,0.5,0.0], [0.0,0.5,0.0], [0.0,0.5,0.0]],
-                [[ind['lw'], 1,0], [0.0,0.5,0.0], [1.0,0.5,0.0], [0.0,0.5,0.0], [0.0,0.5,0.0]],
-                [[ind['rw'], 0,0], [0.0,0.5,1.0], [0.0,0.5,1.0], [1.0,0.5,1.0], [0.0,0.5,1.0]],
-                [[ind['rw'], 1,0], [0.0,0.5,1.0], [0.0,0.5,1.0], [0.0,0.5,1.0], [1.0,0.5,1.0]],
-                ],
-            ]
+        afm = Airframe(self, 0.5)
 
-        afm = Airframe(self, members, 1.0)
+        idims = numpy.linspace(0.45,0.85,7)
+        jdims = numpy.linspace(0,0.9,16)
+        for i in range(idims.shape[0]-1):
+            for j in range(jdims.shape[0]):
+                afm.addVertFlip('Mlw_1:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
+                afm.addVertFlip('Mrw_1:'+str(i)+':'+str(j),'rw',[idims[i],1-jdims[j]],[idims[i+1],1-jdims[j]])
+        for i in range(idims.shape[0]):
+            for j in range(jdims.shape[0]-1):
+                if i is 0 or i is idims.shape[0]-1:
+                    afm.addVertFlip('Mlw_2:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
+                    afm.addVertFlip('Mrw_2:'+str(i)+':'+str(j),'rw',[idims[i],1-jdims[j]],[idims[i],1-jdims[j+1]])
+                else:
+                    afm.addVertFlip('Mlw_2a:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1,0.85])
+                    afm.addVertFlip('Mlw_2b:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[0.15,0])
+                    afm.addVertFlip('Mrw_2a:'+str(i)+':'+str(j),'rw',[idims[i],1-jdims[j]],[idims[i],1-jdims[j+1]],w=[1,0.85])
+                    afm.addVertFlip('Mrw_2b:'+str(i)+':'+str(j),'rw',[idims[i],1-jdims[j]],[idims[i],1-jdims[j+1]],w=[0.15,0])
+        idims = numpy.linspace(0.18,0.45,6)
+        for j in range(idims.shape[0]-1):
+            afm.addVertFlip('Mlw_sec1:'+str(j),'lw',[idims[j],jdims[j]],[idims[j+1],jdims[j+1]])
+            afm.addVertFlip('Mrw_sec1:'+str(j),'rw',[idims[j],1-jdims[j]],[idims[j+1],1-jdims[j+1]])
+            afm.addVertFlip('Mlw_sec2:'+str(j),'lw',[idims[j],jdims[j]],[0.45,jdims[j]])
+            afm.addVertFlip('Mrw_sec2:'+str(j),'rw',[idims[j],1-jdims[j]],[0.45,1-jdims[j]])
+
+        idims = numpy.linspace(0.45,0.85,7)
+        jdims = numpy.linspace(0,0.9,16)
+        for i in range(idims.shape[0]):
+            if i is 0 or i is idims.shape[0]-1:
+                afm.addCtrVert('Mcw_2:'+str(i)+':'+str(j),'lw','rw',idims[i])
+            else:
+                afm.addCtrVert('Mcw_2a:'+str(i)+':'+str(j),'lw','rw',idims[i],w=[1,0.85])
+                afm.addCtrVert('Mcw_2b:'+str(i)+':'+str(j),'lw','rw',idims[i],w=[0.15,0])
+        for i in range(idims.shape[0]-1):
+            afm.addCtr('Mcw_u:','lw','rw',0,[idims[i],idims[i+1]])
+        for i in range(idims.shape[0]-1):
+            afm.addCtr('Mcw_l:','lw','rw',1,[1-idims[i],1-idims[i+1]])
+        afm.addCtrVert('Mcw_sec:'+str(i)+':'+str(j),'lw','rw',0.18)
+
+        idims = numpy.linspace(0.25,0.65,2)
+        jdims = numpy.linspace(0,0.9,10)
+        for i in range(idims.shape[0]-1):
+            for j in range(jdims.shape[0]):
+                afm.addVertFlip('Mlt_1:'+str(i)+':'+str(j),'lt',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
+                afm.addVertFlip('Mrt_1:'+str(i)+':'+str(j),'rt',[idims[i],1-jdims[j]],[idims[i+1],1-jdims[j]])
+                afm.addVertFlip('Mvt_1:'+str(i)+':'+str(j),'vt',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
+        for i in range(idims.shape[0]):
+            for j in range(jdims.shape[0]-1):
+                afm.addVertFlip('Mlt_2:'+str(i)+':'+str(j),'lt',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
+                afm.addVertFlip('Mrt_2:'+str(i)+':'+str(j),'rt',[idims[i],1-jdims[j]],[idims[i],1-jdims[j+1]])
+                afm.addVertFlip('Mvt_2:'+str(i)+':'+str(j),'vt',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
+        for i in range(idims.shape[0]):
+                afm.addCtrVert('Mct_2:'+str(i)+':'+str(j),'lt','rt',idims[i])
+        for i in range(idims.shape[0]-1):
+            afm.addCtr('Mct_u:','lt','rt',0,[idims[i],idims[i+1]])
+        for i in range(idims.shape[0]-1):
+            afm.addCtr('Mct_l:','lt','rt',1,[1-idims[i],1-idims[i+1]])
+
+        idims = numpy.linspace(0,1,4)
+        jdims = numpy.linspace(0,1,20)
+        for i in range(idims.shape[0]-1):
+            for j in range(jdims.shape[0]):
+                afm.addVert('Mfu_1:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[0,2])
+                afm.addVert('Mfu_2:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[1,3])
+                afm.addVert('Mfu_3:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[2,0])
+                afm.addVert('Mfu_4:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[3,1])
+        for i in range(idims.shape[0]):
+            for j in range(jdims.shape[0]-1):
+                afm.addVert('Mfu_5:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[0,2])
+                afm.addVert('Mfu_6:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[1,3])
+                afm.addVert('Mfu_7:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[2,0])
+                afm.addVert('Mfu_8:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[3,1])
+        for j in range(jdims.shape[0]-1):
+            afm.addVertFlip('Mfu_0:'+str(j),'fu',[0.4,jdims[j]],[0.4,jdims[j+1]],w=[1.0,0.0],i=[0,2])
+
+        afm.preview()
         afm.mesh()
+        afm.computeMesh()
 
 if __name__ == '__main__':
 
