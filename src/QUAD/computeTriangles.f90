@@ -18,7 +18,7 @@ subroutine computeTriangles(nvert, nadj, ntri, adjPtr, adjMap, triangles)
   !Working
   integer itri, ivert0, ivert1, ivert2, ivert3, i1, i2, i3
 
-  itri = 1
+  itri = 0
   do ivert0=1,nvert
      do i1=adjPtr(ivert0,1),adjPtr(ivert0,2)
         ivert1 = adjMap(i1)
@@ -27,14 +27,18 @@ subroutine computeTriangles(nvert, nadj, ntri, adjPtr, adjMap, triangles)
            do i3=adjPtr(ivert2,1),adjPtr(ivert2,2)
               ivert3 = adjMap(i3)
               if (ivert0 .eq. ivert3) then
+                 itri = itri + 1
                  triangles(itri,1) = ivert1
                  triangles(itri,2) = ivert2
                  triangles(itri,3) = ivert3
-                 itri = itri + 1
               end if
            end do
         end do
      end do
   end do
+  if (itri .ne. ntri) then
+     print *, 'computeTriangles error', itri, ntri
+     call exit(0)
+  end if
 
 end subroutine computeTriangles

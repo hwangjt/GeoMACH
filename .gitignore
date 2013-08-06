@@ -2,8 +2,8 @@
 *~
 *build/*
 *dist/*
-*/temp/*
-*/temp2/*
+*temp/*
+*temp2/*
 *.so
 *.egg-info
 *.phy

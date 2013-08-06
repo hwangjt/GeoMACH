@@ -183,7 +183,7 @@ class Conventional(Configuration):
         self.computePoints()
 
     def meshStructure(self):
-        afm = Airframe(self, 0.5)
+        afm = Airframe(self, 1)
 
         idims = numpy.linspace(0.45,0.85,7)
         jdims = numpy.linspace(0,0.9,16)
@@ -258,9 +258,9 @@ class Conventional(Configuration):
         for j in range(jdims.shape[0]-1):
             afm.addVertFlip('Mfu_0:'+str(j),'fu',[0.4,jdims[j]],[0.4,jdims[j+1]],w=[1.0,0.0],i=[0,2])
 
-        afm.preview()
+        afm.preview('conventional_pvw.dat')
         afm.mesh()
-        afm.computeMesh()
+        afm.computeMesh('conventional_str.dat')
 
 if __name__ == '__main__':
 

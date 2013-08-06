@@ -51,7 +51,7 @@ class Airframe(object):
                 [[ind[comp2], i,0], [0,p[0],1.0], [0,p[1],1.0], [1,p[0],1.0], [1,p[1],1.0]],
                 ])
 
-    def preview(self):
+    def preview(self, filename):
         self.preview = []
 
         self.computePreviewSurfaces()
@@ -59,7 +59,7 @@ class Airframe(object):
         self.importMembers()
         self.computePreviewMembers()
 
-        self.geometry.oml0.export.write2TecFEquads('preview.dat',self.preview,self.geometry.oml0.var)
+        self.geometry.oml0.export.write2TecFEquads(filename,self.preview,self.geometry.oml0.var)
 
     def mesh(self):
         self.meshS = []
@@ -72,7 +72,7 @@ class Airframe(object):
         self.computeSurfaces()
         self.computeMembers()
 
-    def computeMesh(self):
+    def computeMesh(self, filename):
         oml0 = self.geometry.oml0
 
         oml0.computePoints()
@@ -87,7 +87,7 @@ class Airframe(object):
         for i in range(self.nmem):
             mesh.append([self.memberNames[i], nodes2[nnode2[i]:nnode2[i+1]], quads2[i]])
 
-        self.geometry.oml0.export.write2TecFEquads('structure.dat',mesh,self.geometry.oml0.var)
+        self.geometry.oml0.export.write2TecFEquads(filename,mesh,self.geometry.oml0.var)
 
     def computePreviewSurfaces(self):
         oml0 = self.geometry.oml0
@@ -300,6 +300,7 @@ class Airframe(object):
                             nedge1 = PSMlib.countsurfaceedges(nvert, nedge, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
                             edges1 = PSMlib.computesurfaceedges(nvert, nedge, nedge1, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
                             verts1, edges1 = quad.importEdges(edges1)
+                            print geometry.keys[k], f, i, j
                             nodes, quads = quad.mesh(verts1, edges1, self.maxL, self.surfEdgeLengths[surf,:,:])
                             
                             mu, mv = oml0.edgeProperty(surf,1)
@@ -394,11 +395,12 @@ class Airframe(object):
 
 class QUAD(object):
 
-    def mesh(self, verts, edges, maxL, lengths):
+    def mesh(self, verts, edges, maxL, lengths, plot=False):
         verts, edges = self.computeDivisions(verts, edges, maxL, lengths)
         verts, edges = self.computeGrid(verts, edges, maxL, lengths)
         verts, edges = self.deleteDuplicateVerts(verts, edges)
         verts, edges = self.splitEdges(verts, edges)
+        verts, edges = self.deleteDuplicateEdges(verts, edges)
         verts[:,0] *= 0.5*numpy.sum(lengths[0,:])
         verts[:,1] *= 0.5*numpy.sum(lengths[1,:])
         verts, edges = self.computeCDT(verts, edges)
@@ -523,7 +525,7 @@ class QUAD(object):
                 pylab.plot(
                     [verts[edges[e,i]-1,0] for i in range(2)],
                     [verts[edges[e,i]-1,1] for i in range(2)],
-                    )
+                    'k')
         if pt:
             triangles = self.triangles
             for t in range(triangles.shape[0]):
