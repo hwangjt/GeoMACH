@@ -39,6 +39,7 @@ subroutine computeCDT(nvert, nedge, ntri, verts, edges, ntri0, triangles)
   call trmesh(nvert, x, y, list, lptr, lend, lnew, near, next, dist, ier)
   if (ier .ne. 0) then
      print *, 'CDT trmesh error:', ier
+     call exit(1)
   end if
 
   do iedge=1,nedge
@@ -46,6 +47,7 @@ subroutine computeCDT(nvert, nedge, ntri, verts, edges, ntri0, triangles)
      call edge(edges(iedge,1), edges(iedge,2), x, y, lwk, iwk, list, lptr, lend, ier)
      if (ier .ne. 0) then
         print *, 'CDT edge error:', ier
+        call exit(1)
      end if
   end do
 
@@ -55,6 +57,7 @@ subroutine computeCDT(nvert, nedge, ntri, verts, edges, ntri0, triangles)
   call trlist(ncc, lcc, nvert, list, lptr, lend, nrow, nt, ltri, lct, ier)
   if (ier .ne. 0) then
      print *, 'CDT trlist error:', ier
+     call exit(1)
   end if
 
   ntri0=nt

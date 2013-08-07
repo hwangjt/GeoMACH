@@ -6,6 +6,7 @@ import pylab
 
 from GeoMACH.PUBS import PUBSlib
 from GeoMACH.PSM import PSMlib, QUADlib, CDTlib
+from QUAD import QUAD
 
 
 class Airframe(object):
@@ -221,9 +222,10 @@ class Airframe(object):
                 idims, jdims = self.faceDims[k][f]
                 nedge = PSMlib.countfaceedges(k+1, f+1, ni, nj, nadj, self.adjoiningInt)
                 edge_group, edgeLengths, edges = PSMlib.computefaceedges(k+1, f+1, ni, nj, geometry.oml0.nsurf, nmem, nadj, nedge, idims, jdims, comp.Ks[f]+1, self.surf_group, self.mem_group, self.adjoiningInt, self.adjoiningFlt, self.surfEdgeLengths, self.memEdgeLengths)
-                verts, edges = quad.importEdges(edges)
-                verts, edges = quad.computeIntersections(verts, edges)
-                verts, edges = quad.deleteDuplicateVerts(verts, edges)
+                quad.importEdges(edges)
+                quad.addIntersectionPts()
+                quad.removeDuplicateVerts()
+                verts, edges = quad.verts, quad.edges
 
                 groupIntCount = PSMlib.countgroupintersections(verts.shape[0], edges.shape[0], ngroup, verts, edges, edge_group, groupIntCount)
 
@@ -261,16 +263,13 @@ class Airframe(object):
                 verts,edges,edge_group,edgeLengths = premeshFaces[iList]
                 nvert = PSMlib.countintersectionverts(edges.shape[0], ngroup, edge_group, groupIntPtr)
                 verts = PSMlib.computeintersectionverts(verts.shape[0], edges.shape[0], ngroup, nint, nvert + verts.shape[0], verts, edges, edge_group, groupIntPtr, groupInts)
-                verts, edges = quad.deleteDuplicateVerts(verts, edges)
-                verts, edges = quad.splitEdges(verts, edges)
-                verts, edges = quad.deleteDuplicateEdges(verts, edges)
-                premeshFaces[iList][0] = verts
-                premeshFaces[iList][1] = edges
+                quad.importVertsNEdges(verts, edges)
+                quad.removeDuplicateVerts()
+                quad.splitEdges()
+                quad.removeDuplicateEdges()
+                premeshFaces[iList][0] = quad.verts
+                premeshFaces[iList][1] = quad.edges
                 iList += 1
-
-                if k==1 and f==0 and 0:
-                    quad.plot(verts, edges, 111, pt=False, pq=False)
-                    pylab.show()
 
     def computeSurfaces(self):
         geometry = self.geometry
@@ -299,9 +298,9 @@ class Airframe(object):
                         if oml0.visible[surf]:
                             nedge1 = PSMlib.countsurfaceedges(nvert, nedge, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
                             edges1 = PSMlib.computesurfaceedges(nvert, nedge, nedge1, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
-                            verts1, edges1 = quad.importEdges(edges1)
+                            quad.importEdges(edges1)
                             print geometry.keys[k], f, i, j
-                            nodes, quads = quad.mesh(verts1, edges1, self.maxL, self.surfEdgeLengths[surf,:,:])
+                            nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:])
                             
                             mu, mv = oml0.edgeProperty(surf,1)
                             for u in range(mu):
@@ -342,13 +341,12 @@ class Airframe(object):
         for imem in range(nmem):
             print 'Computing internal members:', self.memberNames[imem]
             edges, edge_group = PSMlib.computememberedges(imem+1, nmem, self.mem_group)
-            verts, edges = quad.importEdges(edges)
+            quad.importEdges(edges)
+            verts, edges = quad.verts, quad.edges
             nvert = PSMlib.countintersectionverts(edges.shape[0], ngroup, edge_group, groupIntPtr)
             verts = PSMlib.computeintersectionverts(verts.shape[0], edges.shape[0], ngroup, nint, nvert + verts.shape[0], verts, edges, edge_group, groupIntPtr, groupInts)
-            verts, edges = quad.deleteDuplicateVerts(verts, edges)
-            verts, edges = quad.splitEdges(verts, edges)
-            verts, edges = quad.deleteDuplicateEdges(verts, edges)
-            nodes, quads = quad.mesh(verts, edges, self.maxL, self.memEdgeLengths[imem,:,:])
+            quad.importVertsNEdges(verts, edges)
+            nodes, quads = quad.mesh(self.maxL, self.memEdgeLengths[imem,:,:])
             nodesInt, nodesFlt = PSMlib.computemembernodes(imem+1, nmem, nodes.shape[0], self.membersInt, self.membersFlt, nodes)
             nodesInt0.append(nodesInt)
             nodesFlt0.append(nodesFlt)
@@ -390,173 +388,3 @@ class Airframe(object):
                     B0 = B0 + W.dot(T.dot(B))
 
         self.meshM = [B0, quads0, nnode0]
-
-
-
-class QUAD(object):
-
-    def mesh(self, verts, edges, maxL, lengths, plot=False):
-        verts, edges = self.computeDivisions(verts, edges, maxL, lengths)
-        verts, edges = self.computeGrid(verts, edges, maxL, lengths)
-        verts, edges = self.deleteDuplicateVerts(verts, edges)
-        verts, edges = self.splitEdges(verts, edges)
-        verts, edges = self.deleteDuplicateEdges(verts, edges)
-        verts[:,0] *= 0.5*numpy.sum(lengths[0,:])
-        verts[:,1] *= 0.5*numpy.sum(lengths[1,:])
-        verts, edges = self.computeCDT(verts, edges)
-        verts, edges = self.splitEdges(verts, edges)
-        verts, edges = self.deleteDuplicateEdges(verts, edges)
-        adjPtr, adjMap = self.computeAdjMap(verts, edges)
-        tris = self.computeTriangles(verts, edges, adjPtr, adjMap)
-        tris = self.deleteDuplicateTriangles(verts, edges, tris)
-        verts, edges = self.computeTri2Quad(verts, edges, tris)
-        verts, edges = self.deleteDuplicateVerts(verts, edges)
-        verts, edges = self.splitEdges(verts, edges)
-        adjPtr, adjMap = self.computeAdjMap(verts, edges)
-        quads = self.computeQuads(verts, edges, adjPtr, adjMap)
-        quads = self.deleteDuplicateQuads(verts, edges, quads)
-        return verts, quads
-
-    def importEdges(self, lines):
-        verts, edges = QUADlib.importedges(2*lines.shape[0], lines.shape[0], lines)
-        return verts, edges
-
-    def computeIntersections(self, verts, edges):
-        nvert = verts.shape[0]
-        nedge = edges.shape[0]
-        nint = QUADlib.countintersections(nvert, nedge, verts, edges)
-        verts = QUADlib.computeintersections(nvert, nedge, nvert+nint, verts, edges)
-        return verts, edges
-
-    def deleteDuplicateVerts(self, verts, edges):
-        nvert0 = verts.shape[0]
-        nedge = edges.shape[0]
-        nvert, ids = QUADlib.computeuniquevertids(nvert0, verts)
-        verts, edges = QUADlib.deleteduplicateverts(nvert, nvert0, nedge, ids, verts, edges)
-        return verts, edges
-
-    def splitEdges(self, verts, edges):
-        nvert = verts.shape[0]
-        nedge = edges.shape[0]
-        nsplit = QUADlib.countsplits(nvert, nedge, verts, edges)
-        edges = QUADlib.splitedges(nvert, nedge, nedge+nsplit, verts, edges)
-        return verts, edges
-
-    def deleteDuplicateEdges(self, verts, edges):
-        nedge0 = edges.shape[0]
-        nedge, ids = QUADlib.computeuniqueedgeids(nedge0, edges)
-        edges = QUADlib.deleteduplicateedges(nedge0, nedge, ids, edges)
-        return verts, edges
-
-    def computeDivisions(self, verts, edges, maxL, lengths):
-        nvert = verts.shape[0]
-        nedge = edges.shape[0]
-        ndiv = QUADlib.countdivisions(nvert, nedge, maxL, lengths, verts, edges)
-        verts = QUADlib.computedivisions(nvert, nedge, nvert+ndiv, maxL, lengths, verts, edges)
-        return verts, edges
-
-    def computeGrid(self, verts, edges, maxL, lengths):
-        nvert = verts.shape[0]
-        nedge = edges.shape[0]
-        ngp = QUADlib.countgridpoints(maxL, lengths)
-        verts = QUADlib.computegridpoints(nvert, nvert+ngp, maxL, lengths, verts)
-        return verts, edges
-
-    def computeCDT(self, verts, edges):
-        nvert = verts.shape[0]
-        nedge = edges.shape[0]
-        verts, edges = QUADlib.reordercollinear(nvert, nedge, verts, edges)
-        ntri, triangles = CDTlib.computecdt(nvert, nedge, 2*nvert-5, verts, edges)
-        edges = QUADlib.trianglestoedges(2*nvert-5, ntri, 3*ntri, triangles)
-        return verts, edges
-
-    def computeAdjMap(self, verts, edges):
-        nvert = verts.shape[0]
-        nedge = edges.shape[0]
-        adjPtr, adjMap = QUADlib.computeadjmap(nvert, nedge, 2*nedge, edges)
-        return adjPtr, adjMap
-
-    def computeTriangles(self, verts, edges, adjPtr, adjMap):
-        nvert = verts.shape[0]
-        nedge = edges.shape[0]
-        nadj = adjMap.shape[0]
-        ntri = nedge - nvert + 1
-        triangles = QUADlib.computetriangles(nvert, nadj, 6*ntri, adjPtr, adjMap)
-        return triangles
-
-    def deleteDuplicateTriangles(self, verts, edges, triangles):
-        nvert = verts.shape[0]
-        nedge = edges.shape[0]
-        ntri = nedge - nvert + 1
-        triangles = QUADlib.deleteduplicatetriangles(6*ntri, ntri, triangles)
-        return triangles
-
-    def computeTri2Quad(self, verts, edges, triangles):
-        nvert = verts.shape[0]
-        nedge = edges.shape[0]
-        ntri = nedge - nvert + 1
-        verts, edges = QUADlib.computetri2quad(nvert, nedge, ntri, nvert+4*ntri, nedge+3*ntri, verts, edges, triangles)
-        return verts, edges
-
-    def computeQuads(self, verts, edges, adjPtr, adjMap):
-        nvert = verts.shape[0]
-        nedge = edges.shape[0]
-        nadj = adjMap.shape[0]
-        nquad = nedge - nvert + 1
-        quads = QUADlib.computequads(nvert, nadj, 8*nquad, adjPtr, adjMap)
-        return quads
-
-    def deleteDuplicateQuads(self, verts, edges, quads):
-        nvert = verts.shape[0]
-        nedge = edges.shape[0]
-        nquad = nedge - nvert + 1
-        quads = QUADlib.deleteduplicatequads(8*nquad, nquad, quads)
-        return quads
-
-    def plot(self, verts, edges, plot, pv=True, pe=True, pt=True, pq=True):
-
-        pylab.subplot(plot)
-        pylab.axis('equal')
-        if pv:
-            for v in range(verts.shape[0]):
-                pylab.plot([verts[v,0]],[verts[v,1]],'ok')
-        if pe:
-            for e in range(edges.shape[0]):
-                pylab.plot(
-                    [verts[edges[e,i]-1,0] for i in range(2)],
-                    [verts[edges[e,i]-1,1] for i in range(2)],
-                    'k')
-        if pt:
-            triangles = self.triangles
-            for t in range(triangles.shape[0]):
-                pylab.plot(
-                    [verts[triangles[t,i]-1,0] for i in range(2)],
-                    [verts[triangles[t,i]-1,1] for i in range(2)],
-                    )
-                pylab.plot(
-                    [verts[triangles[t,i+1]-1,0] for i in range(2)],
-                    [verts[triangles[t,i+1]-1,1] for i in range(2)],
-                    )
-                pylab.plot(
-                    [verts[triangles[t,2*i]-1,0] for i in range(2)],
-                    [verts[triangles[t,2*i]-1,1] for i in range(2)],
-                    )
-        if pq:
-            quads = self.quads
-            for q in range(quads.shape[0]):
-                pylab.plot(
-                    [verts[quads[q,i]-1,0] for i in range(2)],
-                    [verts[quads[q,i]-1,1] for i in range(2)],
-                    )
-                pylab.plot(
-                    [verts[quads[q,i+1]-1,0] for i in range(2)],
-                    [verts[quads[q,i+1]-1,1] for i in range(2)],
-                    )
-                pylab.plot(
-                    [verts[quads[q,i+2]-1,0] for i in range(2)],
-                    [verts[quads[q,i+2]-1,1] for i in range(2)],
-                    )
-                pylab.plot(
-                    [verts[quads[q,3*i]-1,0] for i in range(2)],
-                    [verts[quads[q,3*i]-1,1] for i in range(2)],
-                    )

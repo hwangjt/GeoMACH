@@ -1,21 +1,24 @@
-subroutine splitEdges(nvert, nedge0, nedge, verts, edges0, edges)
+subroutine splitEdges(nvert, nedge0, nedge, &
+     verts, edges0, edgeCon0, edges, edgeCon)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nvert, nedge0, nedge, verts, edges0
-  !f2py intent(out) edges
+  !f2py intent(in) nvert, nedge0, nedge, verts, edges0, edgeCon0
+  !f2py intent(out) edges, edgeCon
   !f2py depend(nvert) verts
-  !f2py depend(nedge0) edges0
-  !f2py depend(nedge) edges
+  !f2py depend(nedge0) edges0, edgeCon0
+  !f2py depend(nedge) edges, edgeCon
 
   !Input
   integer, intent(in) ::  nvert, nedge0, nedge
   double precision, intent(in) ::  verts(nvert,2)
   integer, intent(in) ::  edges0(nedge0,2)
+  logical, intent(in) ::  edgeCon0(nedge0)
 
   !Output
   integer, intent(out) ::  edges(nedge,2)
+  logical, intent(out) ::  edgeCon(nedge)
 
   !Working
   integer iedge0, iedge, i, i1, i2, isplit, nsplit
@@ -38,6 +41,7 @@ subroutine splitEdges(nvert, nedge0, nedge, verts, edges0, edges)
      end do
      if (nsplit .eq. 0) then
         edges(iedge,:) = edges0(iedge0,:)
+        edgeCon(iedge) = edgeCon0(iedge0)
         iedge = iedge + 1
      else
         allocate(t(nsplit))
@@ -62,6 +66,7 @@ subroutine splitEdges(nvert, nedge0, nedge, verts, edges0, edges)
         do i=1,nsplit+1
            edges(iedge,1) = lo(i)
            edges(iedge,2) = hi(i)
+           edgeCon(iedge) = edgeCon0(iedge0)
            iedge = iedge + 1
         end do
         deallocate(t)

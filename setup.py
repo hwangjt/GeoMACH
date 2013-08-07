@@ -35,52 +35,58 @@ PGMsources = [
     ]
 
 PSMsources = [
-    'src/PSM/computeProjtnInputs.f90',
-    'src/PSM/computePreviewSurfaces.f90',
-    'src/PSM/computeEdgeLengths.f90',
-    'src/PSM/computeFaceDimensions.f90',
-    'src/PSM/importMembers.f90',
-    'src/PSM/computePreviewMembers.f90',
-    'src/PSM/computeMemberTopology.f90',
-    'src/PSM/computeAdjoiningEdges.f90',
-    'src/PSM/computeFaceEdges.f90',
-    'src/PSM/computeGroupIntersections.f90',
-    'src/PSM/computeIntersectionVerts.f90',
-    'src/PSM/computeSurfaces.f90',
-    'src/PSM/computeSurfaceProjections.f90',
-    'src/PSM/computeMemberEdges.f90',
-    'src/PSM/computeMemberNodes.f90',
-    'src/PSM/computeMembers.f90',
+    'src/PSM/GFEM/computeProjtnInputs.f90',
+    'src/PSM/GFEM/computePreviewSurfaces.f90',
+    'src/PSM/GFEM/computeEdgeLengths.f90',
+    'src/PSM/GFEM/computeFaceDimensions.f90',
+    'src/PSM/GFEM/importMembers.f90',
+    'src/PSM/GFEM/computePreviewMembers.f90',
+    'src/PSM/GFEM/computeMemberTopology.f90',
+    'src/PSM/GFEM/computeAdjoiningEdges.f90',
+    'src/PSM/GFEM/computeFaceEdges.f90',
+    'src/PSM/GFEM/computeGroupIntersections.f90',
+    'src/PSM/GFEM/computeIntersectionVerts.f90',
+    'src/PSM/GFEM/computeSurfaces.f90',
+    'src/PSM/GFEM/computeSurfaceProjections.f90',
+    'src/PSM/GFEM/computeMemberEdges.f90',
+    'src/PSM/GFEM/computeMemberNodes.f90',
+    'src/PSM/GFEM/computeMembers.f90',
     ]
 
 QUADsources = [
-    'src/QUAD/computeAdjMap.f90',
-    'src/QUAD/computeDivisions.f90',
-    'src/QUAD/computeGrid.f90',
-    'src/QUAD/computeIntersections.f90',
-    'src/QUAD/computeQuads.f90',
-    'src/QUAD/computeTri2Quad.f90',
-    'src/QUAD/computeTriangles.f90',
-    'src/QUAD/deleteDuplicateEdges.f90',
-    'src/QUAD/deleteDuplicateQuads.f90',
-    'src/QUAD/deleteDuplicateTriangles.f90',
-    'src/QUAD/deleteDuplicateVerts.f90',
-    'src/QUAD/importEdges.f90',
-    'src/QUAD/reorderCollinear.f90',
-    'src/QUAD/splitEdges.f90',
-    'src/QUAD/trianglesToEdges.f90',
+    'src/PSM/QUAD/importEdges.f90',
+    'src/PSM/QUAD/reorderCollinear.f90',
+    'src/PSM/QUAD/addIntersectionPts.f90',
+    'src/PSM/QUAD/addEdgePts.f90',
+    'src/PSM/QUAD/addInteriorPts.f90',
+    'src/PSM/QUAD/splitEdges.f90',
+    'src/PSM/QUAD/removeDuplicateEdges.f90',
+    'src/PSM/QUAD/removeDuplicateQuads.f90',
+    'src/PSM/QUAD/removeDuplicateTriangles.f90',
+    'src/PSM/QUAD/removeDuplicateVerts.f90',
+    'src/PSM/QUAD/computeAdjMap.f90',
+    'src/PSM/QUAD/computeTriangles.f90',
+    'src/PSM/QUAD/computeQuads.f90',
+    'src/PSM/QUAD/computeConstraints.f90',
+    'src/PSM/QUAD/computeQuadDominant.f90',
+    'src/PSM/QUAD/splitTrisNQuads.f90',
+    'src/PSM/QUAD/computeQuad2Edge.f90',
     ]
 
 CDTsources = [
-    'src/CDT/addNode.f90',
-    'src/CDT/computeCDT.f90',
-    'src/CDT/constraints.f90',
-    'src/CDT/delaunay.f90',
-    'src/CDT/delete.f90',
-    'src/CDT/misc.f90',
-    'src/CDT/nearest.f90',
-    'src/CDT/output.f90',
-    'src/CDT/postProcess.f90',
+    'src/PSM/CDT/addNode.f90',
+    'src/PSM/CDT/computeCDT.f90',
+    'src/PSM/CDT/constraints.f90',
+    'src/PSM/CDT/delaunay.f90',
+    'src/PSM/CDT/delete.f90',
+    'src/PSM/CDT/misc.f90',
+    'src/PSM/CDT/nearest.f90',
+    'src/PSM/CDT/output.f90',
+    'src/PSM/CDT/postProcess.f90',
+    ]
+
+BLSsources = [
+    'src/PSM/BLS/assembleMtx.f90',
     ]
 
 entry_points = """
@@ -97,6 +103,7 @@ config.add_extension('PGM.PGMlib', sources=PGMsources)
 config.add_extension('PSM.PSMlib', sources=PSMsources)
 config.add_extension('PSM.QUADlib', sources=QUADsources)
 config.add_extension('PSM.CDTlib', sources=CDTsources)
+config.add_extension('PSM.BLSlib', sources=BLSsources)
 
 kwds = {'install_requires':['numpy','scipy'],
         'version': '0.1',

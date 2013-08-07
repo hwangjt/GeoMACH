@@ -1,10 +1,10 @@
-subroutine deleteDuplicateVerts(nvert, nvert0, nedge, &
+subroutine removeDuplicateVerts(nvert0, nvert, nedge, &
      ids, verts0, edges0, verts, edges)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nvert, nvert0, nedge, ids, verts0, edges0
+  !f2py intent(in) nvert0, nvert, nedge, ids, verts0, edges0
   !f2py intent(out) verts, edges
   !f2py depend(nvert0) ids, verts0
   !f2py depend(nedge) edges0
@@ -12,7 +12,7 @@ subroutine deleteDuplicateVerts(nvert, nvert0, nedge, &
   !f2py depend(nedge) edges
 
   !Input
-  integer, intent(in) ::  nvert, nvert0, nedge, ids(nvert0)
+  integer, intent(in) ::  nvert0, nvert, nedge, ids(nvert0)
   double precision, intent(in) ::  verts0(nvert0,2)
   integer, intent(in) ::  edges0(nedge,2)
 
@@ -33,12 +33,12 @@ subroutine deleteDuplicateVerts(nvert, nvert0, nedge, &
      end do
   end do
 
-end subroutine deleteDuplicateVerts
+end subroutine removeDuplicateVerts
 
 
 
 
-subroutine computeUniqueVertIDs(nvert, verts, nid, ids)
+subroutine computeUniqueVerts(nvert, verts, nid, ids)
 
   implicit none
 
@@ -58,8 +58,8 @@ subroutine computeUniqueVertIDs(nvert, verts, nid, ids)
   integer i1, i2
   double precision d(2)
 
-  ids(:) = 0
   nid = 0
+  ids(:) = 0
   do i1=1,nvert
      if (ids(i1) .eq. 0) then
         nid = nid + 1
@@ -75,4 +75,4 @@ subroutine computeUniqueVertIDs(nvert, verts, nid, ids)
      end if
   end do
 
-end subroutine computeUniqueVertIDs
+end subroutine computeUniqueVerts

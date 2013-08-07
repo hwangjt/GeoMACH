@@ -1,4 +1,4 @@
-subroutine deleteDuplicateTriangles(ntri0, ntri, triangles0, triangles)
+subroutine removeDuplicateTriangles(ntri0, ntri, triangles0, triangles)
 
   implicit none
 
@@ -20,11 +20,11 @@ subroutine deleteDuplicateTriangles(ntri0, ntri, triangles0, triangles)
 
   unused(:) = .True.
 
-  itri = 1
+  itri = 0
   do i1=1,ntri0
      if (unused(i1)) then
-        triangles(itri,:) = triangles0(i1,:)
         itri = itri + 1
+        triangles(itri,:) = triangles0(i1,:)
         do i2=i1+1,ntri0
            if (unused(i2)) then
               if (sameTri(triangles0(i1,:),triangles0(i2,:))) then
@@ -34,8 +34,11 @@ subroutine deleteDuplicateTriangles(ntri0, ntri, triangles0, triangles)
         end do
      end if
   end do
+  if (itri .ne. ntri) then
+     print *, 'Error in deleteDuplicateTriangles', itri, ntri
+  end if
 
-end subroutine deleteDuplicateTriangles
+end subroutine removeDuplicateTriangles
 
 
 

@@ -1,4 +1,4 @@
-subroutine computeIntersections(nvert0, nedge, nvert, verts0, edges, verts)
+subroutine addIntersectionPts(nvert0, nedge, nvert, verts0, edges, verts)
 
   implicit none
 
@@ -18,30 +18,30 @@ subroutine computeIntersections(nvert0, nedge, nvert, verts0, edges, verts)
   double precision, intent(out) ::  verts(nvert,2)
 
   !Working
-  integer i, i1, i2
+  integer ivert, i1, i2
   logical valid
   double precision v(2)
 
   verts(1:nvert0,:) = verts0(:,:)
 
-  i = nvert0 + 1
+  ivert = nvert0 + 1
   do i1=1,nedge
      do i2=i1+1,nedge
         call intersect(verts0(edges(i1,1),:), verts0(edges(i1,2),:), &
              verts0(edges(i2,1),:), verts0(edges(i2,2),:), valid, v)
         if (valid) then
-           verts(i,:) = v
-           i = i + 1
+           verts(ivert,:) = v
+           ivert = ivert + 1
         end if
      end do
   end do
 
-end subroutine computeIntersections
+end subroutine addIntersectionPts
 
 
 
 
-subroutine countIntersections(nvert, nedge, verts, edges, nint)
+subroutine countIntersectionPts(nvert, nedge, verts, edges, nint)
 
   implicit none
 
@@ -75,7 +75,7 @@ subroutine countIntersections(nvert, nedge, verts, edges, nint)
      end do
   end do
 
-end subroutine countIntersections
+end subroutine countIntersectionPts
 
 
 

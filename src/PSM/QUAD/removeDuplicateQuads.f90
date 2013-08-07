@@ -1,4 +1,4 @@
-subroutine deleteDuplicateQuads(nquad0, nquad, quads0, quads)
+subroutine removeDuplicateQuads(nquad0, nquad, quads0, quads)
 
   implicit none
 
@@ -20,11 +20,11 @@ subroutine deleteDuplicateQuads(nquad0, nquad, quads0, quads)
 
   unused(:) = .True.
 
-  iquad = 1
+  iquad = 0
   do i1=1,nquad0
      if (unused(i1)) then
-        quads(iquad,:) = quads0(i1,:)
         iquad = iquad + 1
+        quads(iquad,:) = quads0(i1,:)
         do i2=i1+1,nquad0
            if (unused(i2)) then
               if (sameQuad(quads0(i1,:),quads0(i2,:))) then
@@ -34,8 +34,11 @@ subroutine deleteDuplicateQuads(nquad0, nquad, quads0, quads)
         end do
      end if
   end do
+  if (iquad .ne. nquad) then
+     print *, 'Error in deleteDuplicateQuads', iquad, nquad
+  end if
 
-end subroutine deleteDuplicateQuads
+end subroutine removeDuplicateQuads
 
 
 

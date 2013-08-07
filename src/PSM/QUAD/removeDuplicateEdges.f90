@@ -1,32 +1,36 @@
-subroutine deleteDuplicateEdges(nedge0, nedge, ids, edges0, edges)
+subroutine removeDuplicateEdges(nedge0, nedge, ids, &
+     edges0, edgeCon0, edges, edgeCon)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nedge0, nedge, ids, edges0
-  !f2py intent(out) edges
-  !f2py depend(nedge0) ids, edges0
-  !f2py depend(nedge) edges
+  !f2py intent(in) nedge0, nedge, ids, edges0, edgeCon0
+  !f2py intent(out) edges, edgeCon
+  !f2py depend(nedge0) ids, edges0, edgeCon0
+  !f2py depend(nedge) edges, edgeCon
 
   !Input
   integer, intent(in) ::  nedge0, nedge, ids(nedge0), edges0(nedge0,2)
+  logical, intent(in) ::  edgeCon0(nedge0)
 
   !Output
   integer, intent(out) ::  edges(nedge,2)
+  logical, intent(out) ::  edgeCon(nedge)
 
   !Working
-  integer i
+  integer iedge0
 
-  do i=1,nedge0
-     edges(ids(i),:) = edges0(i,:)
+  do iedge0=1,nedge0
+     edges(ids(iedge0),:) = edges0(iedge0,:)
+     edgeCon(ids(iedge0)) = edgeCon0(iedge0)
   end do
 
-end subroutine deleteDuplicateEdges
+end subroutine removeDuplicateEdges
 
 
 
 
-subroutine computeUniqueEdgeIDs(nedge, edges, nid, ids)
+subroutine computeUniqueEdges(nedge, edges, nid, ids)
 
   implicit none
 
@@ -64,4 +68,4 @@ subroutine computeUniqueEdgeIDs(nedge, edges, nid, ids)
      end if
   end do
 
-end subroutine computeUniqueEdgeIDs
+end subroutine computeUniqueEdges
