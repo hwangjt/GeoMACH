@@ -171,7 +171,7 @@ subroutine splitTrisNQuads(nvert0, nedge0, ntri, nquad, nvert, nedge, &
 
   ivert = nvert0
   iedge = nedge0
-  do itri=1,ntri
+  do itri=2,ntri
      i1 = triangles(itri,1)
      i2 = triangles(itri,2)
      i3 = triangles(itri,3)
@@ -186,7 +186,7 @@ subroutine splitTrisNQuads(nvert0, nedge0, ntri, nquad, nvert, nedge, &
      ivert = ivert + 4
      iedge = iedge + 3
   end do
-  do iquad=1,nquad
+  do iquad=2,nquad
      i1 = quads(iquad,1)
      i2 = quads(iquad,2)
      i3 = quads(iquad,3)
@@ -205,11 +205,11 @@ subroutine splitTrisNQuads(nvert0, nedge0, ntri, nquad, nvert, nedge, &
      iedge = iedge + 4
   end do
   if (ivert .ne. nvert) then
-     print *, 'Error in splitTrisNQuads', ivert,nvert
+     print *, 'Error in splitTrisNQuads: ivert', ivert,nvert
      call exit(1)
   end if
   if (iedge .ne. nedge) then
-     print *, 'Error in splitTrisNQuads', iedge,nedge
+     print *, 'Error in splitTrisNQuads: iedge', iedge,nedge
      call exit(1)
   end if
 

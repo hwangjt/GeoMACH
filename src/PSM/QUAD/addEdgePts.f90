@@ -32,7 +32,7 @@ subroutine addEdgePts(nvert0, nedge, nvert, maxL, &
   Ly0 = edgeLengths(2,1)
   Ly1 = edgeLengths(2,2)
 
-  ivert = nvert0 + 1
+  ivert = nvert0
   do iedge=1,nedge
      v1 = verts0(edges(iedge,1),:)
      v2 = verts0(edges(iedge,2),:)
@@ -59,8 +59,8 @@ subroutine addEdgePts(nvert0, nedge, nvert, maxL, &
               end if
            end do
            if (.not. found) then
-              verts(ivert,:) = v
               ivert = ivert + 1
+              verts(ivert,:) = v
            end if
         end do
      end if

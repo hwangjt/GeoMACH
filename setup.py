@@ -97,13 +97,15 @@ GeoMACH.PGM.configurations.conventional.Conventional = GeoMACH.PGM.configuration
 GeoMACH.PGM.configurations.configuration.GeoMACHSender = GeoMACH.PGM.configurations.configuration:GeoMACHSender
 """
 
+addLib = lambda name, srcs: config.add_extension(name, sources=srcs, extra_compile_args=['-fbounds-check'])#, f2py_options=['--debug-capi'])
+
 config = Configuration(name='GeoMACH')
-config.add_extension('PUBS.PUBSlib', sources=PUBSsources)
-config.add_extension('PGM.PGMlib', sources=PGMsources)
-config.add_extension('PSM.PSMlib', sources=PSMsources)
-config.add_extension('PSM.QUADlib', sources=QUADsources)
-config.add_extension('PSM.CDTlib', sources=CDTsources)
-config.add_extension('PSM.BLSlib', sources=BLSsources)
+addLib('PUBS.PUBSlib', PUBSsources)
+addLib('PGM.PGMlib', PGMsources)
+addLib('PSM.PSMlib', PSMsources)
+addLib('PSM.QUADlib', QUADsources)
+addLib('PSM.CDTlib', CDTsources)
+addLib('PSM.BLSlib', BLSsources)
 
 kwds = {'install_requires':['numpy','scipy'],
         'version': '0.1',

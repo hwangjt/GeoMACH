@@ -37,7 +37,7 @@ subroutine computeTriangles(nvert, nadj, ntri, adjPtr, adjMap, triangles)
      end do
   end do
   if (itri .ne. ntri) then
-     print *, 'Error in computeTriangles'
+     print *, 'Error in computeTriangles', itri, ntri
      call exit(1)
   end if
 

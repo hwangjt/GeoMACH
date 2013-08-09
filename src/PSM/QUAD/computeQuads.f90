@@ -55,6 +55,10 @@ subroutine computeQuads(nvert, nadj, nquad, adjPtr, adjMap, quads)
         end do
      end do
   end do
+  if (iquad .ne. nquad) then
+     print *, 'Error in computeQuads', iquad, nquad
+     call exit(1)
+  end if
 
 end subroutine computeQuads
 

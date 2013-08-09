@@ -103,6 +103,33 @@ class Airframe(object):
 
     def computeFaceDimensions(self):
         geometry = self.geometry
+        oml0 = self.geometry.oml0
+
+        groupLengths = numpy.zeros(oml0.ngroup)
+        groupCount = numpy.zeros(oml0.ngroup,int)
+        for k in range(len(geometry.comps)):
+            comp = geometry.comps[geometry.keys[k]]
+            for f in range(len(comp.Ks)):
+                ni, nj = comp.Ks[f].shape
+                groupLengths, groupCount = PSMlib.addgrouplengths(ni, nj, oml0.nsurf, oml0.nedge, oml0.ngroup, comp.Ks[f]+1, oml0.surf_edge, oml0.edge_group, self.surfEdgeLengths, groupLengths, groupCount)
+
+        groupLengths = groupLengths / groupCount
+                 
+        faceDims = []       
+        for k in range(len(geometry.comps)):
+            comp = geometry.comps[geometry.keys[k]]
+            faceDimsComp = []
+            for f in range(len(comp.Ks)):
+                ni, nj = comp.Ks[f].shape
+                idims, jdims = PSMlib.computefacedimensions(ni, nj, oml0.nsurf, oml0.nedge, oml0.ngroup, comp.Ks[f]+1, oml0.surf_edge, oml0.edge_group, groupLengths)
+                #print idims, jdims
+                faceDimsComp.append([idims,jdims])
+            faceDims.append(faceDimsComp)
+
+        self.faceDims = faceDims
+
+    def computeFaceDimensions0(self):
+        geometry = self.geometry
         nsurf = self.geometry.oml0.nsurf
 
         faceDims = []
@@ -298,9 +325,13 @@ class Airframe(object):
                         if oml0.visible[surf]:
                             nedge1 = PSMlib.countsurfaceedges(nvert, nedge, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
                             edges1 = PSMlib.computesurfaceedges(nvert, nedge, nedge1, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
-                            quad.importEdges(edges1)
+
                             print geometry.keys[k], f, i, j
-                            nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:])
+                            quad.importEdges(edges1)
+                            if geometry.keys[k]=='fu' and f==1 and i==0 and j==0:
+                                nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:])#,True,True)
+                            else:
+                                nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:])
                             
                             mu, mv = oml0.edgeProperty(surf,1)
                             for u in range(mu):

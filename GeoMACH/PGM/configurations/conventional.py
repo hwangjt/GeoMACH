@@ -183,7 +183,7 @@ class Conventional(Configuration):
         self.computePoints()
 
     def meshStructure(self):
-        afm = Airframe(self, 2)
+        afm = Airframe(self, 0.5)#0.2)
 
         idims = numpy.linspace(0.45,0.85,7)
         jdims = numpy.linspace(0,0.9,16)
@@ -264,8 +264,7 @@ class Conventional(Configuration):
 
 if __name__ == '__main__':
 
-#    import cProfile
-#    cProfile.run('Conventional()')
+    import cProfile
 
     name = 'conventional'
     aircraft = Conventional()
@@ -279,5 +278,6 @@ if __name__ == '__main__':
     aircraft.oml0.write2Tec(name)
     aircraft.oml0.write2TecC(name)
     aircraft.meshStructure()
+#    cProfile.run('aircraft.meshStructure()')
 
     #aircraft.oml0.plot()
