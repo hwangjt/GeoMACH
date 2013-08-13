@@ -183,7 +183,7 @@ class Conventional(Configuration):
         self.computePoints()
 
     def meshStructure(self):
-        afm = Airframe(self, 0.5)#0.2)
+        afm = Airframe(self, 0.2)
 
         idims = numpy.linspace(0.45,0.85,7)
         jdims = numpy.linspace(0,0.9,16)

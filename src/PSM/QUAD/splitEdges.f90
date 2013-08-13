@@ -58,7 +58,7 @@ subroutine splitEdges(nvert, nedge0, nedge, &
               end if
            end if
         end do
-        call sort(nsplit, t, ti)
+        call sortVerts(nsplit, t, ti)
         lo(1) = edges0(iedge0,1)
         lo(2:) = ti
         hi(1:nsplit) = ti
@@ -81,7 +81,7 @@ end subroutine splitEdges
 
 
 
-subroutine sort(n, t, ti)
+subroutine sortVerts(n, t, ti)
 
   implicit none
 
@@ -101,8 +101,7 @@ subroutine sort(n, t, ti)
      t(minloc(t,1)) = 2.0
   end do
 
-end subroutine sort
-
+end subroutine sortVerts
 
 
 

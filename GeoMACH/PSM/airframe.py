@@ -122,7 +122,6 @@ class Airframe(object):
             for f in range(len(comp.Ks)):
                 ni, nj = comp.Ks[f].shape
                 idims, jdims = PSMlib.computefacedimensions(ni, nj, oml0.nsurf, oml0.nedge, oml0.ngroup, comp.Ks[f]+1, oml0.surf_edge, oml0.edge_group, groupLengths)
-                #print idims, jdims
                 faceDimsComp.append([idims,jdims])
             faceDims.append(faceDimsComp)
 
@@ -236,6 +235,7 @@ class Airframe(object):
     def computeGroupIntersections(self):
         geometry = self.geometry
         quad = self.quad
+        nsurf = geometry.oml0.nsurf
         nmem = self.nmem
         ngroup = self.ngroupS + self.ngroupM
         nadj = self.adjoiningInt.shape[0]
@@ -248,7 +248,7 @@ class Airframe(object):
                 ni, nj = comp.Ks[f].shape
                 idims, jdims = self.faceDims[k][f]
                 nedge = PSMlib.countfaceedges(k+1, f+1, ni, nj, nadj, self.adjoiningInt)
-                edge_group, edgeLengths, edges = PSMlib.computefaceedges(k+1, f+1, ni, nj, geometry.oml0.nsurf, nmem, nadj, nedge, idims, jdims, comp.Ks[f]+1, self.surf_group, self.mem_group, self.adjoiningInt, self.adjoiningFlt, self.surfEdgeLengths, self.memEdgeLengths)
+                edge_group, edgeLengths, edges = PSMlib.computefaceedges(k+1, f+1, ni, nj, nsurf, nmem, nadj, nedge, idims, jdims, comp.Ks[f]+1, self.surf_group, self.mem_group, self.adjoiningInt, self.adjoiningFlt, self.surfEdgeLengths, self.memEdgeLengths)
                 quad.importEdges(edges)
                 quad.addIntersectionPts()
                 quad.removeDuplicateVerts()
@@ -270,9 +270,18 @@ class Airframe(object):
                 iList += 1
                 groupInts = PSMlib.computegroupintersections(verts.shape[0], edges.shape[0], ngroup, nint, verts, edges, edge_group, groupIntPtr, groupInts)
 
+        groupSplitCount = PSMlib.countgroupsplits(nsurf, nmem, ngroup, nint, self.maxL, self.surf_group, self.mem_group, self.surfEdgeLengths, self.memEdgeLengths, groupIntPtr, groupInts)
+
+        groupSplitPtr = PSMlib.computegroupintptr(ngroup, groupSplitCount)
+        nsplit = groupSplitPtr[-1,-1]
+
+        groupSplits = PSMlib.computegroupsplits(nsurf, nmem, ngroup, nint, nsplit, self.maxL, self.surf_group, self.mem_group, self.surfEdgeLengths, self.memEdgeLengths, groupIntPtr, groupInts, groupSplitPtr)
+
         self.premeshFaces = premeshFaces
         self.groupIntPtr = groupIntPtr
         self.groupInts = groupInts
+        self.groupSplitPtr = groupSplitPtr
+        self.groupSplits = groupSplits
 
     def computeFaces(self):
         geometry = self.geometry
@@ -281,15 +290,18 @@ class Airframe(object):
         premeshFaces = self.premeshFaces
         groupIntPtr = self.groupIntPtr
         groupInts = self.groupInts
+        groupSplitPtr = self.groupSplitPtr
+        groupSplits = self.groupSplits
         nint = groupIntPtr[-1,-1]
+        nsplit = groupSplitPtr[-1,-1]
 
         iList = 0
         for k in range(len(geometry.comps)):
             comp = geometry.comps[geometry.keys[k]]
             for f in range(len(comp.Ks)):
                 verts,edges,edge_group,edgeLengths = premeshFaces[iList]
-                nvert = PSMlib.countintersectionverts(edges.shape[0], ngroup, edge_group, groupIntPtr)
-                verts = PSMlib.computeintersectionverts(verts.shape[0], edges.shape[0], ngroup, nint, nvert + verts.shape[0], verts, edges, edge_group, groupIntPtr, groupInts)
+                nvert = PSMlib.countintersectionverts(edges.shape[0], ngroup, edge_group, groupIntPtr, groupSplitPtr)
+                verts = PSMlib.computeintersectionverts(verts.shape[0], edges.shape[0], ngroup, nint, nsplit, nvert + verts.shape[0], verts, edges, edge_group, groupIntPtr, groupInts, groupSplitPtr, groupSplits)
                 quad.importVertsNEdges(verts, edges)
                 quad.removeDuplicateVerts()
                 quad.splitEdges()
@@ -361,9 +373,12 @@ class Airframe(object):
         oml0 = geometry.oml0
         groupIntPtr = self.groupIntPtr
         groupInts = self.groupInts
+        groupSplitPtr = self.groupSplitPtr
+        groupSplits = self.groupSplits
         quad = self.quad
         ngroup = self.ngroupS + self.ngroupM
         nint = groupIntPtr[-1,-1]
+        nsplit = groupSplitPtr[-1,-1]
 
         nodesInt0 = []
         nodesFlt0 = []
@@ -374,8 +389,8 @@ class Airframe(object):
             edges, edge_group = PSMlib.computememberedges(imem+1, nmem, self.mem_group)
             quad.importEdges(edges)
             verts, edges = quad.verts, quad.edges
-            nvert = PSMlib.countintersectionverts(edges.shape[0], ngroup, edge_group, groupIntPtr)
-            verts = PSMlib.computeintersectionverts(verts.shape[0], edges.shape[0], ngroup, nint, nvert + verts.shape[0], verts, edges, edge_group, groupIntPtr, groupInts)
+            nvert = PSMlib.countintersectionverts(edges.shape[0], ngroup, edge_group, groupIntPtr, groupSplitPtr)
+            verts = PSMlib.computeintersectionverts(verts.shape[0], edges.shape[0], ngroup, nint, nsplit, nvert + verts.shape[0], verts, edges, edge_group, groupIntPtr, groupInts, groupSplitPtr, groupSplits)
             quad.importVertsNEdges(verts, edges)
             nodes, quads = quad.mesh(self.maxL, self.memEdgeLengths[imem,:,:])
             nodesInt, nodesFlt = PSMlib.computemembernodes(imem+1, nmem, nodes.shape[0], self.membersInt, self.membersFlt, nodes)

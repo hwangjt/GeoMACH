@@ -32,8 +32,8 @@ class QUAD(object):
         self.splitEdges()
         self.removeDuplicateEdges()
 
-        self.addEdgePts()
-        self.splitEdges()
+        #self.addEdgePts()
+        #self.splitEdges()
         self.addInteriorPts()
         self.removeDuplicateVerts()
 

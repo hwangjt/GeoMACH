@@ -91,7 +91,7 @@ subroutine computeGroupIntersections(nvert, nedge, ngroup, nint, verts, edges, &
   double precision, intent(out) ::  groupInts(nint)
 
   !Working
-  integer iedge, ivert, igroup, index, counter(ngroup)
+  integer iedge, ivert, igroup, index, counter(ngroup), i1, i2
   logical validSplit
   double precision split
 
@@ -113,7 +113,32 @@ subroutine computeGroupIntersections(nvert, nedge, ngroup, nint, verts, edges, &
      end do
   end do
 
+  do igroup=1,ngroup
+     i1 = groupIntPtr(igroup,1)
+     i2 = groupIntPtr(igroup,2)
+     call sortSplits(i2-i1+1,groupInts(i1:i2))
+  end do
+
 end subroutine computeGroupIntersections
+
+
+
+
+subroutine sortSplits(n,v)
+
+  implicit none
+  integer, intent(in) ::  n
+  double precision, intent(inout) ::  v(n)
+  double precision buffer(n)
+  integer i
+
+  buffer = v
+  do i=1,n
+     v(i) = minval(buffer)
+     buffer(minloc(buffer,1)) = 2.0
+  end do
+
+end subroutine sortSplits
 
 
 

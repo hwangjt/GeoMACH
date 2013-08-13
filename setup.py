@@ -45,6 +45,7 @@ PSMsources = [
     'src/PSM/GFEM/computeAdjoiningEdges.f90',
     'src/PSM/GFEM/computeFaceEdges.f90',
     'src/PSM/GFEM/computeGroupIntersections.f90',
+    'src/PSM/GFEM/computeGroupSplits.f90',
     'src/PSM/GFEM/computeIntersectionVerts.f90',
     'src/PSM/GFEM/computeSurfaces.f90',
     'src/PSM/GFEM/computeSurfaceProjections.f90',
