@@ -78,17 +78,51 @@ class Airframe(object):
 
         oml0.computePoints()
 
-        mesh = []
         B1, quads1, nnode1 = self.meshS
         B2, quads2, nnode2 = self.meshM
         nodes1 = B1.dot(oml0.C)
         nodes2 = B2.dot(oml0.C)
+
+        mesh = []
+        nodes = []
+        quads = []
+        nCount = 0
         for i in range(len(self.surfaceNames)):
             mesh.append([self.surfaceNames[i], nodes1[nnode1[i]:nnode1[i+1]], quads1[i]])
+            nodes.append(nodes1[nnode1[i]:nnode1[i+1]])
+            quads.append(quads1[i]+nCount)
+            nCount = nCount + nnode1[i+1] - nnode1[i]
         for i in range(self.nmem):
             mesh.append([self.memberNames[i], nodes2[nnode2[i]:nnode2[i+1]], quads2[i]])
+            nodes.append(nodes2[nnode2[i]:nnode2[i+1]])
+            quads.append(quads2[i]+nCount)
+            nCount = nCount + nnode2[i+1] - nnode2[i]
 
         self.geometry.oml0.export.write2TecFEquads(filename,mesh,self.geometry.oml0.var)
+
+        nodes = numpy.array(numpy.concatenate(nodes,axis=0)[:,:3], order='F')
+        quads = numpy.array(numpy.concatenate(quads,axis=0), order='F')
+
+        nnode = nodes.shape[0]
+        nquad = quads.shape[0]
+        nid, ids = PSMlib.computeuniquenodes(nnode, nodes)
+        nodes, quads = PSMlib.removeduplicatenodes(nnode, nid, nquad, ids, nodes, quads)
+
+        #nnode = nodes.shape[0]
+        #nquad = quads.shape[0]
+        #right = PSMlib.countrightquads(nnode, nquad, nodes, quads)
+        #quads = PSMlib.removerightquads(nquad, nquad-numpy.sum(right), quads, right)
+
+        nnode = nodes.shape[0]
+        symm = PSMlib.identifysymmnodes(nnode, nodes)
+
+        self.geometry.oml0.export.write2TecFEquads('test.dat',[['test',nodes,quads]],self.geometry.oml0.var[:3])
+        import BDFwriter
+        BDFwriter.writeBDF('test.bdf',nodes,quads,symm)
+
+        for i in range(3):
+            nodes[:,i] *= symm
+        self.geometry.oml0.export.write2TecScatter('symm.dat', nodes, ['x','y','z'])
 
     def computePreviewSurfaces(self):
         oml0 = self.geometry.oml0

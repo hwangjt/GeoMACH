@@ -183,7 +183,7 @@ class Conventional(Configuration):
         self.computePoints()
 
     def meshStructure(self):
-        afm = Airframe(self, 0.2)
+        afm = Airframe(self, 1) #0.2)
 
         idims = numpy.linspace(0.45,0.85,7)
         jdims = numpy.linspace(0,0.9,16)
@@ -245,18 +245,19 @@ class Conventional(Configuration):
         jdims = numpy.linspace(0,1,20)
         for i in range(idims.shape[0]-1):
             for j in range(jdims.shape[0]):
-                afm.addVert('Mfu_1:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[0,2])
-                afm.addVert('Mfu_2:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[1,3])
-                afm.addVert('Mfu_3:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[2,0])
-                afm.addVert('Mfu_4:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[3,1])
-        for i in range(idims.shape[0]):
+                afm.addVert('Mfu_F1:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[0,2])
+                afm.addVert('Mfu_F2:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[1,3])
+                afm.addVert('Mfu_F3:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[2,0])
+                afm.addVert('Mfu_F4:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[3,1])
+        for i in range(idims.shape[0]-1):
             for j in range(jdims.shape[0]-1):
-                afm.addVert('Mfu_5:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[0,2])
-                afm.addVert('Mfu_6:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[1,3])
-                afm.addVert('Mfu_7:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[2,0])
-                afm.addVert('Mfu_8:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[3,1])
+                afm.addVert('Mfu_L1:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[0,2])
+                afm.addVert('Mfu_L2:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[1,3])
+                afm.addVert('Mfu_L3:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[2,0])
+                afm.addVert('Mfu_L4:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[3,1])
         for j in range(jdims.shape[0]-1):
-            afm.addVertFlip('Mfu_0:'+str(j),'fu',[0.4,jdims[j]],[0.4,jdims[j+1]],w=[1.0,0.0],i=[0,2])
+            afm.addVertFlip('Mfu_0a:'+str(j),'fu',[0.4,jdims[j]],[0.4,jdims[j+1]],w=[1.0,0.5],i=[0,2])
+            afm.addVertFlip('Mfu_0b:'+str(j),'fu',[0.4,jdims[j]],[0.4,jdims[j+1]],w=[0.5,0.0],i=[0,2])
 
         afm.preview('conventional_pvw.dat')
         afm.mesh()

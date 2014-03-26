@@ -52,6 +52,9 @@ PSMsources = [
     'src/PSM/GFEM/computeMemberEdges.f90',
     'src/PSM/GFEM/computeMemberNodes.f90',
     'src/PSM/GFEM/computeMembers.f90',
+    'src/PSM/GFEM/removeDuplicateNodes.f90',
+    'src/PSM/GFEM/removeRightQuads.f90',
+    'src/PSM/GFEM/identifySymmNodes.f90',
     ]
 
 QUADsources = [
