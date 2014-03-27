@@ -1,5 +1,5 @@
 from parameter import Parameter
-from component import Component, Property
+from component import Component
 from primitive import Primitive
 from wing import Wing
 from body import Body
