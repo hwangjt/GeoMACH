@@ -10,56 +10,57 @@ from GeoMACH.PSM import Airframe
 
 class Conventional(Configuration):
 
-    def __init__(self):
-        super(Conventional,self).__init__()
+    def define_primitive_comps(self):
+        comps = {'fu': Body(nx=12, ny=4, nz=2),
+                 'lw': Wing(nx=4, nz=4, right=0),
+                 'rw': Wing(nx=4, nz=4, left=0),
+                 'lp': Wing(left=0, right=0),
+                 'rp': Wing(left=0, right=0),
+                 'ln': Shell(nx=4, ny=1, nz=4),
+                 'rn': Shell(nx=4, ny=1, nz=4),
+                 'lt': Wing(right=0),
+                 'rt': Wing(left=0),
+                 'vt': Wing(nx=2,right=0),
+                 }
+        return comps
+
+    def define_interpolant_comps(self):
         c = self.comps
+        comps = {'fu_n': Cone(c['fu'], 0),
+                 'fu_t': Cone(c['fu'], 1),
+                 'lp_lw': Junction(c['lw'], 1, 1, [1,0], c['lp'], mSide=0),
+                 'lp_ln': Junction(c['ln'], 1, 2, [1,0], c['lp'], mSide=1),
+                 'rp_rw': Junction(c['rw'], 1, 1, [1,0], c['rp'], mSide=0),
+                 'rp_rn': Junction(c['rn'], 1, 2, [1,0], c['rp'], mSide=1),
+                 'lw_fu': Junction(c['fu'], 2, 0, [2,1], c['lw'], mSide=0),
+                 'rw_fu': Junction(c['fu'], 0, 2, [2,5], c['rw'], mSide=1),
+                 'lt_fu': Junction(c['fu'], 2, 0, [1,9], c['lt'], mSide=0),
+                 'rt_fu': Junction(c['fu'], 0, 2, [1,0], c['rt'], mSide=1),
+                 'vt_fu': Junction(c['fu'], 1, 0, [0,8], c['vt'], mSide=0),
+                 }
+        return comps
 
-        self.addComp('fu', Body(nx=12, ny=4, nz=2))
-        self.addComp('lw', Wing(nx=4, nz=4, right=0))
-        self.addComp('rw', Wing(nx=4, nz=4, left=0))
-        self.addComp('lp', Wing(left=0, right=0))
-        self.addComp('rp', Wing(left=0, right=0))
-        self.addComp('ln', Shell(nx=4, ny=1, nz=4))
-        self.addComp('rn', Shell(nx=4, ny=1, nz=4))
-        self.addComp('lt', Wing(right=0))
-        self.addComp('rt', Wing(left=0))
-        self.addComp('vt', Wing(nx=2,right=0))
+    def define_oml_resolution(self):
+        comps = self.comps
+        comps['fu'].setm(0,1,[18,4,4,4,4,8,4,15,4,4,10,4])
+        comps['fu'].setm(0,0,[4,4,4,4])
+        comps['fu'].setm(1,0,[8,8])
+        comps['lw'].setm(0,1,[6,4,4,20])
+        comps['rw'].setm(0,1,[20,4,4,6])
+        comps['lt'].setm(0,1,[15])
+        comps['rt'].setm(0,1,[15])
+        comps['vt'].setm(0,1,[15])
+        comps['ln'].setm(0,1,[4])
+        comps['ln'].setm(5,1,[4])
+        comps['rn'].setm(0,1,[4])
+        comps['rn'].setm(5,1,[4])
+        comps['ln'].setm(0,0,[4])
+        comps['ln'].setm(2,0,[4])
+        comps['rn'].setm(0,0,[4])
+        comps['rn'].setm(2,0,[4])
 
-        self.separateComps()
-
-        self.addComp('fu_n', Cone(c['fu'], 0))
-        self.addComp('fu_t', Cone(c['fu'], 1))
-        self.addComp('lp_lw', Junction(c['lw'], 1, 1, [1,0], c['lp'], mSide=0))
-        self.addComp('lp_ln', Junction(c['ln'], 1, 2, [1,0], c['lp'], mSide=1))
-        self.addComp('rp_rw', Junction(c['rw'], 1, 1, [1,0], c['rp'], mSide=0))
-        self.addComp('rp_rn', Junction(c['rn'], 1, 2, [1,0], c['rp'], mSide=1))
-        self.addComp('lw_fu', Junction(c['fu'], 2, 0, [2,1], c['lw'], mSide=0))
-        self.addComp('rw_fu', Junction(c['fu'], 0, 2, [2,5], c['rw'], mSide=1))
-        self.addComp('lt_fu', Junction(c['fu'], 2, 0, [1,9], c['lt'], mSide=0))
-        self.addComp('rt_fu', Junction(c['fu'], 0, 2, [1,0], c['rt'], mSide=1))
-        self.addComp('vt_fu', Junction(c['fu'], 1, 0, [0,8], c['vt'], mSide=0))
-
-        self.assembleComponents()
-
-        c['fu'].setm(0,1,[18,4,4,4,4,8,4,15,4,4,10,4])
-        c['fu'].setm(0,0,[4,4,4,4])
-        c['fu'].setm(1,0,[8,8])
-        c['lw'].setm(0,1,[6,4,4,20])
-        c['rw'].setm(0,1,[20,4,4,6])
-        c['lt'].setm(0,1,[15])
-        c['rt'].setm(0,1,[15])
-        c['vt'].setm(0,1,[15])
-        c['ln'].setm(0,1,[4])
-        c['ln'].setm(5,1,[4])
-        c['rn'].setm(0,1,[4])
-        c['rn'].setm(5,1,[4])
-        c['ln'].setm(0,0,[4])
-        c['ln'].setm(2,0,[4])
-        c['rn'].setm(0,0,[4])
-        c['rn'].setm(2,0,[4])
-
-        self.update()
-
+    def define_oml_parameters(self):
+        c = self.comps
         c['fu'].params['pos'].setP([[0,0,0],[50,0,0]])
         c['fu'].params['scl'].setP([0])
         c['fu'].addParam('nose','pos',[2,3],P=[[0,-1.1,0],[0,0,0]],T=[0,0.13],B=[False,True])
@@ -180,8 +181,6 @@ class Conventional(Configuration):
         #c['rw'].params['scl'].setP([1])
         #c['rw'].addParam('scl1','scl',[3,1],P=[10,5,0.8],T=[0,0.35,1.0])
 
-        self.computePoints()
-
     def meshStructure(self):
         afm = Airframe(self, 1) #0.2)
 
@@ -270,7 +269,7 @@ if __name__ == '__main__':
     name = 'conventional'
     aircraft = Conventional()
 
-    der = aircraft.getDerivatives('lw', 'scl1', (0,0), FD=False)
+    der = aircraft.get_derivatives('lw', 'scl1', (0,0), useFD=False)
     aircraft.oml0.addVars(['der'])
     #aircraft.oml0.addVars(['dx','dy','dz'])
     #aircraft.oml0.P0[:,6] = aircraft.oml0.exportPjtn(der)
@@ -278,7 +277,13 @@ if __name__ == '__main__':
     aircraft.oml0.computePoints()
     aircraft.oml0.write2Tec(name)
     aircraft.oml0.write2TecC(name)
-    aircraft.meshStructure()
-#    cProfile.run('aircraft.meshStructure()')
 
-    #aircraft.oml0.plot()
+    #aircraft.test_derivatives('lw')
+    #aircraft.test_derivatives('fu')
+    #aircraft.test_derivatives('lw_fu')
+    aircraft.oml0.plot()
+    #aircraft.meshStructure()
+
+
+
+#    cProfile.run('aircraft.meshStructure()')

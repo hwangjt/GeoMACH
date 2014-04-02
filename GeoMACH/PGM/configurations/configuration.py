@@ -1,184 +1,209 @@
+"""
+GeoMACH configuration class
+John Hwang, April 2014
+"""
 from __future__ import division
 import numpy
 import time
+from collections import OrderedDict
 
-from GeoMACH.PUBS import PUBS, PUBSlib
-from GeoMACH.PSM import PSMlib
+from GeoMACH.PUBS import PUBS
 
 
 class Configuration(object):
+    """ Base class for an aircraft configuration """
     
     def __init__(self):
-        self.comps = {}
-        self.keys = []
-        self.inds = {}
+        """ Initializes the outer mold line (OML) and parametrization """
+        self.comps = OrderedDict()
 
-    def addComp(self, name, comp):
-        self.comps[name] = comp
-        self.keys.append(name)
-        self.inds[name] = len(self.inds)
+        # Adds primitive components and separate them
+        self.primitive_comps = self.define_primitive_comps()
+        self.comps.update(self.primitive_comps)
+        z_coord = 0
+        for comp in self.primitive_comps.values():
+            for surfs in comp.Ps:
+                surfs[:,:,:] += z_coord
+            z_coord += 4
 
-    def separateComps(self):
-        self.nprim = len(self.comps)
-        for k in range(len(self.comps)):
-            self.comps[self.keys[k]].translatePoints(0,0,k*4)   
+        # Adds interpolant components
+        self.interpolant_comps = self.define_interpolant_comps()
+        self.comps.update(self.interpolant_comps)
 
-    def assembleComponents(self):
-        Ps = []
-        for k in range(len(self.comps)):
-            comp = self.comps[self.keys[k]]
-            if k > 0:
-                comp0 = self.comps[self.keys[k-1]]
-                maxk = numpy.max(comp0.Ks[-1]) + 1
-                for s in range(len(comp.Ks)):
-                    for j in range(comp.Ks[s].shape[1]):
-                        for i in range(comp.Ks[s].shape[0]):
-                            if comp.Ks[s][i,j] != -1:
-                                comp.Ks[s][i,j] += maxk
-            Ps.extend(comp.Ps)
+        # Assembles initial surfaces and instantiates OML object
+        surfs_list = []
+        index_offset = 0
+        for comp in self.comps.values():
+            for surf in comp.Ks:
+                num_i, num_j = surf.shape
+                for ind_j in xrange(num_j):
+                    for ind_i in xrange(num_i):
+                        if surf[ind_i, ind_j] != -1:
+                            surf[ind_i, ind_j] += index_offset
+            index_offset = numpy.max(comp.Ks[-1]) + 1
+            surfs_list.extend(comp.Ps)
             comp.Ps = []
+        self.oml0 = PUBS.PUBS(surfs_list)
 
-        self.oml0 = PUBS.PUBS(Ps)
-
-        for k in range(len(self.comps)):
-            comp = self.comps[self.keys[k]]
+        # Sets comp data and OML properties
+        for name in self.comps:
+            comp = self.comps[name]
+            comp.name = name
             comp.oml0 = self.oml0
             comp.setDOFs()
-        self.oml0.updateBsplines()
-        self.updateParametrization()
+        self.define_oml_resolution()
+        self.oml0.update()
 
-    def updateParametrization(self):
-        for k in range(len(self.comps)):
-            comp = self.comps[self.keys[k]]
+        # Sets up comp to OML mapping
+        for comp in self.comps.values():
             comp.computeEdgeInfo()
             comp.initializeDOFmappings()
             comp.initializeVariables()
-        self.computePoints()
 
-    def update(self):
-        self.oml0.update()
-        self.updateParametrization()
+        self.define_oml_parameters()
+        self.compute()
 
-    def computePoints(self):
-        t0 = time.time()
-        self.computeVs()
-        self.computeQs()
-        self.propagateQs()
+    def define_primitive_comps(self):
+        """ Virtual method; must be implemented in derived class """
+        pass
+
+    def define_interpolant_comps(self):
+        """ Virtual method; must be implemented in derived class """
+        pass
+
+    def define_oml_resolution(self):
+        """ Virtual method; must be implemented in derived class """
+        pass
+
+    def define_oml_parameters(self):
+        """ Virtual method; must be implemented in derived class """
+        pass
+
+    def compute(self):
+        """ Computes OML points based on current parameter values """
+        time0 = time.time()
+        self.compute_properties()
+        self.compute_face_ctrlpts()
+        self.compute_free_ctrlpt_vector()
+        time1 = time.time()
         self.oml0.computePoints()
-        print time.time()-t0
+        time2 = time.time()
+        print time2-time1, time1-time0
 
-    def computeVs(self):
-        for k in range(len(self.comps)):
-            self.comps[self.keys[k]].computeVs()
+    def compute_properties(self):
+        """ Computes section properties from parameters """
+        for comp in self.comps.values():
+            comp.computeVs()
 
-    def computeQs(self, full=True, comp=None):
+    def compute_face_ctrlpts(self, full=True, name0=None):
+        """ Computes face control points from section properties """
         if full:
-            for k in range(len(self.comps)):
-                self.comps[self.keys[k]].computeQs()
+            for comp in self.comps.values():
+                comp.computeQs()
         else:
-            for k in range(self.nprim,len(self.comps)):
-                if self.keys[k] != comp:
-                    self.comps[self.keys[k]].computeQs()
+            for name in self.interpolant_comps.keys():
+                if name != name0:
+                    self.comps[name].computeQs()
 
-    def propagateQs(self):
-        self.oml0.Q[:,:3] = 0.0
-        for k in range(len(self.comps)):
-            self.comps[self.keys[k]].propagateQs()
+    def compute_free_ctrlpt_vector(self):
+        """ Computes vector of free control points from face control points """
+        self.oml0.Q[:, :3] = 0.0
+        for comp in self.comps.values():
+            comp.propagateQs()
 
-    def getDerivatives(self, c, p, ind, clean=True, FD=False, h=1e-5):
-        comp = self.comps[c]
-        par = comp.params[p]
+    def get_derivatives(self, comp_name, par_name, ind,
+                        clean=True, useFD=False, step=1e-5):
+        comp = self.comps[comp_name]
+        par = comp.params[par_name]
         var = par.var
-        self.computeVs()
-        self.computeQs()
-        self.propagateQs()
+        self.compute_properties()
+        self.compute_face_ctrlpts()
+        self.compute_free_ctrlpt_vector()
         V0 = numpy.array(comp.variables[var])
-        Q0 = numpy.array(self.oml0.Q[:,:3])
-        if FD:
-            par.P[ind[0],ind[1],0] += h
-            self.computeVs()
-            self.computeQs()
-            par.P[ind[0],ind[1],0] -= h
+        Q0 = numpy.array(self.oml0.Q[:, :3])
+        if useFD:
+            par.P[ind[0], ind[1], 0] += step
+            self.compute_properties()
+            self.compute_face_ctrlpts()
+            par.P[ind[0], ind[1], 0] -= step
         else:
-            h = 1.0
-            par.P[ind[0],ind[1],0] += h
-            self.computeVs()
-            par.P[ind[0],ind[1],0] -= h
+            step = 1.0
+            par.P[ind[0], ind[1], 0] += step
+            self.compute_properties()
+            par.P[ind[0], ind[1], 0] -= step
             dV = comp.variables[var] - V0
-            self.computeVs()
-            comp.setDerivatives(var,dV)
-            self.computeQs(False, c)
-        self.propagateQs()
-        res = (self.oml0.Q[:,:3] - Q0)/h
+            self.compute_properties()
+            comp.setDerivatives(var, dV)
+            self.compute_face_ctrlpts(False, comp_name)
+        self.compute_free_ctrlpt_vector()
+        res = (self.oml0.Q[:, :3] - Q0)/step
         if clean:
-            self.computePoints()
+            self.compute()
         return res
 
-    def runDerivativeTest(self, c, ps=[]):
-        self.computePoints()
+    def test_derivatives(self, c, ps=[]):
+        self.compute()
 
         comp = self.comps[c]
-        if ps==[]:
+        if ps == []:
             ps = comp.params.keys()
 
-        self.computePoints()
-        h = 1e-5
+        self.compute()
+        step = 1e-5
         for p in ps:
             par = comp.params[p]
             var = par.var
-            if not (var in ['nor','ogn','flt']):
-                ni,nj = par.P.shape[:2]
+            if not (var in ['nor', 'ogn', 'flt']):
+                ni, nj = par.P.shape[:2]
                 for i in range(ni):
                     for j in range(nj):
-                        ind = (i,j)
-                        t0 = time.time()
-                        d1 = self.getDerivatives(c,p,ind,clean=False)
-                        t1 = time.time()
-                        d2 = self.getDerivatives(c,p,ind,clean=False,FD=True,h=h)
-                        t2 = time.time()
-                        norm0 = numpy.linalg.norm(d2)
-                        norm0 = 1.0 if norm0==0 else norm0
-                        error = numpy.linalg.norm(d2-d1)/norm0
+                        ind = (i, j)
+                        drv1 = self.get_derivatives(c, p, ind, clean=False)
+                        drv2 = self.get_derivatives(c, p, ind, clean=False,
+                                                    useFD=True, step=step)
+                        norm0 = numpy.linalg.norm(drv1)
+                        norm0 = 1.0 if norm0 == 0 else norm0
+                        error = numpy.linalg.norm(drv2-drv1)/norm0
                         good = 'O' if error < 1e-4 else 'X'
-                        print good, ' ', c, ' ', p, ' ', ind, ' ', error #t1-t0, t2-t1
-        self.computePoints()
+                        print good, ' ', c, ' ', p, ' ', ind, ' ', error
+        self.compute()
 
-    def getDerivatives0(self, comp, var, ind, clean=True, FD=False, h=1e-5):
-        self.computeQs()
-        self.propagateQs()
-        Q0 = numpy.array(self.oml0.Q[:,:3])
-        if FD:
-            self.comps[comp].variables[var][ind] += h
-            self.computeQs()
-            self.comps[comp].variables[var][ind] -= h
+"""
+    def get_derivatives0(self, comp, var, ind, clean=True, useFD=False, step=1e-5):
+        self.compute_face_ctrlpts()
+        self.compute_free_ctrlpt_vector()
+        Q0 = numpy.array(self.oml0.Q[:, :3])
+        if useFD:
+            self.comps[comp].variables[var][ind] += step
+            self.compute_face_ctrlpts()
+            self.comps[comp].variables[var][ind] -= step
         else:
-            self.comps[comp].setDerivatives(var,ind)
-            self.computeQs(False, comp)
-            h = 1.0
-        self.propagateQs()
-        res = (self.oml0.Q[:,:3] - Q0)/h
+            self.comps[comp].setDerivatives(var, ind)
+            self.compute_face_ctrlpts(False, comp)
+            step = 1.0
+        self.compute_free_ctrlpt_vector()
+        res = (self.oml0.Q[:, :3] - Q0)/step
         if clean:
             self.computePoints()
         return res
 
-    def runDerivativeTest0(self, comp, variables=[]):
-        self.computePoints()
-        if variables==[]:
+    def test_derivatives0(self, comp, variables=[]):
+        self.compute()
+        if variables == []:
             variables = self.comps[comp].variables.keys()
-        h = 1e-5
+        step = 1e-5
         for var in variables:
-            if not (var in ['nor','origin','fillet']):
+            if not (var in ['nor', 'origin', 'fillet']):
                 dat = self.comps[comp].variables[var]
-                for ind,x in numpy.ndenumerate(dat):
-                    ind = ind[0] if len(ind)==1 else ind
-                    t0 = time.time()
-                    d1 = self.getDerivatives(comp,var,ind,clean=False)
-                    t1 = time.time()
-                    d2 = self.getDerivatives(comp,var,ind,clean=False,FD=True,h=h)
-                    t2 = time.time()
-                    norm0 = numpy.linalg.norm(d2)
-                    norm0 = 1.0 if norm0==0 else norm0
-                    error = numpy.linalg.norm(d2-d1)/norm0
+                for ind, val in numpy.ndenumerate(dat):
+                    ind = ind[0] if len(ind) == 1 else ind
+                    drv1 = self.get_derivatives(comp, var, ind, clean=False)
+                    drv2 = self.get_derivatives(comp, var, ind, clean=False,
+                                               useFD=True, step=step)
+                    norm0 = numpy.linalg.norm(drv2)
+                    norm0 = 1.0 if norm0 == 0 else norm0
+                    error = numpy.linalg.norm(drv2-drv1)/norm0
                     good = 'O' if error < 1e-4 else 'X'
-                    print good, ' ', comp, ' ', var, ' ', ind, ' ', error #t1-t0, t2-t1
-        self.computePoints()
+                    print good, ' ', comp, ' ', var, ' ', ind, ' ', error
+        self.compute()
+"""

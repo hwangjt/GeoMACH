@@ -287,9 +287,3 @@ class Component(object):
         oml0 = self.oml0
         for f in range(len(Ns)):
             PGMlib.updateqs(oml0.nQ, Ns[f].shape[0], Ns[f].shape[1], oml0.nvar, Ns[f], Qs[f], oml0.Q)
-
-    def translatePoints(self, dx, dy, dz):
-        for k in range(len(self.Ps)):
-            self.Ps[k][:,:,0] += dx
-            self.Ps[k][:,:,1] += dy
-            self.Ps[k][:,:,2] += dz

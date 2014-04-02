@@ -23,33 +23,33 @@ class Airframe(object):
         self.memberNames.append(name)
 
     def addVertFlip(self, name, comp, p1, p2, w=[1,0], i=[0,1]):
-        ind = self.geometry.inds
+        index = self.geometry.comps.keys().index
         self.addMember(name,[
-                [[ind[comp],i[0],0], [w[0],p1[0],p1[1]], [w[0],p2[0],p2[1]], [w[1],p1[0],p1[1]], [w[1],p2[0],p2[1]]],
-                [[ind[comp],i[1],0], [1-w[0],1-p1[0],p1[1]], [1-w[0],1-p2[0],p2[1]], [1-w[1],1-p1[0],p1[1]], [1-w[1],1-p2[0],p2[1]]],
+                [[index(comp),i[0],0], [w[0],p1[0],p1[1]], [w[0],p2[0],p2[1]], [w[1],p1[0],p1[1]], [w[1],p2[0],p2[1]]],
+                [[index(comp),i[1],0], [1-w[0],1-p1[0],p1[1]], [1-w[0],1-p2[0],p2[1]], [1-w[1],1-p1[0],p1[1]], [1-w[1],1-p2[0],p2[1]]],
                 ])
 
     def addVert(self, name, comp, p1, p2, w=[1,0], i=[0,1]):
-        ind = self.geometry.inds
+        index = self.geometry.comps.keys().index
         self.addMember(name,[
-                [[ind[comp],i[0],0], [w[0],p1[0],p1[1]], [w[0],p2[0],p2[1]], [w[1],p1[0],p1[1]], [w[1],p2[0],p2[1]]],
-                [[ind[comp],i[1],0], [1-w[0],p1[0],p1[1]], [1-w[0],p2[0],p2[1]], [1-w[1],p1[0],p1[1]], [1-w[1],p2[0],p2[1]]],
+                [[index(comp),i[0],0], [w[0],p1[0],p1[1]], [w[0],p2[0],p2[1]], [w[1],p1[0],p1[1]], [w[1],p2[0],p2[1]]],
+                [[index(comp),i[1],0], [1-w[0],p1[0],p1[1]], [1-w[0],p2[0],p2[1]], [1-w[1],p1[0],p1[1]], [1-w[1],p2[0],p2[1]]],
                 ])
 
     def addCtrVert(self, name, comp1, comp2, p, w=[1,0]):
-        ind = self.geometry.inds
+        index = self.geometry.comps.keys().index
         self.addMember(name,[
-                [[ind[comp1], 0,0], [w[0],p,0.0], [w[1],p,0.0], [0.0,p,0.0], [0.0,p,0.0]],
-                [[ind[comp1], 1,0], [1-w[0],1-p,0.0], [1-w[1],1-p,0.0], [0.0,1-p,0.0], [0.0,1-p,0.0]],
-                [[ind[comp2], 0,0], [0.0,p,1.0], [0.0,p,1.0], [w[0],p,1.0], [w[1],p,1.0]],
-                [[ind[comp2], 1,0], [0.0,1-p,1.0], [0.0,1-p,1.0], [1-w[0],1-p,1.0], [1-w[1],1-p,1.0]],
+                [[index(comp1), 0,0], [w[0],p,0.0], [w[1],p,0.0], [0.0,p,0.0], [0.0,p,0.0]],
+                [[index(comp1), 1,0], [1-w[0],1-p,0.0], [1-w[1],1-p,0.0], [0.0,1-p,0.0], [0.0,1-p,0.0]],
+                [[index(comp2), 0,0], [0.0,p,1.0], [0.0,p,1.0], [w[0],p,1.0], [w[1],p,1.0]],
+                [[index(comp2), 1,0], [0.0,1-p,1.0], [0.0,1-p,1.0], [1-w[0],1-p,1.0], [1-w[1],1-p,1.0]],
                 ])
 
     def addCtr(self, name, comp1, comp2, i, p):
-        ind = self.geometry.inds
+        index = self.geometry.comps.keys().index
         self.addMember(name,[
-                [[ind[comp1], i,0], [1,p[0],0.0], [1,p[1],0.0], [0,p[0],0.0], [0,p[1],0.0]],
-                [[ind[comp2], i,0], [0,p[0],1.0], [0,p[1],1.0], [1,p[0],1.0], [1,p[1],1.0]],
+                [[index(comp1), i,0], [1,p[0],0.0], [1,p[1],0.0], [0,p[0],0.0], [0,p[1],0.0]],
+                [[index(comp2), i,0], [0,p[0],1.0], [0,p[1],1.0], [1,p[0],1.0], [1,p[1],1.0]],
                 ])
 
     def preview(self, filename):
@@ -141,23 +141,21 @@ class Airframe(object):
 
         groupLengths = numpy.zeros(oml0.ngroup)
         groupCount = numpy.zeros(oml0.ngroup,int)
-        for k in range(len(geometry.comps)):
-            comp = geometry.comps[geometry.keys[k]]
+        for comp in geometry.comps.values():
             for f in range(len(comp.Ks)):
                 ni, nj = comp.Ks[f].shape
                 groupLengths, groupCount = PSMlib.addgrouplengths(ni, nj, oml0.nsurf, oml0.nedge, oml0.ngroup, comp.Ks[f]+1, oml0.surf_edge, oml0.edge_group, self.surfEdgeLengths, groupLengths, groupCount)
 
         groupLengths = groupLengths / groupCount
                  
-        faceDims = []       
-        for k in range(len(geometry.comps)):
-            comp = geometry.comps[geometry.keys[k]]
+        faceDims = {}     
+        for comp in geometry.comps.values():
             faceDimsComp = []
             for f in range(len(comp.Ks)):
                 ni, nj = comp.Ks[f].shape
                 idims, jdims = PSMlib.computefacedimensions(ni, nj, oml0.nsurf, oml0.nedge, oml0.ngroup, comp.Ks[f]+1, oml0.surf_edge, oml0.edge_group, groupLengths)
                 faceDimsComp.append([idims,jdims])
-            faceDims.append(faceDimsComp)
+            faceDims[comp.name] = faceDimsComp
 
         self.faceDims = faceDims
 
@@ -165,9 +163,8 @@ class Airframe(object):
         geometry = self.geometry
         nsurf = self.geometry.oml0.nsurf
 
-        faceDims = []
-        for k in range(len(geometry.comps)):
-            comp = geometry.comps[geometry.keys[k]]
+        faceDims = {}    
+        for comp in geometry.comps.values():
             faceDimsComp = []
             jdim0 = numpy.zeros(comp.Ks[0].shape[1]+1)
             for f in range(len(comp.Ks)):
@@ -178,7 +175,7 @@ class Airframe(object):
             jdim0 /= len(comp.Ks)
             for f in range(len(comp.Ks)):
                 faceDimsComp[f][1][:] = jdim0[:]
-            faceDims.append(faceDimsComp)
+            faceDims[comp.name] = faceDimsComp
 
         self.faceDims = faceDims
 
@@ -195,10 +192,10 @@ class Airframe(object):
         membersInt, membersFlt = PSMlib.importmembers(nmem, members)
 
         for k in range(len(geometry.comps)):
-            comp = geometry.comps[geometry.keys[k]]
+            comp = geometry.comps.values()[k]            
             for f in range(len(comp.Ks)):
                 ni, nj = comp.Ks[f].shape
-                idims, jdims = self.faceDims[k][f]
+                idims, jdims = self.faceDims[comp.name][f]
                 PSMlib.computepreviewmembercoords(k+1,f+1,ni,nj,nmem,comp.Ks[f]+1,idims,jdims,membersInt,membersFlt)
 
         self.membersInt = membersInt
@@ -277,10 +274,10 @@ class Airframe(object):
         premeshFaces = []
         groupIntCount = numpy.zeros(ngroup,int)
         for k in range(len(geometry.comps)):
-            comp = geometry.comps[geometry.keys[k]]
+            comp = geometry.comps.values()[k]     
             for f in range(len(comp.Ks)):
                 ni, nj = comp.Ks[f].shape
-                idims, jdims = self.faceDims[k][f]
+                idims, jdims = self.faceDims[comp.name][f]
                 nedge = PSMlib.countfaceedges(k+1, f+1, ni, nj, nadj, self.adjoiningInt)
                 edge_group, edgeLengths, edges = PSMlib.computefaceedges(k+1, f+1, ni, nj, nsurf, nmem, nadj, nedge, idims, jdims, comp.Ks[f]+1, self.surf_group, self.mem_group, self.adjoiningInt, self.adjoiningFlt, self.surfEdgeLengths, self.memEdgeLengths)
                 quad.importEdges(edges)
@@ -297,8 +294,7 @@ class Airframe(object):
 
         iList = 0
         groupInts = numpy.zeros(nint)
-        for k in range(len(geometry.comps)):
-            comp = geometry.comps[geometry.keys[k]]
+        for comp in geometry.comps.values():
             for f in range(len(comp.Ks)):
                 verts,edges,edge_group,edgeLengths = premeshFaces[iList]
                 iList += 1
@@ -330,8 +326,7 @@ class Airframe(object):
         nsplit = groupSplitPtr[-1,-1]
 
         iList = 0
-        for k in range(len(geometry.comps)):
-            comp = geometry.comps[geometry.keys[k]]
+        for comp in geometry.comps.values():
             for f in range(len(comp.Ks)):
                 verts,edges,edge_group,edgeLengths = premeshFaces[iList]
                 nvert = PSMlib.countintersectionverts(edges.shape[0], ngroup, edge_group, groupIntPtr, groupSplitPtr)
@@ -355,16 +350,15 @@ class Airframe(object):
         quads0 = []
         nnode0 = [0]
         iList = 0
-        for k in range(len(geometry.comps)):
-            comp = geometry.comps[geometry.keys[k]]
+        for comp in geometry.comps.values():
             for f in range(len(comp.Ks)):
                 verts,edges,edge_group,edgeLengths = premeshFaces[iList]
                 iList += 1
                 nvert = verts.shape[0]
                 nedge = edges.shape[0]
                 ni, nj = comp.Ks[f].shape
-                idims, jdims = self.faceDims[k][f]
-                print 'Computing skin elements:', geometry.keys[k], f
+                idims, jdims = self.faceDims[comp.name][f]
+                print 'Computing skin elements:', comp.name, f
                 for i in range(ni):
                     for j in range(nj):
                         surf = comp.Ks[f][i,j]
@@ -372,9 +366,9 @@ class Airframe(object):
                             nedge1 = PSMlib.countsurfaceedges(nvert, nedge, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
                             edges1 = PSMlib.computesurfaceedges(nvert, nedge, nedge1, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
 
-                            print geometry.keys[k], f, i, j
+                            print comp.name, f, i, j
                             quad.importEdges(edges1)
-                            if geometry.keys[k]=='fu' and f==1 and i==0 and j==0:
+                            if comp.name=='fu' and f==1 and i==0 and j==0:
                                 nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:])#,True,True)
                             else:
                                 nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:])
@@ -390,7 +384,7 @@ class Airframe(object):
 
                             B = oml0.evaluateBases(s,u,v)
 
-                            name = geometry.keys[k] + ':' + str(f) + '-' + str(i) + '-' + str(j)
+                            name = comp.name + ':' + str(f) + '-' + str(i) + '-' + str(j)
 
                             self.surfaceNames.append(name)
                             B0.append(B)
@@ -438,10 +432,10 @@ class Airframe(object):
         nnode = nodesInt.shape[0]
 
         for k in range(len(geometry.comps)):
-            comp = geometry.comps[geometry.keys[k]]
+            comp = geometry.comps.values()[k]  
             for f in range(len(comp.Ks)):
                 ni, nj = comp.Ks[f].shape
-                idims, jdims = self.faceDims[k][f]
+                idims, jdims = self.faceDims[comp.name][f]
                 PSMlib.computememberlocalcoords(k+1, f+1, ni, nj, nnode, idims, jdims, comp.Ks[f]+1, nodesInt, nodesFlt)
 
         linW = numpy.linspace(0,nnode-1,nnode)
