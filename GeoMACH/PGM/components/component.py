@@ -248,13 +248,12 @@ class Component(object):
 
         Qs = []
         Ns = []
-
         for f in range(len(Ks)):
             ni = self.getms(f,0)
             nj = self.getms(f,1)
             Qs.append(numpy.zeros((sum(ni)+1,sum(nj)+1,3)))
-            Ns.append(numpy.zeros((sum(ni)+1,sum(nj)+1,5),int))
-            Ns[f][:,:,:] = -1
+            Ns.append(numpy.zeros((sum(ni)+1,sum(nj)+1),int))
+            Ns[f][:,:] = -1
             for j in range(Ks[f].shape[1]):
                 for i in range(Ks[f].shape[0]):
                     surf = Ks[f][i,j]
@@ -273,11 +272,7 @@ class Component(object):
                                         DOF = DOF and not getC1(surf,u=int(uType/2),d=int(vType/2))
                                         DOF = DOF and not getC1(surf,v=int(vType/2),d=int(uType/2))
                                 if DOF:
-                                    Ns[f][ii,jj,0] = oml0.getIndex(surf,u,v,2)
-                                    Ns[f][ii,jj,1] = i
-                                    Ns[f][ii,jj,2] = u
-                                    Ns[f][ii,jj,3] = j
-                                    Ns[f][ii,jj,4] = v
+                                    Ns[f][ii,jj] = oml0.getIndex(surf,u,v,2)
         self.Qs = Qs
         self.Ns = Ns
 

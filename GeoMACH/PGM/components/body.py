@@ -65,8 +65,6 @@ class Body(Primitive):
         a('shB','shB',(1,1),P=[0.0])
         self.params['pos'].setP(P=[[0.,0.,0.],[1.,0.,0.]])
 
-        self.setSections()
-
     def computeQs(self):
         nx = self.Qs[0].shape[1]
         ny = self.Qs[0].shape[0]

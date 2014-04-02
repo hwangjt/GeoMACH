@@ -41,24 +41,6 @@ class Primitive(Component):
         a('nor','nor',(1,1),P=[1.0])
         a('flt','flt',(1,1),P=[0.0])
 
-    def setSections(self, sections=[], t1U=0, t2U=0, t1L=0, t2L=0):
-        Ns = self.Ns
-        v = self.variables
-        for f in range(len(Ns)):
-            for j in range(Ns[f].shape[1]):
-                for i in range(Ns[f].shape[0]):
-                    val = Ns[f][i,j,3]
-                    if not val == -1:
-                        break
-                found = False
-                for k in range(len(sections)):
-                    found = found or (val==sections[k])
-                if found or sections==[]:
-                    v['flt'][j,0] = t1U
-                    v['flt'][j,1] = t2U
-                    v['flt'][j,2] = t1L
-                    v['flt'][j,3] = t2L
-
     def computeSections(self, nQ, shapes, radii=None):
         nf = len(self.Qs)
         n = self.Qs[0].shape[1]

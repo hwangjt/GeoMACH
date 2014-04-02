@@ -204,10 +204,10 @@ class Junction(Interpolant):
             nu[k] = sum(mu[:self.si[k]])
             nv[k] = sum(mv[:self.sj[k]])
         N = self.Ns[0]
-        N[nu[1],nv[1]:nv[2]+1,0] = -1
-        N[nu[2],nv[1]:nv[2]+1,0] = -1
-        N[nu[1]:nu[2]+1,nv[1],0] = -1
-        N[nu[1]:nu[2]+1,nv[2],0] = -1
+        N[nu[1],nv[1]:nv[2]+1] = -1
+        N[nu[2],nv[1]:nv[2]+1] = -1
+        N[nu[1]:nu[2]+1,nv[1]] = -1
+        N[nu[1]:nu[2]+1,nv[2]] = -1
         
     def computeQs(self):
         fu = self.fComp.getms(self.fFace,0)

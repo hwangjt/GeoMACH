@@ -11,7 +11,7 @@ subroutine updateQs(nQ, ni, nj, nvar, Nf, Qf, Q)
 
   !Input
   integer, intent(in) ::  nQ, ni, nj, nvar
-  integer, intent(in) ::  Nf(ni, nj, 5)
+  integer, intent(in) ::  Nf(ni, nj)
   double precision, intent(in) ::  Qf(ni, nj, 3)
 
   !Output
@@ -22,9 +22,9 @@ subroutine updateQs(nQ, ni, nj, nvar, Nf, Qf, Q)
 
   do j=1,nj
      do i=1,ni
-        if (Nf(i,j,1) .ne. -1) then
+        if (Nf(i,j) .ne. -1) then
            do k=1,3
-              Q(Nf(i,j,1)+1,k) = Qf(i,j,k)
+              Q(Nf(i,j)+1,k) = Qf(i,j,k)
            end do
         end if
      end do
