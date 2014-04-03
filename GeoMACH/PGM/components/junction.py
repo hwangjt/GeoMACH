@@ -196,8 +196,7 @@ class Junction(Interpolant):
 
     def initializeDOFmappings(self):
         super(Junction,self).initializeDOFmappings()
-        mu = self.getms(0,0)
-        mv = self.getms(0,1)
+        mu, mv = self.faces[0].num_cp_list[:]
         nu = range(4)
         nv = range(4)
         for k in range(4):
@@ -210,8 +209,7 @@ class Junction(Interpolant):
         N[nu[1]:nu[2]+1,nv[2]] = -1
         
     def computeQs(self):
-        fu = self.fComp.getms(self.fFace,0)
-        fv = self.fComp.getms(self.fFace,1)
+        fu, fv = self.fComp.faces[self.fFace].num_cp_list[:]
         fu,fv = self.flip(fu,fv)
         fu1 = sum(fu[:self.fNW[0]])
         fu2 = sum(fu[:self.fNW[0]+self.si[3]])
@@ -236,8 +234,7 @@ class Junction(Interpolant):
             N = getEdge(self.mComp.Qs[0], j=-1, d=1)
             S = getEdge(self.mComp.Qs[1], j=-1, d=-1)
 
-        mu = self.getms(0,0)
-        mv = self.getms(0,1)
+        mu, mv = self.faces[0].num_cp_list[:]
         nu = range(3)
         nv = range(3)
         for k in range(3):

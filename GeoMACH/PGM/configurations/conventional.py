@@ -40,7 +40,7 @@ class Conventional(Configuration):
                  }
         return comps
 
-    def define_oml_resolution(self):
+    def set_oml_resolution(self):
         comps = self.comps
         comps['fu'].setm(0,1,[18,4,4,4,4,8,4,15,4,4,10,4])
         comps['fu'].setm(0,0,[4,4,4,4])

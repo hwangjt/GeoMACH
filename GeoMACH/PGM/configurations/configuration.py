@@ -23,7 +23,7 @@ class Configuration(object):
         z_coord = 0
         for comp in self.primitive_comps.values():
             for surfs in comp.Ps:
-                surfs[:,:,:] += z_coord
+                surfs[:, :, :] += z_coord
             z_coord += 4
 
         # Adds interpolant components
@@ -51,7 +51,8 @@ class Configuration(object):
             comp.name = name
             comp.oml0 = self.oml0
             comp.setDOFs()
-        self.define_oml_resolution()
+            comp.initializeEdgeInfo()
+        self.set_oml_resolution()
         self.oml0.update()
 
         # Sets up comp to OML mapping
@@ -71,7 +72,7 @@ class Configuration(object):
         """ Virtual method; must be implemented in derived class """
         pass
 
-    def define_oml_resolution(self):
+    def set_oml_resolution(self):
         """ Virtual method; must be implemented in derived class """
         pass
 

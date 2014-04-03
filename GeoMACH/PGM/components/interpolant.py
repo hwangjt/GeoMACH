@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy
 
-from GeoMACH.PGM.components import Component
+from GeoMACH.PGM.components import Component, Face
 
 
 
@@ -20,7 +20,7 @@ class Interpolant(Component):
         self.ns.append(numpy.zeros(sum(self.ni),int))
         self.ns.append(numpy.zeros(sum(self.nj),int))
         self.ns.append(None)
-        self.faces.append([1,2])
+        self.faces.append(Face(0,1,2))
             
         self.si = numpy.zeros(4,int)
         self.sj = numpy.zeros(4,int)

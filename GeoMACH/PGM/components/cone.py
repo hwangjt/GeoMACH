@@ -77,8 +77,7 @@ class Cone(Interpolant):
             else:
                 S = getEdge(Qs[1], j=-2, d=-1)
 
-        mu = self.getms(0,0)
-        mv = self.getms(0,1)
+        mu, mv = self.faces[0].num_cp_list[:]
         nu = range(3)
         nv = range(3)
         for k in range(3):

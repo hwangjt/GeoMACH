@@ -82,8 +82,8 @@ def fitAirfoil(wing,filename):
     Qs = []
     for f in range(2):
         nsurf = wing.Ks[f].shape[0]
-        ms = wing.getms(f,0)
-        ns = wing.getns(f,0)
+        ms = wing.faces[f].num_cp_list[0]
+        ns = wing.faces[f].num_pt_list[0]
         nP = sum(ns) + 1
 
         P = getP(nP, airfoil[f])

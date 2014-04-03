@@ -45,7 +45,7 @@ class Component(object):
             self.set(1, f, d, [max(4,int(x/3.0)) for x in val], ind)
 
     def set(self, p, f, d, val, ind):
-        ind = range(self.getms(f,d).shape[0]) if len(ind)==0 else ind
+        ind = range(self.faces[f].num_surf[d]) if len(ind)==0 else ind
         val = [val[0] for x in range(len(ind))] if len(val) < len(ind) else val
 
         Ks = self.Ks
@@ -69,25 +69,24 @@ class Component(object):
     def addParam(self, name, var, shp, P=None, T=None, Tdim=0, D=None, Ddim=0, B=None, Bdim=0):
         self.params[name] = Parameter(var, shp, self.variables[var].shape, P, T, Tdim, D, Ddim, B, Bdim)
         
-    def addFace(self, du, dv, d, ru=0.5, rv=0.5):
+    def addFace(self, axis_u, axis_v, d, ru=0.5, rv=0.5):
         """ Creates a set of rectangular surfaces, their IDs, and face dims.
         nu,nv: number of surfaces in the u and v directions
-        du,dv: {1,2,3} maps to {x,y,z}; negative sign means reverse order
+        axis_u,axis_v: {1,2,3} maps to {x,y,z}; negative sign means reverse order
         d: position of the surfaces in the remaining coordinate axis
         ru,rv: surfaces span -ru to +ru in u dir. and -rv to +rv in v dir.
 
         Adds to self.Ps and self.Ks
         """
-        self.faces.append([du,dv])
         nP = 10
-        ni = self.ms[abs(du)-1].shape[0]
-        nj = self.ms[abs(dv)-1].shape[0]
+        ni = self.ms[abs(axis_u)-1].shape[0]
+        nj = self.ms[abs(axis_v)-1].shape[0]
         verts = numpy.zeros((2,2,3),order='F')
         verts[:,:,:] = d
-        verts[0,:,abs(du)-1] = -ru*numpy.sign(du)
-        verts[1,:,abs(du)-1] = ru*numpy.sign(du)
-        verts[:,0,abs(dv)-1] = -rv*numpy.sign(dv)
-        verts[:,1,abs(dv)-1] = rv*numpy.sign(dv)
+        verts[0,:,abs(axis_u)-1] = -ru*numpy.sign(axis_u)
+        verts[1,:,abs(axis_u)-1] = ru*numpy.sign(axis_u)
+        verts[:,0,abs(axis_v)-1] = -rv*numpy.sign(axis_v)
+        verts[:,1,abs(axis_v)-1] = rv*numpy.sign(axis_v)
         for j in range(nj):
             for i in range(ni):
                 self.Ps.append(PGMlib.bilinearinterp(nP, ni, nj, i+1, j+1, verts))
@@ -96,12 +95,15 @@ class Component(object):
             counter = numpy.max(self.Ks[-1]) + 1
         else:
             counter = 0
+
+        face = Face(len(self.faces), axis_u, axis_v)
         K = numpy.zeros((ni,nj),int)
         for j in range(nj):
             for i in range(ni):
                 K[i,j] = counter
                 counter += 1
         self.Ks.append(K)
+        self.faces.append(face)
             
         self.outers.append(numpy.ones((ni,nj),bool))
 
@@ -115,7 +117,7 @@ class Component(object):
             Ks = self.Ks
             Ps = self.Ps
             d = 0 if u==None else 1
-            r = self.faces[f][d]
+            r = self.faces[f].axes[d]
             k = kk if r > 0 else -1-kk
             surf = Ks[f][k,v] if d==0 else Ks[f][u,k]
             P = Ps[surf][:,v] if d == 0 else Ps[surf][u,:]
@@ -203,24 +205,12 @@ class Component(object):
                 for j in range(Ks[f].shape[1]):
                     surf = Ks[f][i,j]
                     if surf != -1:
-                        self.getms(f,0)[i] = edgeProperty(surf,1)[0] - 1
-                        self.getms(f,1)[j] = edgeProperty(surf,1)[1] - 1
-                        self.getns(f,0)[i] = edgeProperty(surf,2)[0] - 1
-                        self.getns(f,1)[j] = edgeProperty(surf,2)[1] - 1
-
-    def getms(self, f, d):
-        dim = self.faces[f][d]
-        if dim > 0:
-            return self.ms[abs(dim)-1]
-        else:
-            return self.ms[abs(dim)-1][::-1]
-
-    def getns(self, f, d):
-        dim = self.faces[f][d]
-        if dim > 0:
-            return self.ns[abs(dim)-1]
-        else:
-            return self.ns[abs(dim)-1][::-1]
+                        self.faces[f].num_cp_list[0][i] = edgeProperty(surf,1)[0] - 1
+                        self.faces[f].num_cp_list[1][j] = edgeProperty(surf,1)[1] - 1
+                        self.faces[f].num_pt_list[0][i] = edgeProperty(surf,2)[0] - 1
+                        self.faces[f].num_pt_list[1][j] = edgeProperty(surf,2)[1] - 1
+            for d in xrange(2):
+                self.faces[f].num_cp[d] = sum(self.faces[f].num_cp_list[d]) + 1
 
     def initializeDOFmappings(self):
         def classify(i, n):
@@ -249,8 +239,7 @@ class Component(object):
         Qs = []
         Ns = []
         for f in range(len(Ks)):
-            ni = self.getms(f,0)
-            nj = self.getms(f,1)
+            ni, nj = self.faces[f].num_cp_list[:]
             Qs.append(numpy.zeros((sum(ni)+1,sum(nj)+1,3)))
             Ns.append(numpy.zeros((sum(ni)+1,sum(nj)+1),int))
             Ns[f][:,:] = -1
@@ -282,3 +271,31 @@ class Component(object):
         oml0 = self.oml0
         for f in range(len(Ns)):
             PGMlib.updateqs(oml0.nQ, Ns[f].shape[0], Ns[f].shape[1], oml0.nvar, Ns[f], Qs[f], oml0.Q)
+
+    def initializeEdgeInfo(self):
+        for face in self.faces:
+            for d in xrange(2):
+                dim = face.axes[d]
+                if dim > 0:
+                    face.num_cp_list[d] = self.ms[abs(dim)-1]
+                    face.num_pt_list[d] = self.ns[abs(dim)-1]
+                else:
+                    face.num_cp_list[d] = self.ms[abs(dim)-1][::-1]
+                    face.num_pt_list[d] = self.ns[abs(dim)-1][::-1]
+            face.num_surf[d] = face.num_cp_list[d].shape[0]
+
+
+
+class Face(object):
+
+    def __init__(self, num, axis_u, axis_v):
+        self.num = num
+        self.axes = [axis_u, axis_v]
+        self.oml = None
+        self.surf_indices = None
+        self.cp_array = None
+        self.index_array = None
+        self.num_cp_list = [None, None]
+        self.num_pt_list = [None, None]
+        self.num_surf = [0, 0]
+        self.num_cp = [0, 0]
