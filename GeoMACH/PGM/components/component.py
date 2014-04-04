@@ -89,80 +89,6 @@ class Component(object):
         for k in range(self.faces[f1].num_surf[v1==None]):
             self.averageEdges(edge(f1,u1,v1,k), edge(f2,u2,v2,k))
 
-    def initializeDOFmappings(self):
-        def classify(i, n):
-            if i==0:
-                return 0
-            elif i==n-1:
-                return 2
-            else:
-                return 1
-
-        def getC1(surf, u=None, v=None, d=0):
-            if u==None:
-                edge = self.oml0.surf_edge[surf,0,v]
-            else:
-                edge = self.oml0.surf_edge[surf,1,u]
-            if edge > 0:
-                return self.oml0.edge_c1[abs(edge)-1,d]
-            else:
-                return self.oml0.edge_c1[abs(edge)-1,1-abs(d)]
-
-        oml0 = self.oml0
-        surf_c1 = oml0.surf_c1
-        edge_c1 = oml0.edge_c1
-
-        Qs = []
-        Ns = []
-        for f in range(len(self.faces)):
-            face = self.faces[f]
-            ni, nj = face.num_cp_list[:]
-            Qs.append(numpy.zeros((sum(ni)+1,sum(nj)+1,3)))
-            Ns.append(numpy.zeros((sum(ni)+1,sum(nj)+1),int))
-            Ns[f][:,:] = -1
-            for j in range(face.num_surf[1]):
-                for i in range(face.num_surf[0]):
-                    surf = face.surf_indices[i,j]
-                    if surf != -1:
-                        mu,mv = oml0.edgeProperty(surf,1)
-                        for v in range(mv):
-                            jj = sum(nj[:j]) + v
-                            vType = classify(v,mv)
-                            for u in range(mu):
-                                ii = sum(ni[:i]) + u
-                                uType = classify(u,mu)
-                                DOF = True
-                                if uType==0 or uType==2 or vType==0 or vType==2:
-                                    DOF = DOF and not surf_c1[surf,uType,vType]
-                                    if (not uType==1) and (not vType==1):
-                                        DOF = DOF and not getC1(surf,u=int(uType/2),d=int(vType/2))
-                                        DOF = DOF and not getC1(surf,v=int(vType/2),d=int(uType/2))
-                                if DOF:
-                                    Ns[f][ii,jj] = oml0.getIndex(surf,u,v,2)
-        self.Qs = Qs
-        self.Ns = Ns
-
-    def propagateQs(self):
-        Qs = self.Qs
-        Ns = self.Ns
-        oml0 = self.oml0
-        for f in range(len(Ns)):
-            PGMlib.updateqs(oml0.nQ, Ns[f].shape[0], Ns[f].shape[1], oml0.nvar, Ns[f], Qs[f], oml0.Q)
-
-    def compute_num_cp(self):
-        edgeProperty = self.oml0.edgeProperty
-        for face in self.faces:
-            for j in range(face.num_surf[1]):
-                for i in range(face.num_surf[0]):
-                    surf = face.surf_indices[i,j]
-                    if surf != -1:
-                        face.num_cp_list[0][i] = edgeProperty(surf,1)[0] - 1
-                        face.num_cp_list[1][j] = edgeProperty(surf,1)[1] - 1
-                        face.num_pt_list[0][i] = edgeProperty(surf,2)[0] - 1
-                        face.num_pt_list[1][j] = edgeProperty(surf,2)[1] - 1
-            for d in xrange(2):
-                face.num_cp[d] = sum(face.num_cp_list[d]) + 1
-
 
 
 class Face(object):
@@ -179,6 +105,70 @@ class Face(object):
         self.cp_array = None
         self.index_array = None
         self.num_cp = [None, None]
+
+    def initializeDOFmappings(self):
+        def classify(i, n):
+            if i==0:
+                return 0
+            elif i==n-1:
+                return 2
+            else:
+                return 1
+
+        def getC1(surf, u=None, v=None, d=0):
+            if u==None:
+                edge = self.oml.surf_edge[surf,0,v]
+            else:
+                edge = self.oml.surf_edge[surf,1,u]
+            if edge > 0:
+                return self.oml.edge_c1[abs(edge)-1,d]
+            else:
+                return self.oml.edge_c1[abs(edge)-1,1-abs(d)]
+
+        oml = self.oml
+        surf_c1 = oml.surf_c1
+        edge_c1 = oml.edge_c1
+
+        ni, nj = self.num_cp_list[:]
+        self.cp_array = numpy.zeros((sum(ni)+1,sum(nj)+1,3))
+        self.index_array = numpy.zeros((sum(ni)+1,sum(nj)+1),int)
+        self.index_array[:,:] = -1
+        for j in range(self.num_surf[1]):
+            for i in range(self.num_surf[0]):
+                surf = self.surf_indices[i,j]
+                if surf != -1:
+                    mu,mv = oml.edgeProperty(surf,1)
+                    for v in range(mv):
+                        jj = sum(nj[:j]) + v
+                        vType = classify(v,mv)
+                        for u in range(mu):
+                            ii = sum(ni[:i]) + u
+                            uType = classify(u,mu)
+                            DOF = True
+                            if uType==0 or uType==2 or vType==0 or vType==2:
+                                DOF = DOF and not surf_c1[surf,uType,vType]
+                                if (not uType==1) and (not vType==1):
+                                    DOF = DOF and not getC1(surf,u=int(uType/2),d=int(vType/2))
+                                    DOF = DOF and not getC1(surf,v=int(vType/2),d=int(uType/2))
+                            if DOF:
+                                self.index_array[ii,jj] = oml.getIndex(surf,u,v,2)
+
+    def propagateQs(self):
+        PGMlib.updateqs(self.oml.nQ, self.num_cp[0], self.num_cp[1], self.oml.nvar, 
+                        self.index_array, self.cp_array, self.oml.Q)
+
+    def compute_num_cp(self):
+        edgeProperty = self.oml.edgeProperty
+        for j in range(self.num_surf[1]):
+            for i in range(self.num_surf[0]):
+                surf = self.surf_indices[i,j]
+                if surf != -1:
+                    self.num_cp_list[0][i] = edgeProperty(surf,1)[0] - 1
+                    self.num_cp_list[1][j] = edgeProperty(surf,1)[1] - 1
+                    self.num_pt_list[0][i] = edgeProperty(surf,2)[0] - 1
+                    self.num_pt_list[1][j] = edgeProperty(surf,2)[1] - 1
+        for d in xrange(2):
+            self.num_cp[d] = sum(self.num_cp_list[d]) + 1
 
     def setm(self, d, val, ind=[], both=True):
         self.set(1, d, val, ind)

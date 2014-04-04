@@ -113,29 +113,3 @@ class Shell(Primitive):
         nQ = nx*(9+12*ny+12*nz) if self.bottom==2 else nx*(9+12*ny+6*nz)
         radii = [r0,r0,r0,r1,r1,r1,r0,r1]
         self.computeSections(nQ, shapes, radii=radii)
-
-
-if __name__ == '__main__':
-    s = Shell(nx=4,ny=4,nz=4,bottom=2)
-    import PUBS
-    from mayavi import mlab
-    s.oml0 = PUBS.PUBS(s.Ps)
-    s.setDOFs()
-    s.oml0.updateBsplines()
-    s.computems()
-    s.initializeDOFmappings()
-    s.initializeVariables()
-    s.variables['pos'][:,0] = numpy.linspace(0,4,s.Qs[0].shape[1])
-    #s.variables['pos'][:,1] = numpy.linspace(0,4,s.Qs[0].shape[1])
-    s.variables['pos'][:,2] = numpy.linspace(0,4,s.Qs[0].shape[1])
-    #s.variables['pos'][4,1] = -0.5
-    #s.variables['fillet'][:,0] = 0.4
-    #s.variables['fillet'][:,1] = 0.6
-    #s.variables['shapeR'][:10,3:-3] = -0.5
-    #s.variables['shapeL'][-10:,3:-3] = -0.5
-    s.propagateQs()
-    s.updateQs()
-    s.oml0.computePoints()
-    s.oml0.plot()
-    name='shell'
-    s.oml0.write2Tec(name)

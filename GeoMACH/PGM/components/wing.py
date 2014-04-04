@@ -75,7 +75,7 @@ class Wing(Primitive):
     def setAirfoil(self,filename="naca0012"):
         Ps = airfoils.fitAirfoil(self,filename)
         for f in range(len(self.faces)):
-            for j in range(self.Ns[f].shape[1]):
+            for j in range(self.faces[f].num_cp[1]):
                 shape = self.shapeU if f==0 else self.shapeL
                 shape[:,j,:2] = Ps[f][:,:]
         

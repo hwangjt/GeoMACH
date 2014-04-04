@@ -60,24 +60,24 @@ class Cone(Interpolant):
 
     def computeQs(self):
         getEdge = self.getEdge
-        Qs = self.comp.Qs
+        comp_faces = self.comp.faces
         zeros = numpy.zeros((1,3),order='F')
         if self.face==0:
-            W = getEdge(Qs[0], j=1, d=-1)
-            N = getEdge(Qs[1], j=1, d=1)
-            E = getEdge(Qs[2], j=1, d=1)
+            W = getEdge(comp_faces[0].cp_array, j=1, d=-1)
+            N = getEdge(comp_faces[1].cp_array, j=1, d=1)
+            E = getEdge(comp_faces[2].cp_array, j=1, d=1)
             if self.comp.bottom==2:
-                S = getEdge(Qs[3], j=1, d=-1)
+                S = getEdge(comp_faces[3].cp_array, j=1, d=-1)
             else:
-                S = getEdge(Qs[1], j=1, d=1)
+                S = getEdge(comp_faces[1].cp_array, j=1, d=1)
         else:
-            E = getEdge(Qs[0], j=-2, d=-1)
-            N = getEdge(Qs[1], j=-2, d=-1)
-            W = getEdge(Qs[2], j=-2, d=1)
+            E = getEdge(comp_faces[0].cp_array, j=-2, d=-1)
+            N = getEdge(comp_faces[1].cp_array, j=-2, d=-1)
+            W = getEdge(comp_faces[2].cp_array, j=-2, d=1)
             if self.comp.bottom==2:
-                S = getEdge(Qs[3], j=-2, d=1)
+                S = getEdge(comp_faces[3].cp_array, j=-2, d=1)
             else:
-                S = getEdge(Qs[1], j=-2, d=-1)
+                S = getEdge(comp_faces[1].cp_array, j=-2, d=-1)
 
         mu, mv = self.faces[0].num_cp_list[:]
         nu = range(3)
@@ -87,4 +87,4 @@ class Cone(Interpolant):
             nv[k] = sum(mv[self.sj[k]:self.sj[k+1]])
 
         v = self.variables
-        self.Qs[0] = PGMlib.computecone(sum(nu)+1, sum(nv)+1, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['scl']*self.comp.faces[0].num_cp[1], v['fC1'], v['mC1'], W, E, N, S, v['shp'])
+        self.faces[0].cp_array = PGMlib.computecone(sum(nu)+1, sum(nv)+1, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['scl']*comp_faces[0].num_cp[1], v['fC1'], v['mC1'], W, E, N, S, v['shp'])

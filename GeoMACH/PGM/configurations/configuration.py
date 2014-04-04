@@ -55,8 +55,9 @@ class Configuration(object):
 
         # Sets up comp to OML mapping
         for comp in self.comps.values():
-            comp.compute_num_cp()
-            comp.initializeDOFmappings()
+            for face in comp.faces:
+                face.compute_num_cp()
+                face.initializeDOFmappings()
             comp.initializeVariables()
 
         self.define_oml_parameters()
@@ -108,7 +109,8 @@ class Configuration(object):
         """ Computes vector of free control points from face control points """
         self.oml0.Q[:, :3] = 0.0
         for comp in self.comps.values():
-            comp.propagateQs()
+            for face in comp.faces:
+                face.propagateQs()
 
     def get_derivatives(self, comp_name, par_name, ind,
                         clean=True, useFD=False, step=1e-5):
