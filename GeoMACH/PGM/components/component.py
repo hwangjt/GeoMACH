@@ -96,7 +96,7 @@ class Component(object):
         else:
             counter = 0
 
-        face = Face(len(self.faces), axis_u, axis_v)
+        face = Face(len(self.faces), axis_u, axis_v, ni, nj)
         K = numpy.zeros((ni,nj),int)
         for j in range(nj):
             for i in range(ni):
@@ -197,21 +197,6 @@ class Component(object):
         self.setC1('edge', f, i=i, j=j, u=i, d=j, val=val)
         self.setC1('edge', f, i=i, j=j, v=j, d=i, val=val)
 
-    def computeEdgeInfo(self):
-        edgeProperty = self.oml0.edgeProperty
-        Ks = self.Ks
-        for f in range(len(Ks)):
-            for i in range(Ks[f].shape[0]):
-                for j in range(Ks[f].shape[1]):
-                    surf = Ks[f][i,j]
-                    if surf != -1:
-                        self.faces[f].num_cp_list[0][i] = edgeProperty(surf,1)[0] - 1
-                        self.faces[f].num_cp_list[1][j] = edgeProperty(surf,1)[1] - 1
-                        self.faces[f].num_pt_list[0][i] = edgeProperty(surf,2)[0] - 1
-                        self.faces[f].num_pt_list[1][j] = edgeProperty(surf,2)[1] - 1
-            for d in xrange(2):
-                self.faces[f].num_cp[d] = sum(self.faces[f].num_cp_list[d]) + 1
-
     def initializeDOFmappings(self):
         def classify(i, n):
             if i==0:
@@ -272,30 +257,34 @@ class Component(object):
         for f in range(len(Ns)):
             PGMlib.updateqs(oml0.nQ, Ns[f].shape[0], Ns[f].shape[1], oml0.nvar, Ns[f], Qs[f], oml0.Q)
 
-    def initializeEdgeInfo(self):
-        for face in self.faces:
+    def computeEdgeInfo(self):
+        edgeProperty = self.oml0.edgeProperty
+        Ks = self.Ks
+        for f in range(len(Ks)):
+            for i in range(Ks[f].shape[0]):
+                for j in range(Ks[f].shape[1]):
+                    surf = Ks[f][i,j]
+                    if surf != -1:
+                        self.faces[f].num_cp_list[0][i] = edgeProperty(surf,1)[0] - 1
+                        self.faces[f].num_cp_list[1][j] = edgeProperty(surf,1)[1] - 1
+                        self.faces[f].num_pt_list[0][i] = edgeProperty(surf,2)[0] - 1
+                        self.faces[f].num_pt_list[1][j] = edgeProperty(surf,2)[1] - 1
             for d in xrange(2):
-                dim = face.axes[d]
-                if dim > 0:
-                    face.num_cp_list[d] = self.ms[abs(dim)-1]
-                    face.num_pt_list[d] = self.ns[abs(dim)-1]
-                else:
-                    face.num_cp_list[d] = self.ms[abs(dim)-1][::-1]
-                    face.num_pt_list[d] = self.ns[abs(dim)-1][::-1]
-            face.num_surf[d] = face.num_cp_list[d].shape[0]
+                self.faces[f].num_cp[d] = sum(self.faces[f].num_cp_list[d]) + 1
 
 
 
 class Face(object):
 
-    def __init__(self, num, axis_u, axis_v):
+    def __init__(self, num, axis_u, axis_v, ni, nj):
         self.num = num
         self.axes = [axis_u, axis_v]
+        self.surf_indices = numpy.zeros((ni,nj),int)
+        self.num_cp_list = [numpy.zeros(ni, int), numpy.zeros(nj, int)]
+        self.num_pt_list = [numpy.zeros(ni, int), numpy.zeros(nj, int)]
+        self.num_surf = [ni, nj]
+
         self.oml = None
-        self.surf_indices = None
         self.cp_array = None
         self.index_array = None
-        self.num_cp_list = [None, None]
-        self.num_pt_list = [None, None]
-        self.num_surf = [0, 0]
-        self.num_cp = [0, 0]
+        self.num_cp = [None, None]

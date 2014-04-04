@@ -51,7 +51,6 @@ class Configuration(object):
             comp.name = name
             comp.oml0 = self.oml0
             comp.setDOFs()
-            comp.initializeEdgeInfo()
         self.set_oml_resolution()
         self.oml0.update()
 
