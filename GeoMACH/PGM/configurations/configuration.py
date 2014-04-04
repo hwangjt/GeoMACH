@@ -34,13 +34,12 @@ class Configuration(object):
         surfs_list = []
         index_offset = 0
         for comp in self.comps.values():
-            for surf in comp.Ks:
-                num_i, num_j = surf.shape
-                for ind_j in xrange(num_j):
-                    for ind_i in xrange(num_i):
-                        if surf[ind_i, ind_j] != -1:
-                            surf[ind_i, ind_j] += index_offset
-            index_offset = numpy.max(comp.Ks[-1]) + 1
+            for face in comp.faces:
+                for ind_j in xrange(face.num_surf[1]):
+                    for ind_i in xrange(face.num_surf[0]):
+                        if face.surf_indices[ind_i, ind_j] != -1:
+                            face.surf_indices[ind_i, ind_j] += index_offset
+            index_offset = numpy.max(comp.faces[-1].surf_indices) + 1
             surfs_list.extend(comp.Ps)
             comp.Ps = []
         self.oml0 = PUBS.PUBS(surfs_list)

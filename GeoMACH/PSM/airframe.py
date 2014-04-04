@@ -142,18 +142,18 @@ class Airframe(object):
         groupLengths = numpy.zeros(oml0.ngroup)
         groupCount = numpy.zeros(oml0.ngroup,int)
         for comp in geometry.comps.values():
-            for f in range(len(comp.Ks)):
-                ni, nj = comp.Ks[f].shape
-                groupLengths, groupCount = PSMlib.addgrouplengths(ni, nj, oml0.nsurf, oml0.nedge, oml0.ngroup, comp.Ks[f]+1, oml0.surf_edge, oml0.edge_group, self.surfEdgeLengths, groupLengths, groupCount)
+            for f in range(len(comp.faces)):
+                ni, nj = comp.faces[f].num_surf
+                groupLengths, groupCount = PSMlib.addgrouplengths(ni, nj, oml0.nsurf, oml0.nedge, oml0.ngroup, comp.faces[f].surf_indices+1, oml0.surf_edge, oml0.edge_group, self.surfEdgeLengths, groupLengths, groupCount)
 
         groupLengths = groupLengths / groupCount
                  
         faceDims = {}     
         for comp in geometry.comps.values():
             faceDimsComp = []
-            for f in range(len(comp.Ks)):
-                ni, nj = comp.Ks[f].shape
-                idims, jdims = PSMlib.computefacedimensions(ni, nj, oml0.nsurf, oml0.nedge, oml0.ngroup, comp.Ks[f]+1, oml0.surf_edge, oml0.edge_group, groupLengths)
+            for f in range(len(comp.faces)):
+                ni, nj = comp.faces[f].num_surf
+                idims, jdims = PSMlib.computefacedimensions(ni, nj, oml0.nsurf, oml0.nedge, oml0.ngroup, comp.faces[f].surf_indices+1, oml0.surf_edge, oml0.edge_group, groupLengths)
                 faceDimsComp.append([idims,jdims])
             faceDims[comp.name] = faceDimsComp
 
@@ -166,14 +166,14 @@ class Airframe(object):
         faceDims = {}    
         for comp in geometry.comps.values():
             faceDimsComp = []
-            jdim0 = numpy.zeros(comp.Ks[0].shape[1]+1)
-            for f in range(len(comp.Ks)):
-                ni, nj = comp.Ks[f].shape
-                idims, jdims = PSMlib.computefacedimensions(ni,nj,nsurf,comp.Ks[f]+1,self.surfEdgeLengths)
+            jdim0 = numpy.zeros(comp.faces[0].num_surf[1]+1)
+            for f in range(len(comp.faces)):
+                ni, nj = comp.faces[f].num_surf
+                idims, jdims = PSMlib.computefacedimensions(ni,nj,nsurf,comp.faces[f].surf_indices+1,self.surfEdgeLengths)
                 jdim0 += jdims
                 faceDimsComp.append([idims,jdims])
-            jdim0 /= len(comp.Ks)
-            for f in range(len(comp.Ks)):
+            jdim0 /= len(comp.faces)
+            for f in range(len(comp.faces)):
                 faceDimsComp[f][1][:] = jdim0[:]
             faceDims[comp.name] = faceDimsComp
 
@@ -193,10 +193,10 @@ class Airframe(object):
 
         for k in range(len(geometry.comps)):
             comp = geometry.comps.values()[k]            
-            for f in range(len(comp.Ks)):
-                ni, nj = comp.Ks[f].shape
+            for f in range(len(comp.faces)):
+                ni, nj = comp.faces[f].num_surf
                 idims, jdims = self.faceDims[comp.name][f]
-                PSMlib.computepreviewmembercoords(k+1,f+1,ni,nj,nmem,comp.Ks[f]+1,idims,jdims,membersInt,membersFlt)
+                PSMlib.computepreviewmembercoords(k+1,f+1,ni,nj,nmem,comp.faces[f].surf_indices+1,idims,jdims,membersInt,membersFlt)
 
         self.membersInt = membersInt
         self.membersFlt = membersFlt
@@ -275,11 +275,11 @@ class Airframe(object):
         groupIntCount = numpy.zeros(ngroup,int)
         for k in range(len(geometry.comps)):
             comp = geometry.comps.values()[k]     
-            for f in range(len(comp.Ks)):
-                ni, nj = comp.Ks[f].shape
+            for f in range(len(comp.faces)):
+                ni, nj = comp.faces[f].num_surf
                 idims, jdims = self.faceDims[comp.name][f]
                 nedge = PSMlib.countfaceedges(k+1, f+1, ni, nj, nadj, self.adjoiningInt)
-                edge_group, edgeLengths, edges = PSMlib.computefaceedges(k+1, f+1, ni, nj, nsurf, nmem, nadj, nedge, idims, jdims, comp.Ks[f]+1, self.surf_group, self.mem_group, self.adjoiningInt, self.adjoiningFlt, self.surfEdgeLengths, self.memEdgeLengths)
+                edge_group, edgeLengths, edges = PSMlib.computefaceedges(k+1, f+1, ni, nj, nsurf, nmem, nadj, nedge, idims, jdims, comp.faces[f].surf_indices+1, self.surf_group, self.mem_group, self.adjoiningInt, self.adjoiningFlt, self.surfEdgeLengths, self.memEdgeLengths)
                 quad.importEdges(edges)
                 quad.addIntersectionPts()
                 quad.removeDuplicateVerts()
@@ -295,7 +295,7 @@ class Airframe(object):
         iList = 0
         groupInts = numpy.zeros(nint)
         for comp in geometry.comps.values():
-            for f in range(len(comp.Ks)):
+            for f in range(len(comp.faces)):
                 verts,edges,edge_group,edgeLengths = premeshFaces[iList]
                 iList += 1
                 groupInts = PSMlib.computegroupintersections(verts.shape[0], edges.shape[0], ngroup, nint, verts, edges, edge_group, groupIntPtr, groupInts)
@@ -327,7 +327,7 @@ class Airframe(object):
 
         iList = 0
         for comp in geometry.comps.values():
-            for f in range(len(comp.Ks)):
+            for f in range(len(comp.faces)):
                 verts,edges,edge_group,edgeLengths = premeshFaces[iList]
                 nvert = PSMlib.countintersectionverts(edges.shape[0], ngroup, edge_group, groupIntPtr, groupSplitPtr)
                 verts = PSMlib.computeintersectionverts(verts.shape[0], edges.shape[0], ngroup, nint, nsplit, nvert + verts.shape[0], verts, edges, edge_group, groupIntPtr, groupInts, groupSplitPtr, groupSplits)
@@ -351,17 +351,17 @@ class Airframe(object):
         nnode0 = [0]
         iList = 0
         for comp in geometry.comps.values():
-            for f in range(len(comp.Ks)):
+            for f in range(len(comp.faces)):
                 verts,edges,edge_group,edgeLengths = premeshFaces[iList]
                 iList += 1
                 nvert = verts.shape[0]
                 nedge = edges.shape[0]
-                ni, nj = comp.Ks[f].shape
+                ni, nj = comp.faces[f].num_surf
                 idims, jdims = self.faceDims[comp.name][f]
                 print 'Computing skin elements:', comp.name, f
                 for i in range(ni):
                     for j in range(nj):
-                        surf = comp.Ks[f][i,j]
+                        surf = comp.faces[f].surf_indices[i,j]
                         if oml0.visible[surf]:
                             nedge1 = PSMlib.countsurfaceedges(nvert, nedge, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
                             edges1 = PSMlib.computesurfaceedges(nvert, nedge, nedge1, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
@@ -433,10 +433,10 @@ class Airframe(object):
 
         for k in range(len(geometry.comps)):
             comp = geometry.comps.values()[k]  
-            for f in range(len(comp.Ks)):
-                ni, nj = comp.Ks[f].shape
+            for f in range(len(comp.faces)):
+                ni, nj = comp.faces[f].num_surf
                 idims, jdims = self.faceDims[comp.name][f]
-                PSMlib.computememberlocalcoords(k+1, f+1, ni, nj, nnode, idims, jdims, comp.Ks[f]+1, nodesInt, nodesFlt)
+                PSMlib.computememberlocalcoords(k+1, f+1, ni, nj, nnode, idims, jdims, comp.faces[f].surf_indices+1, nodesInt, nodesFlt)
 
         linW = numpy.linspace(0,nnode-1,nnode)
         B0 = scipy.sparse.csr_matrix((nnode,oml0.C.shape[0]))

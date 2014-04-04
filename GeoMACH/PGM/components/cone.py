@@ -28,7 +28,7 @@ class Cone(Interpolant):
             self.nj = [int(nz/2),0,int(nz/2)]
 
     def initializeSurfaces(self):
-        vtx = lambda f, i, j: self.comp.Ps[self.comp.Ks[f][i,j]][i,j,:]
+        vtx = lambda f, i, j: self.comp.Ps[self.comp.faces[f].surf_indices[i,j]][i,j,:]
         verts = numpy.zeros((2,2,3),order='F')
         if self.face==0:
             verts[0,0,:] = vtx(0, -1, 0)
@@ -44,11 +44,12 @@ class Cone(Interpolant):
         nj = sum(self.nj)
 
         self.Ps = []
-        self.Ks = [-numpy.ones((ni,nj),int)]
+        face = self.faces[0]
+        face.surf_indices[:,:] = -1
         for j in range(nj):
             for i in range(ni):
                 self.Ps.append(PGMlib.bilinearinterp(self.nP, ni, nj, i+1, j+1, verts))
-                self.Ks[0][i,j] = j*ni + i
+                face.surf_indices[i,j] = j*ni + i
 
     def setDOFs(self):
         self.setC1('surf', 0, val=True)

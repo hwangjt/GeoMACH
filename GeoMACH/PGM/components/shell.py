@@ -51,7 +51,7 @@ class Shell(Primitive):
     def setDOFs(self):
         setC1 = self.setC1
         setCornerC1 = self.setCornerC1
-        for f in range(len(self.Ks)):
+        for f in range(len(self.faces)):
             self.setC1('surf', f, val=True)
         if self.bottom==0:
             setC1('surf', 0, i= 0, u= 0, val=False)

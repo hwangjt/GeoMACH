@@ -71,11 +71,11 @@ class Junction(Interpolant):
             self.rotate = lambda P: numpy.swapaxes(P,0,1)[:,::-1]
             self.flip = lambda nu, nv: [nv,nu[::-1]]
 
-        self.fK = self.rotate(self.fComp.Ks[self.fFace])[self.fNW[0]:self.fNW[0]+sum(self.ni),self.fNW[1]:self.fNW[1]+sum(self.nj)]
+        self.fK = self.rotate(self.fComp.faces[self.fFace].surf_indices)[self.fNW[0]:self.fNW[0]+sum(self.ni),self.fNW[1]:self.fNW[1]+sum(self.nj)]
 
     def initializeVerts(self):
         vtx = lambda i, j, u, v: self.rotate(self.fComp.Ps[self.fK[i,j]])[u,v,:]
-        vtxM = lambda f, i, j, u, v: self.mComp.Ps[self.mComp.Ks[f][i,j]][u,v,:]
+        vtxM = lambda f, i, j, u, v: self.mComp.Ps[self.mComp.faces[f].surf_indices[i,j]][u,v,:]
 
         verts = numpy.zeros((4,4,3),order='F')
         for i in [0,-1]:
@@ -110,8 +110,8 @@ class Junction(Interpolant):
             edge = P[u,:,:] if not u==None else P[:,v,:]
             return edge if d==1 else edge[::-1,:]
 
-        getM = lambda f, i, j: self.mComp.Ps[self.mComp.Ks[f][i,j]]
-        getI = lambda i, j: self.Ps[self.Ks[0][i,j]]
+        getM = lambda f, i, j: self.mComp.Ps[self.mComp.faces[f].surf_indices[i,j]]
+        getI = lambda i, j: self.Ps[self.faces[0].surf_indices[i,j]]
         getF = lambda i, j: self.rotate(self.fComp.Ps[self.fK[i,j]])
 
         def copy(iI, jI, fM, iM, jM, uI=None, vI=None, uM=None, vM=None, d=1):
@@ -133,13 +133,14 @@ class Junction(Interpolant):
         sj = self.sj
 
         self.Ps = []
-        self.Ks = [-numpy.ones((si[3],sj[3]),int)]
+        face = self.faces[0]
+        face.surf_indices[:,:] = -1
         counter = 0
         for j in range(sj[3]):
             for i in range(si[3]):
                 if i<si[1] or j<sj[1] or i>=si[2] or j>=sj[2]:
                     self.Ps.append(numpy.zeros((nP,nP,3),order='F'))
-                    self.Ks[0][i,j] = counter
+                    face.surf_indices[i,j] = counter
                     counter += 1
 
         for b in range(3):
@@ -148,14 +149,14 @@ class Junction(Interpolant):
                     jj = sj[b] + j
                     for i in range(ni[a]):
                         ii = si[a] + i
-                        if not self.Ks[0][ii,jj]==-1:
-                            self.Ps[self.Ks[0][ii,jj]][:,:,:] = PGMlib.bilinearinterp(nP, ni[a], nj[b], i+1, j+1, verts[a:a+2,b:b+2,:])
+                        if not face.surf_indices[ii,jj]==-1:
+                            self.Ps[face.surf_indices[ii,jj]][:,:,:] = PGMlib.bilinearinterp(nP, ni[a], nj[b], i+1, j+1, verts[a:a+2,b:b+2,:])
 
         for i in [0,-1]:
-            for j in range(self.Ks[0].shape[1]):
+            for j in range(face.num_surf[1]):
                 copy2(i, j, u=i)
         for j in [0,-1]:
-            for i in range(self.Ks[0].shape[0]):
+            for i in range(face.num_surf[0]):
                 copy2(i, j, v=j)
 
         if not self.mSide==-1:
@@ -176,23 +177,11 @@ class Junction(Interpolant):
                     copy(ii, jj, 1, -1-j, -1, uI=0, vM=-1, d=-1)
 
     def removeSurfaces(self):
-        fPs = self.fComp.Ps
-        fKs = self.fComp.Ks
         fK0 = self.fK
 
         for j in range(fK0.shape[1]):
             for i in range(fK0.shape[0]):
                 self.oml0.visible[fK0[i,j]] = False
-
-        #for j0 in range(fK0.shape[1]):
-        #    for i0 in range(fK0.shape[0]):
-        #        fPs.pop(fK0[i0,j0])
-        #        for f in range(len(fKs)):
-        #            for j in range(fKs[f].shape[1]):
-        #                for i in range(fKs[f].shape[0]):
-        #                    if (fKs[f][i,j] > fK0[i0,j0]) and (fKs[f][i,j] != -1):
-        #                        fKs[f][i,j] -= 1
-        #        fK0[i0,j0] = -1
 
     def initializeDOFmappings(self):
         super(Junction,self).initializeDOFmappings()

@@ -11,7 +11,6 @@ class Component(object):
 
     def __init__(self):
         self.Ps = []
-        self.Ks = []   
         self.outers = []
         self.oml0 = None
         self.faces = []
@@ -19,20 +18,6 @@ class Component(object):
         self.params = {}
         self.Cv0 = 2
         self.Cv1 = 2
-
-    def computeLeft(self):
-        for f in range(len(self.Ks)):
-            for j in range(self.Ks[f].shape[1]):
-                for i in range(self.Ks[f].shape[0]):
-                    #print self.oml0.visible[self.Ks[f][i,j]]
-                    try:
-                        self.oml0.visible[self.Ks[f][i,j]] = self.outers[f][i,j]
-                    except:
-                        self.oml0.visible[self.Ks[f][i,j]] = True
-                    #try:
-                    #    self.oml0.visible[self.Ks[f][i,j]] = avg > 0 and self.outers[f][i,j]
-                    #except:
-                    #    self.oml0.visible[self.Ks[f][i,j]] = avg > 0
 
     def setm(self, f, d, val, ind=[], both=True):
         self.set(1, f, d, val, ind)
@@ -48,12 +33,12 @@ class Component(object):
         ind = range(self.faces[f].num_surf[d]) if len(ind)==0 else ind
         val = [val[0] for x in range(len(ind))] if len(val) < len(ind) else val
 
-        Ks = self.Ks
-        ilist = range(Ks[f].shape[0]) if d==1 else ind
-        jlist = range(Ks[f].shape[1]) if d==0 else ind
+        face = self.faces[f]
+        ilist = range(face.num_surf[0]) if d==1 else ind
+        jlist = range(face.num_surf[1]) if d==0 else ind
         for i in range(len(ilist)):
             for j in range(len(jlist)):
-                surf = Ks[f][ilist[i],jlist[j]]
+                surf = face.surf_indices[ilist[i],jlist[j]]
                 pos = i if d==0 else j
                 if not surf==-1:
                     self.oml0.edgeProperty(surf,p,d,val[pos])
@@ -75,8 +60,6 @@ class Component(object):
         axis_u,axis_v: {1,2,3} maps to {x,y,z}; negative sign means reverse order
         d: position of the surfaces in the remaining coordinate axis
         ru,rv: surfaces span -ru to +ru in u dir. and -rv to +rv in v dir.
-
-        Adds to self.Ps and self.Ks
         """
         nP = 10
         ni = self.ms[abs(axis_u)-1].shape[0]
@@ -91,18 +74,16 @@ class Component(object):
             for i in range(ni):
                 self.Ps.append(PGMlib.bilinearinterp(nP, ni, nj, i+1, j+1, verts))
 
-        if len(self.Ks) > 0:
-            counter = numpy.max(self.Ks[-1]) + 1
+        if len(self.faces) > 0:
+            counter = numpy.max(self.faces[-1].surf_indices) + 1
         else:
             counter = 0
 
         face = Face(len(self.faces), axis_u, axis_v, ni, nj)
-        K = numpy.zeros((ni,nj),int)
         for j in range(nj):
             for i in range(ni):
-                K[i,j] = counter
+                face.surf_indices[i,j] = counter
                 counter += 1
-        self.Ks.append(K)
         self.faces.append(face)
             
         self.outers.append(numpy.ones((ni,nj),bool))
@@ -114,16 +95,16 @@ class Component(object):
 
     def connectEdges(self, f1=0, u1=None, v1=None, f2=0, u2=None, v2=None):
         def edge(f, u, v, kk):
-            Ks = self.Ks
+            surf_indices = self.faces[f].surf_indices
             Ps = self.Ps
             d = 0 if u==None else 1
             r = self.faces[f].axes[d]
             k = kk if r > 0 else -1-kk
-            surf = Ks[f][k,v] if d==0 else Ks[f][u,k]
+            surf = surf_indices[k,v] if d==0 else surf_indices[u,k]
             P = Ps[surf][:,v] if d == 0 else Ps[surf][u,:]
             return P[::-1] if r < 0 else P                
             
-        for k in range(self.Ks[f1].shape[v1==None]):
+        for k in range(self.faces[f1].num_surf[v1==None]):
             self.averageEdges(edge(f1,u1,v1,k), edge(f2,u2,v2,k))
 
     def setC1(self, t, f, i=None, j=None, u=None, v=None, d=None, val=True):
@@ -149,7 +130,7 @@ class Component(object):
 
         def setSurfC1(f, i, j, u, v, d, val):
             oml0 = self.oml0
-            surf = self.Ks[f][i,j]
+            surf = self.faces[f].surf_indices[i,j]
             if not surf==-1:
                 if u==None and v==None:
                     oml0.surf_c1[surf,:,:] = val                    
@@ -163,7 +144,7 @@ class Component(object):
 
         def setEdgeC1(f, i, j, u, v, d, val):
             oml0 = self.oml0
-            surf = self.Ks[f][i,j]
+            surf = self.faces[f].surf_indices[i,j]
             if not surf==-1:
                 if u==None:
                     edge = oml0.surf_edge[surf,0,v]
@@ -183,14 +164,14 @@ class Component(object):
         if (not i==None) and (not j==None):
             func(f, i, j, u, v, d, val)
         elif not i==None:
-            for j in range(self.Ks[f].shape[1]):
+            for j in range(self.faces[f].num_surf[1]):
                 func(f, i, j, u, v, d, val)
         elif not j==None:
-            for i in range(self.Ks[f].shape[0]):
+            for i in range(self.faces[f].num_surf[0]):
                 func(f, i, j, u, v, d, val)
         else:
-            for j in range(self.Ks[f].shape[1]):
-                for i in range(self.Ks[f].shape[0]):
+            for j in range(self.faces[f].num_surf[1]):
+                for i in range(self.faces[f].num_surf[0]):
                     func(f, i, j, u, v, d, val)
 
     def setCornerC1(self, f, i=0, j=0, val=True):
@@ -217,20 +198,20 @@ class Component(object):
                 return self.oml0.edge_c1[abs(edge)-1,1-abs(d)]
 
         oml0 = self.oml0
-        Ks = self.Ks
         surf_c1 = oml0.surf_c1
         edge_c1 = oml0.edge_c1
 
         Qs = []
         Ns = []
-        for f in range(len(Ks)):
-            ni, nj = self.faces[f].num_cp_list[:]
+        for f in range(len(self.faces)):
+            face = self.faces[f]
+            ni, nj = face.num_cp_list[:]
             Qs.append(numpy.zeros((sum(ni)+1,sum(nj)+1,3)))
             Ns.append(numpy.zeros((sum(ni)+1,sum(nj)+1),int))
             Ns[f][:,:] = -1
-            for j in range(Ks[f].shape[1]):
-                for i in range(Ks[f].shape[0]):
-                    surf = Ks[f][i,j]
+            for j in range(face.num_surf[1]):
+                for i in range(face.num_surf[0]):
+                    surf = face.surf_indices[i,j]
                     if surf != -1:
                         mu,mv = oml0.edgeProperty(surf,1)
                         for v in range(mv):
@@ -259,18 +240,17 @@ class Component(object):
 
     def computeEdgeInfo(self):
         edgeProperty = self.oml0.edgeProperty
-        Ks = self.Ks
-        for f in range(len(Ks)):
-            for i in range(Ks[f].shape[0]):
-                for j in range(Ks[f].shape[1]):
-                    surf = Ks[f][i,j]
+        for face in self.faces:
+            for j in range(face.num_surf[1]):
+                for i in range(face.num_surf[0]):
+                    surf = face.surf_indices[i,j]
                     if surf != -1:
-                        self.faces[f].num_cp_list[0][i] = edgeProperty(surf,1)[0] - 1
-                        self.faces[f].num_cp_list[1][j] = edgeProperty(surf,1)[1] - 1
-                        self.faces[f].num_pt_list[0][i] = edgeProperty(surf,2)[0] - 1
-                        self.faces[f].num_pt_list[1][j] = edgeProperty(surf,2)[1] - 1
+                        face.num_cp_list[0][i] = edgeProperty(surf,1)[0] - 1
+                        face.num_cp_list[1][j] = edgeProperty(surf,1)[1] - 1
+                        face.num_pt_list[0][i] = edgeProperty(surf,2)[0] - 1
+                        face.num_pt_list[1][j] = edgeProperty(surf,2)[1] - 1
             for d in xrange(2):
-                self.faces[f].num_cp[d] = sum(self.faces[f].num_cp_list[d]) + 1
+                face.num_cp[d] = sum(face.num_cp_list[d]) + 1
 
 
 
