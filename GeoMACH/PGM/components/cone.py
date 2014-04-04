@@ -87,4 +87,4 @@ class Cone(Interpolant):
             nv[k] = sum(mv[self.sj[k]:self.sj[k+1]])
 
         v = self.variables
-        self.Qs[0] = PGMlib.computecone(sum(nu)+1, sum(nv)+1, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['scl']*self.comp.Qs[0].shape[1], v['fC1'], v['mC1'], W, E, N, S, v['shp'])
+        self.Qs[0] = PGMlib.computecone(sum(nu)+1, sum(nv)+1, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['scl']*self.comp.faces[0].num_cp[1], v['fC1'], v['mC1'], W, E, N, S, v['shp'])

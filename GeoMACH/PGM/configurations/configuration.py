@@ -55,7 +55,7 @@ class Configuration(object):
 
         # Sets up comp to OML mapping
         for comp in self.comps.values():
-            comp.computeEdgeInfo()
+            comp.compute_num_cp()
             comp.initializeDOFmappings()
             comp.initializeVariables()
 

@@ -60,9 +60,10 @@ class Shell(Primitive):
 
     def initializeVariables(self):
         super(Shell,self).initializeVariables()
-        nx = self.Qs[0].shape[1]
-        ny = self.Qs[0].shape[0]
-        nz = self.Qs[1].shape[0]
+        faces = self.faces
+        nx = faces[0].num_cp[1]
+        ny = faces[0].num_cp[0]
+        nz = faces[1].num_cp[0]
         zeros = numpy.zeros
         v = self.variables
         a = self.addParam
@@ -89,9 +90,10 @@ class Shell(Primitive):
         self.params['pos'].setP(P=[[0.,0.,0.],[1.,0.,0.]])
 
     def computeQs(self):
-        nx = self.Qs[0].shape[1]
-        ny = self.Qs[0].shape[0]
-        nz = self.Qs[1].shape[0]
+        faces = self.faces
+        nx = faces[0].num_cp[1]
+        ny = faces[0].num_cp[0]
+        nz = faces[1].num_cp[0]
         v = self.variables
         b = self.bottom==2
 

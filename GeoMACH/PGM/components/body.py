@@ -47,9 +47,10 @@ class Body(Primitive):
 
     def initializeVariables(self):
         super(Body,self).initializeVariables()
-        nx = self.Qs[0].shape[1]
-        ny = self.Qs[0].shape[0]
-        nz = self.Qs[1].shape[0]
+        faces = self.faces
+        nx = faces[0].num_cp[1]
+        ny = faces[0].num_cp[0]
+        nz = faces[1].num_cp[0]
         zeros = numpy.zeros
         v = self.variables
         a = self.addParam
@@ -66,9 +67,10 @@ class Body(Primitive):
         self.params['pos'].setP(P=[[0.,0.,0.],[1.,0.,0.]])
 
     def computeQs(self):
-        nx = self.Qs[0].shape[1]
-        ny = self.Qs[0].shape[0]
-        nz = self.Qs[1].shape[0]
+        faces = self.faces
+        nx = faces[0].num_cp[1]
+        ny = faces[0].num_cp[0]
+        nz = faces[1].num_cp[0]
         v = self.variables
         b = self.bottom==2
 
@@ -83,33 +85,3 @@ class Body(Primitive):
 
         nQ = nx*(9+6*ny+6*nz) if self.bottom==2 else nx*(9+6*ny+3*nz)
         self.computeSections(nQ, shapes)
-
-
-if __name__ == '__main__':
-    b = Body(nx=8,ny=4,nz=4,bottom=0)
-    import PUBS
-    from mayavi import mlab
-    b.oml0 = PUBS.PUBS(b.Ps)
-    b.setDOFs()
-    b.oml0.updateBsplines()
-    b.computems()
-    b.initializeDOFmappings()
-    b.initializeVariables()
-    b.variables['pos'][:,0] = numpy.linspace(0,4,b.Qs[2].shape[1])
-    #b.variables['pos'][:,1] = numpy.linspace(0,4,b.Qs[2].shape[1])
-    b.variables['pos'][:,2] = numpy.linspace(0,4,b.Qs[2].shape[1])
-    b.variables['pos'][4,1] = -0.5
-    #b.variables['shapeL'][:,:] = 0.5
-    #b.variables['shapeR'][:,:] = 0.5
-    b.parameters['fillet'][:,0] = 0.5
-    b.parameters['fillet'][:,1] = 0.5
-    b.variables['noseL'] = 0.5
-    b.variables['tailL'] = 0.5
-    #b.variables['shapeR'][:10,3:-3] = -0.5
-    #b.variables['shapeL'][-10:,3:-3] = -0.5
-    b.propagateQs()
-    b.updateQs()
-    b.oml0.computePoints()
-    b.oml0.plot()
-    name='body'
-    b.oml0.write2Tec(name)

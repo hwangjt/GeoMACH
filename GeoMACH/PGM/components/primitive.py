@@ -22,7 +22,7 @@ class Primitive(Component):
         self.ns.append(numpy.zeros(nz,int))
 
     def initializeVariables(self):
-        n = self.Qs[0].shape[1]
+        n = self.faces[0].num_cp[1]
         zeros = numpy.zeros
         v = self.variables
         a = self.addParam
@@ -42,8 +42,8 @@ class Primitive(Component):
         a('flt','flt',(1,1),P=[0.0])
 
     def computeSections(self, nQ, shapes, radii=None):
-        nf = len(self.Qs)
-        n = self.Qs[0].shape[1]
+        nf = len(self.faces)
+        n = self.faces[0].num_cp[1]
         v = self.variables
 
         rot0, Da, Di, Dj = PGMlib.computerotations(self.ax1, self.ax2, n, 9*(n*3-2), v['pos'], v['nor'])
@@ -57,33 +57,33 @@ class Primitive(Component):
                 scale = v['scl']
             else:
                 scale = radii[f]
-            ni, nj = self.Qs[f].shape[:2]
+            ni, nj = self.faces[f].num_cp
             self.Qs[f][:,:,:], Da, Di, Dj = PGMlib.computesections(self.ax1, self.ax2, ni, nj, ni*nj*27, counter, v['ogn'], scale, v['pos'], rot, shapes[f])
             self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nQ))
             self.dQs_dv[f] = self.dQs_dv[f] + self.dQs_dv[f].dot(dv_dpos0)
             counter += 3*ni*nj
 
     def setDerivatives(self, var, dV0):
-        nf = len(self.Qs)
+        nf = len(self.faces)
+        n = self.faces[0].num_cp[1]
         nv = self.dQs_dv[0].shape[1]
-        n = self.Qs[0].shape[1]
         dV = numpy.zeros(nv)
         if var=='scl':
             dV[:3*n] = dV0.T.flatten()
             for f in range(nf):
-                ni, nj = self.Qs[f].shape[:2]
+                ni, nj = self.faces[f].num_cp
                 self.Qs[f][:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].dot(dV))
         elif var=='pos':
             dV[3*n:6*n] = dV0.T.flatten()
             for f in range(nf):
-                ni, nj = self.Qs[f].shape[:2]
+                ni, nj = self.faces[f].num_cp
                 for i in range(ni):
                     self.Qs[f][i,:,:] += dV0
                 self.Qs[f][:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].dot(dV))
         elif var=='rot':
             dV[6*n:9*n] = dV0.T.flatten()
             for f in range(nf):
-                ni, nj = self.Qs[f].shape[:2]
+                ni, nj = self.faces[f].num_cp
                 self.Qs[f][:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].dot(dV)*numpy.pi/180.0)
         else:
             self.variables[var] += dV0

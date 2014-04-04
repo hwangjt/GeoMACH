@@ -53,8 +53,9 @@ class Wing(Primitive):
 
     def initializeVariables(self):
         super(Wing,self).initializeVariables()
-        ni = self.Qs[0].shape[0]
-        nj = self.Qs[0].shape[1]
+        faces = self.faces
+        ni = faces[0].num_cp[0]
+        nj = faces[0].num_cp[1]
         zeros = numpy.zeros
         v = self.variables
         a = self.addParam
@@ -79,8 +80,9 @@ class Wing(Primitive):
                 shape[:,j,:2] = Ps[f][:,:]
         
     def computeQs(self):
-        ni = self.Qs[0].shape[0]
-        nj = self.Qs[0].shape[1]
+        faces = self.faces
+        ni = faces[0].num_cp[0]
+        nj = faces[0].num_cp[1]
         v = self.variables
 
         #if self.left==2:
@@ -95,32 +97,3 @@ class Wing(Primitive):
         self.computeSections(nQ, shapes)
         shapes[0][:,:,1] -= v['shU']
         shapes[1][:,:,1] += v['shL']
-
-
-if __name__ == '__main__':
-    w = Wing(nx=2,nz=2,left=0)
-    import PUBS
-    from mayavi import mlab
-
-    w.oml0 = PUBS.PUBS(w.Ps)
-    w.setDOFs()
-    w.oml0.updateBsplines()
-    w.computems()
-    w.initializeDOFmappings()
-    w.initializeVariables()
-    w.variables['pos'][:,2] = numpy.linspace(0,1,w.Qs[0].shape[1])
-    #for j in range(w.Qs[0].shape[1]):
-    #    w.variables['shape'][0,:,j,0] = 1 - numpy.linspace(0,1,w.Qs[0].shape[0])
-    #    w.variables['shape'][1,:,j,0] = numpy.linspace(0,1,w.Qs[0].shape[0])
-    w.variables['pos'][:,0] = numpy.linspace(0,1,w.Qs[0].shape[1])
-    w.variables['pos'][:,1] = numpy.linspace(0,1,w.Qs[0].shape[1])
-    #w.variables['rot'][:,2] = 20
-    w.parameters['nor'][:,:] = 1.0
-    w.setAirfoil("naca0012.dat")
-    w.computeQs()
-    w.propagateQs()
-    w.oml0.computePoints()
-    w.oml0.plot()
-    name='wing'
-    w.oml0.write2Tec(name)
-    w.oml0.write2TecC(name)

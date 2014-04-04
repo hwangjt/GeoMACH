@@ -149,7 +149,7 @@ class Component(object):
         for f in range(len(Ns)):
             PGMlib.updateqs(oml0.nQ, Ns[f].shape[0], Ns[f].shape[1], oml0.nvar, Ns[f], Qs[f], oml0.Q)
 
-    def computeEdgeInfo(self):
+    def compute_num_cp(self):
         edgeProperty = self.oml0.edgeProperty
         for face in self.faces:
             for j in range(face.num_surf[1]):

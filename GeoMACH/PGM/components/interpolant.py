@@ -32,8 +32,9 @@ class Interpolant(Component):
         self.setC1('surf', 0, val=True)
 
     def initializeVariables(self):
-        ni = self.Qs[0].shape[0]
-        nj = self.Qs[0].shape[1]
+        faces = self.faces
+        ni = faces[0].num_cp[0]
+        nj = faces[0].num_cp[1]
         zeros = numpy.zeros
         v = self.variables
         a = self.addParam
