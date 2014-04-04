@@ -185,15 +185,14 @@ class Junction(Interpolant):
             for i in range(fK0.shape[0]):
                 self.oml0.visible[fK0[i,j]] = False
 
-    def initializeDOFmappings(self):
-        super(Junction,self).initializeDOFmappings()
+    def removeHiddenDOFs(self):
         mu, mv = self.faces[0].num_cp_list[:]
         nu = range(4)
         nv = range(4)
         for k in range(4):
             nu[k] = sum(mu[:self.si[k]])
             nv[k] = sum(mv[:self.sj[k]])
-        N = self.Ns[0]
+        N = self.faces[0].index_array
         N[nu[1],nv[1]:nv[2]+1] = -1
         N[nu[2],nv[1]:nv[2]+1] = -1
         N[nu[1]:nu[2]+1,nv[1]] = -1
@@ -206,24 +205,24 @@ class Junction(Interpolant):
         fu2 = sum(fu[:self.fNW[0]+self.si[3]])
         fv1 = sum(fv[:self.fNW[1]])
         fv2 = sum(fv[:self.fNW[1]+self.sj[3]])
-        fQ = self.rotate(self.fComp.Qs[self.fFace])[fu1:fu2+1,fv1:fv2+1,:]
+        fQ = self.rotate(self.fComp.faces[self.fFace].cp_array)[fu1:fu2+1,fv1:fv2+1,:]
 
         getEdge = self.getEdge
         if self.mSide==-1:
-            W = getEdge(self.mComp.Qs[2], i=-1, d=1)
-            E = getEdge(self.mComp.Qs[0], i=0, d=1)
-            N = getEdge(self.mComp0.Qs[0], i=-1, d=-1)
-            S = getEdge(self.mComp1.Qs[0], i=-1, d=1)
+            W = getEdge(self.mComp.faces[2].cp_array, i=-1, d=1)
+            E = getEdge(self.mComp.faces[0].cp_array, i=0, d=1)
+            N = getEdge(self.mComp0.faces[0].cp_array, i=-1, d=-1)
+            S = getEdge(self.mComp1.faces[0].cp_array, i=-1, d=1)
         elif self.mSide==0:
             W = numpy.zeros((1,2,3),order='F')
             E = numpy.zeros((1,2,3),order='F')
-            N = getEdge(self.mComp.Qs[0], j=0, d=-1)
-            S = getEdge(self.mComp.Qs[1], j=0, d=1)
+            N = getEdge(self.mComp.faces[0].cp_array, j=0, d=-1)
+            S = getEdge(self.mComp.faces[1].cp_array, j=0, d=1)
         elif self.mSide==1:
             W = numpy.zeros((1,2,3),order='F')
             E = numpy.zeros((1,2,3),order='F')
-            N = getEdge(self.mComp.Qs[0], j=-1, d=1)
-            S = getEdge(self.mComp.Qs[1], j=-1, d=-1)
+            N = getEdge(self.mComp.faces[0].cp_array, j=-1, d=1)
+            S = getEdge(self.mComp.faces[1].cp_array, j=-1, d=-1)
 
         mu, mv = self.faces[0].num_cp_list[:]
         nu = range(3)
@@ -233,4 +232,4 @@ class Junction(Interpolant):
             nv[k] = sum(mv[self.sj[k]:self.sj[k+1]]) + 1
 
         v = self.variables
-        self.Qs[0] = PGMlib.computejunction(sum(nu)-2, sum(nv)-2, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['fC1'], v['mC1'], W, E, N, S, fQ, v['shp'])
+        self.faces[0].cp_array[:,:,:] = PGMlib.computejunction(sum(nu)-2, sum(nv)-2, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['fC1'], v['mC1'], W, E, N, S, fQ, v['shp'])
