@@ -10,6 +10,7 @@ class Component(object):
     """ Base class for Wing, Body, and Junction components. """
 
     def __init__(self):
+        self.name = None
         self.Ps = []
         self.outers = []
         self.oml0 = None
@@ -19,29 +20,10 @@ class Component(object):
         self.Cv0 = 2
         self.Cv1 = 2
 
-    def setm(self, f, d, val, ind=[], both=True):
-        self.set(1, f, d, val, ind)
-        if both:
-            self.set(2, f, d, [x*3 for x in val], ind)
-
-    def setn(self, f, d, val, ind=[], both=True):
-        self.set(2, f, d, val, ind)
-        if both:
-            self.set(1, f, d, [max(4,int(x/3.0)) for x in val], ind)
-
-    def set(self, p, f, d, val, ind):
-        ind = range(self.faces[f].num_surf[d]) if len(ind)==0 else ind
-        val = [val[0] for x in range(len(ind))] if len(val) < len(ind) else val
-
-        face = self.faces[f]
-        ilist = range(face.num_surf[0]) if d==1 else ind
-        jlist = range(face.num_surf[1]) if d==0 else ind
-        for i in range(len(ilist)):
-            for j in range(len(jlist)):
-                surf = face.surf_indices[ilist[i],jlist[j]]
-                pos = i if d==0 else j
-                if not surf==-1:
-                    self.oml0.edgeProperty(surf,p,d,val[pos])
+    def set_oml(self, oml):
+        self.oml0 = oml
+        for face in self.faces:
+            face.oml = oml
 
     def computeVs(self):
         vs = self.variables
@@ -106,77 +88,6 @@ class Component(object):
             
         for k in range(self.faces[f1].num_surf[v1==None]):
             self.averageEdges(edge(f1,u1,v1,k), edge(f2,u2,v2,k))
-
-    def setC1(self, t, f, i=None, j=None, u=None, v=None, d=None, val=True):
-        """Set C1 continuity 
-
-        t: {string} surface or edge C1
-
-        f: face index
-
-        i,j: surface index
-            both given: only consider [i,j] surface
-            one given: loop through and apply to all of the other index
-            none given: apply to all surfaces
-
-        u,v: edge/vert index (for surfC1)
-            both given: only consider [u,v] corner/side
-            one given: loop through and apply to all of the other index
-            none given: apply to all corners/sides
-
-        u,v,d: side index (for edgeC1)
-
-        """
-
-        def setSurfC1(f, i, j, u, v, d, val):
-            oml0 = self.oml0
-            surf = self.faces[f].surf_indices[i,j]
-            if not surf==-1:
-                if u==None and v==None:
-                    oml0.surf_c1[surf,:,:] = val                    
-                elif u==None:
-                    oml0.surf_c1[surf,:,v] = val
-                elif v==None:
-                    oml0.surf_c1[surf,u,:] = val
-                else:
-                    oml0.surf_c1[surf,u,v] = val
-
-
-        def setEdgeC1(f, i, j, u, v, d, val):
-            oml0 = self.oml0
-            surf = self.faces[f].surf_indices[i,j]
-            if not surf==-1:
-                if u==None:
-                    edge = oml0.surf_edge[surf,0,v]
-                else:
-                    edge = oml0.surf_edge[surf,1,u]
-                if d==None:
-                    oml0.edge_c1[abs(edge)-1,:] = val
-                elif edge>0:
-                    oml0.edge_c1[abs(edge)-1,d] = val
-                else:
-                    oml0.edge_c1[abs(edge)-1,1-abs(d)] = val
-
-        if t=='surf':
-            func = setSurfC1
-        elif t=='edge':
-            func = setEdgeC1
-        if (not i==None) and (not j==None):
-            func(f, i, j, u, v, d, val)
-        elif not i==None:
-            for j in range(self.faces[f].num_surf[1]):
-                func(f, i, j, u, v, d, val)
-        elif not j==None:
-            for i in range(self.faces[f].num_surf[0]):
-                func(f, i, j, u, v, d, val)
-        else:
-            for j in range(self.faces[f].num_surf[1]):
-                for i in range(self.faces[f].num_surf[0]):
-                    func(f, i, j, u, v, d, val)
-
-    def setCornerC1(self, f, i=0, j=0, val=True):
-        self.setC1('edge', f, i=i, j=j, u=i, d=j, val=val)
-        self.setC1('edge', f, i=i, j=j, v=j, d=i, val=val)
 
     def initializeDOFmappings(self):
         def classify(i, n):
@@ -268,3 +179,95 @@ class Face(object):
         self.cp_array = None
         self.index_array = None
         self.num_cp = [None, None]
+
+    def setm(self, d, val, ind=[], both=True):
+        self.set(1, d, val, ind)
+        if both:
+            self.set(2, d, [x*3 for x in val], ind)
+
+    def setn(self, d, val, ind=[], both=True):
+        self.set(2, d, val, ind)
+        if both:
+            self.set(1, d, [max(4,int(x/3.0)) for x in val], ind)
+
+    def set(self, p, d, val, ind):
+        ind = range(self.num_surf[d]) if len(ind)==0 else ind
+        val = [val[0] for x in range(len(ind))] if len(val) < len(ind) else val
+
+        ilist = range(self.num_surf[0]) if d==1 else ind
+        jlist = range(self.num_surf[1]) if d==0 else ind
+        for i in range(len(ilist)):
+            for j in range(len(jlist)):
+                surf = self.surf_indices[ilist[i],jlist[j]]
+                pos = i if d==0 else j
+                if not surf==-1:
+                    self.oml.edgeProperty(surf,p,d,val[pos])
+
+    def setC1(self, t, i=None, j=None, u=None, v=None, d=None, val=True):
+        """Set C1 continuity 
+
+        t: {string} surface or edge C1
+
+        i,j: surface index
+            both given: only consider [i,j] surface
+            one given: loop through and apply to all of the other index
+            none given: apply to all surfaces
+
+        u,v: edge/vert index (for surfC1)
+            both given: only consider [u,v] corner/side
+            one given: loop through and apply to all of the other index
+            none given: apply to all corners/sides
+
+        u,v,d: side index (for edgeC1)
+
+        """
+
+        def setSurfC1(i, j, u, v, d, val):
+            oml = self.oml
+            surf = self.surf_indices[i,j]
+            if not surf==-1:
+                if u==None and v==None:
+                    oml.surf_c1[surf,:,:] = val                    
+                elif u==None:
+                    oml.surf_c1[surf,:,v] = val
+                elif v==None:
+                    oml.surf_c1[surf,u,:] = val
+                else:
+                    oml.surf_c1[surf,u,v] = val
+
+
+        def setEdgeC1(i, j, u, v, d, val):
+            oml = self.oml
+            surf = self.surf_indices[i,j]
+            if not surf==-1:
+                if u==None:
+                    edge = oml.surf_edge[surf,0,v]
+                else:
+                    edge = oml.surf_edge[surf,1,u]
+                if d==None:
+                    oml.edge_c1[abs(edge)-1,:] = val
+                elif edge>0:
+                    oml.edge_c1[abs(edge)-1,d] = val
+                else:
+                    oml.edge_c1[abs(edge)-1,1-abs(d)] = val
+
+        if t=='surf':
+            func = setSurfC1
+        elif t=='edge':
+            func = setEdgeC1
+        if (not i==None) and (not j==None):
+            func(i, j, u, v, d, val)
+        elif not i==None:
+            for j in range(self.num_surf[1]):
+                func(i, j, u, v, d, val)
+        elif not j==None:
+            for i in range(self.num_surf[0]):
+                func(i, j, u, v, d, val)
+        else:
+            for j in range(self.num_surf[1]):
+                for i in range(self.num_surf[0]):
+                    func(i, j, u, v, d, val)
+
+    def setCornerC1(self, i=0, j=0, val=True):
+        self.setC1('edge', i=i, j=j, u=i, d=j, val=val)
+        self.setC1('edge', i=i, j=j, v=j, d=i, val=val)

@@ -37,20 +37,19 @@ class Wing(Primitive):
         self.ax2 = 2
 
     def setDOFs(self):
-        setC1 = self.setC1
-        setCornerC1 = self.setCornerC1
+        faces = self.faces
         for f in range(2):
-            setC1('surf', f, val=True) #C1 Everywhere
-            setC1('surf', f, i=-f, u=-f, val=False) #C0 trailing edge
-            setC1('edge', f, i=-f, u=-f, val=True) #C0 trailing edge
+            faces[f].setC1('surf', val=True) #C1 Everywhere
+            faces[f].setC1('surf', i=-f, u=-f, val=False) #C0 trailing edge
+            faces[f].setC1('edge', i=-f, u=-f, val=True) #C0 trailing edge
             if self.left==0:  
-                setC1('surf', f, j=-1, v=-1, val=False) #C0 left edge
-                setC1('edge', f, j=-1, v=-1, val=True) #C0 left edge
-                setCornerC1(f, i=-f, j=-1, val=False) #C0 left TE corner     
-            if self.right==0:         
-                setC1('surf', f, j=0, v=0, val=False) #C0 right edge
-                setC1('edge', f, j=0, v=0, val=True) #C0 right edge
-                setCornerC1(f, i=-f, j=0, val=False) #C0 right TE corner
+                faces[f].setC1('surf', j=-1, v=-1, val=False) #C0 left edge
+                faces[f].setC1('edge', j=-1, v=-1, val=True) #C0 left edge
+                faces[f].setCornerC1(i=-f, j=-1, val=False) #C0 left TE corner
+            if self.right==0:
+                faces[f].setC1('surf', j=0, v=0, val=False) #C0 right edge
+                faces[f].setC1('edge', j=0, v=0, val=True) #C0 right edge
+                faces[f].setCornerC1(i=-f, j=0, val=False) #C0 right TE corner
 
     def initializeVariables(self):
         super(Wing,self).initializeVariables()

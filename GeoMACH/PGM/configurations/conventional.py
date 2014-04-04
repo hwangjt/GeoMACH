@@ -42,22 +42,22 @@ class Conventional(Configuration):
 
     def set_oml_resolution(self):
         comps = self.comps
-        comps['fu'].setm(0,1,[18,4,4,4,4,8,4,15,4,4,10,4])
-        comps['fu'].setm(0,0,[4,4,4,4])
-        comps['fu'].setm(1,0,[8,8])
-        comps['lw'].setm(0,1,[6,4,4,20])
-        comps['rw'].setm(0,1,[20,4,4,6])
-        comps['lt'].setm(0,1,[15])
-        comps['rt'].setm(0,1,[15])
-        comps['vt'].setm(0,1,[15])
-        comps['ln'].setm(0,1,[4])
-        comps['ln'].setm(5,1,[4])
-        comps['rn'].setm(0,1,[4])
-        comps['rn'].setm(5,1,[4])
-        comps['ln'].setm(0,0,[4])
-        comps['ln'].setm(2,0,[4])
-        comps['rn'].setm(0,0,[4])
-        comps['rn'].setm(2,0,[4])
+        comps['fu'].faces[0].setm(1,[18,4,4,4,4,8,4,15,4,4,10,4])
+        comps['fu'].faces[0].setm(0,[4,4,4,4])
+        comps['fu'].faces[1].setm(0,[8,8])
+        comps['lw'].faces[0].setm(1,[6,4,4,20])
+        comps['rw'].faces[0].setm(1,[20,4,4,6])
+        comps['lt'].faces[0].setm(1,[15])
+        comps['rt'].faces[0].setm(1,[15])
+        comps['vt'].faces[0].setm(1,[15])
+        comps['ln'].faces[0].setm(1,[4])
+        comps['ln'].faces[5].setm(1,[4])
+        comps['rn'].faces[0].setm(1,[4])
+        comps['rn'].faces[5].setm(1,[4])
+        comps['ln'].faces[0].setm(0,[4])
+        comps['ln'].faces[2].setm(0,[4])
+        comps['rn'].faces[0].setm(0,[4])
+        comps['rn'].faces[2].setm(0,[4])
 
     def define_oml_parameters(self):
         c = self.comps

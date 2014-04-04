@@ -36,14 +36,14 @@ class Body(Primitive):
         self.ax2 = 1
 
     def setDOFs(self):
-        setC1 = self.setC1
-        for f in range(len(self.faces)):
-            self.setC1('surf', f, val=True)
+        faces = self.faces
+        for f in range(len(faces)):
+            faces[f].setC1('surf', val=True)
         if self.bottom==0:
-            setC1('surf', 0, i= 0, u= 0, val=False)
-            setC1('edge', 0, i= 0, u= 0, val=True)
-            setC1('surf', 2, i=-1, u=-1, val=False)
-            setC1('edge', 2, i=-1, u=-1, val=True)
+            faces[0].setC1('surf', i= 0, u= 0, val=False)
+            faces[0].setC1('edge', i= 0, u= 0, val=True)
+            faces[2].setC1('surf', i=-1, u=-1, val=False)
+            faces[2].setC1('edge', i=-1, u=-1, val=True)
 
     def initializeVariables(self):
         super(Body,self).initializeVariables()

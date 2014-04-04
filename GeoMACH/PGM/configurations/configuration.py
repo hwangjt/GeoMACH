@@ -48,7 +48,7 @@ class Configuration(object):
         for name in self.comps:
             comp = self.comps[name]
             comp.name = name
-            comp.oml0 = self.oml0
+            comp.set_oml(self.oml0)
             comp.setDOFs()
         self.set_oml_resolution()
         self.oml0.update()

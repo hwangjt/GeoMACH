@@ -52,10 +52,11 @@ class Cone(Interpolant):
                 face.surf_indices[i,j] = j*ni + i
 
     def setDOFs(self):
-        self.setC1('surf', 0, val=True)
+        faces = self.faces
+        faces[0].setC1('surf', val=True)
         if self.comp.bottom==0:
-            self.setC1('surf', 0, i=-1, u=-1, val=False)
-            self.setC1('edge', 0, i=-1, u=-1, val=True)
+            faces[0].setC1('surf', i=-1, u=-1, val=False)
+            faces[0].setC1('edge', i=-1, u=-1, val=True)
 
     def computeQs(self):
         getEdge = self.getEdge

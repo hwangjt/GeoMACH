@@ -24,21 +24,23 @@ class Junction(Interpolant):
         self.initializeSurfaces()
 
     def setDOFs(self):
-        self.setC1('surf', 0, val=True)
+        faces = self.faces
+
+        faces[0].setC1('surf', val=True)
 
         si = self.si
         sj = self.sj
         for j in range(sj[1],sj[2]):
-            self.setC1('surf', 0, i=si[1]-1, j=j, u=-1, val=False)
-            self.setC1('surf', 0, i=si[2], j=j, u=0, val=False)
+            faces[0].setC1('surf', i=si[1]-1, j=j, u=-1, val=False)
+            faces[0].setC1('surf', i=si[2], j=j, u=0, val=False)
         for i in range(si[1],si[2]):
-            self.setC1('surf', 0, i=i, j=sj[1]-1, v=-1, val=False)
-            self.setC1('surf', 0, i=i, j=sj[2], v=0, val=False)
+            faces[0].setC1('surf', i=i, j=sj[1]-1, v=-1, val=False)
+            faces[0].setC1('surf', i=i, j=sj[2], v=0, val=False)
 
-        self.setC1('surf', 0, i=si[1]-1, j=sj[1]-1, u=-1, v=-1, val=False)
-        self.setC1('surf', 0, i=si[2], j=sj[1]-1, u=0, v=-1, val=False)
-        self.setC1('surf', 0, i=si[1]-1, j=sj[2], u=-1, v=0, val=False)
-        self.setC1('surf', 0, i=si[2], j=sj[2], u=0, v=0, val=False)
+        faces[0].setC1('surf', i=si[1]-1, j=sj[1]-1, u=-1, v=-1, val=False)
+        faces[0].setC1('surf', i=si[2], j=sj[1]-1, u=0, v=-1, val=False)
+        faces[0].setC1('surf', i=si[1]-1, j=sj[2], u=-1, v=0, val=False)
+        faces[0].setC1('surf', i=si[2], j=sj[2], u=0, v=0, val=False)
 
         self.removeSurfaces()
 
