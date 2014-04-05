@@ -2,8 +2,10 @@
 GeoMACH configuration class
 John Hwang, April 2014
 """
+# pylint: disable=E1101
 from __future__ import division
 import numpy
+import scipy.sparse
 import time
 from collections import OrderedDict
 
@@ -52,20 +54,19 @@ class Configuration(object):
             comp.setDOFs()
         self.set_oml_resolution()
         self.oml0.update()
-
-        # Sets up comp to OML mapping
         for comp in self.comps.values():
             for face in comp.faces:
                 face.compute_num_cp()
 
+        # Creates global face-wise cp and index vectors
         num_cp_total = 0
         for comp in self.comps.values():
             for face in comp.faces:
                 num_cp_total += face.num_cp[0] * face.num_cp[1]
-
         cp_vec = numpy.zeros(3*num_cp_total)
         index_vec = -numpy.ones(num_cp_total, int)
 
+        # Passes views to each face
         start, end = 0, 0
         for comp in self.comps.values():
             for face in comp.faces:
@@ -73,6 +74,28 @@ class Configuration(object):
                 face.initializeDOFmappings(cp_vec[3*start:3*end],
                                            index_vec[start:end])
                 start += face.num_cp[0] * face.num_cp[1]
+
+        # Sets up face-wise cp to oml's free cp vec mapping
+        data0 = numpy.minimum(1, index_vec + 1)
+        rows0 = numpy.maximum(0, index_vec)
+        cols0 = numpy.linspace(0, num_cp_total-1, num_cp_total)
+        data = numpy.zeros(3*num_cp_total, int)
+        rows = numpy.zeros(3*num_cp_total, int)
+        cols = numpy.zeros(3*num_cp_total, int)
+        for coord in xrange(3):
+            data[coord::3] = data0
+            rows[coord::3] = 3*rows0 + coord
+            cols[coord::3] = 3*cols0 + coord
+        cp_jacobian = scipy.sparse.csr_matrix((data, (rows, cols)), 
+                                              shape=(3*self.oml0.nQ, 
+                                                     3*num_cp_total))
+        row_sums = cp_jacobian.dot(numpy.ones(3*num_cp_total, int))
+        inv_row_sum = scipy.sparse.diags(1.0/row_sums, 0, format='csr')
+        self.cp_jacobian = inv_row_sum.dot(cp_jacobian)
+
+        self.cp_vec = cp_vec
+        self.q_vec0 = numpy.zeros((3*self.oml0.nQ))
+        self.q_vec = self.q_vec0.reshape((self.oml0.nQ, 3), order='C')
 
         for comp in self.comps.values():
             comp.removeHiddenDOFs()
@@ -125,10 +148,8 @@ class Configuration(object):
 
     def compute_free_ctrlpt_vector(self):
         """ Computes vector of free control points from face control points """
-        self.oml0.Q[:, :3] = 0.0
-        for comp in self.comps.values():
-            for face in comp.faces:
-                face.propagateQs()
+        self.q_vec0[:] = self.cp_jacobian.dot(self.cp_vec)
+        self.oml0.Q[:, :3] = self.q_vec
 
     def get_derivatives(self, comp_name, par_name, ind,
                         clean=True, useFD=False, step=1e-5):

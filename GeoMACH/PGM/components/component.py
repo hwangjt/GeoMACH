@@ -129,8 +129,8 @@ class Face(object):
 
         oml = self.oml
         ni, nj = self.num_cp_list[:]
-        self.cp_array = cp_vec.reshape((sum(ni)+1,sum(nj)+1,3), order='F')
-        self.index_array = index_vec.reshape((sum(ni)+1,sum(nj)+1), order='F')
+        self.cp_array = cp_vec.reshape((sum(ni)+1,sum(nj)+1,3), order='C')
+        self.index_array = index_vec.reshape((sum(ni)+1,sum(nj)+1), order='C')
         for j in range(self.num_surf[1]):
             for i in range(self.num_surf[0]):
                 surf = self.surf_indices[i,j]
