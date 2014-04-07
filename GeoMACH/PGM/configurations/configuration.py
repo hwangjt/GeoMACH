@@ -36,12 +36,12 @@ class Configuration(object):
         surfs_list = []
         index_offset = 0
         for comp in self.comps.values():
-            for face in comp.faces:
+            for face in comp.faces.values():
                 for ind_j in xrange(face.num_surf[1]):
                     for ind_i in xrange(face.num_surf[0]):
                         if face.surf_indices[ind_i, ind_j] != -1:
                             face.surf_indices[ind_i, ind_j] += index_offset
-            index_offset = numpy.max(comp.faces[-1].surf_indices) + 1
+            index_offset = numpy.max(comp.faces.values()[-1].surf_indices) + 1
             surfs_list.extend(comp.Ps)
             comp.Ps = []
         self.oml0 = PUBS.PUBS(surfs_list)
@@ -55,13 +55,13 @@ class Configuration(object):
         self.set_oml_resolution()
         self.oml0.update()
         for comp in self.comps.values():
-            for face in comp.faces:
+            for face in comp.faces.values():
                 face.compute_num_cp()
 
         # Creates global face-wise cp and index vectors
         num_cp_total = 0
         for comp in self.comps.values():
-            for face in comp.faces:
+            for face in comp.faces.values():
                 num_cp_total += face.num_cp[0] * face.num_cp[1]
         cp_vec = numpy.zeros(3*num_cp_total)
         index_vec = -numpy.ones(num_cp_total, int)
@@ -69,7 +69,7 @@ class Configuration(object):
         # Passes views to each face
         start, end = 0, 0
         for comp in self.comps.values():
-            for face in comp.faces:
+            for face in comp.faces.values():
                 end += face.num_cp[0] * face.num_cp[1]
                 face.initializeDOFmappings(cp_vec[3*start:3*end],
                                            index_vec[start:end])

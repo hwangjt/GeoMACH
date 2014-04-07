@@ -9,7 +9,7 @@ from GeoMACH.PGM.components import Component
 class Primitive(Component):
 
     def __init__(self, nx, ny, nz):
-        super(Primitive,self).__init__() 
+        super(Primitive,self).__init__()
 
         self.ms = []
         self.ms.append(numpy.zeros(nx,int))
@@ -22,7 +22,7 @@ class Primitive(Component):
         self.ns.append(numpy.zeros(nz,int))
 
     def initializeVariables(self):
-        n = self.faces[0].num_cp[1]
+        n = self.faces.values()[0].num_cp[1]
         zeros = numpy.zeros
         v = self.variables
         a = self.addParam
@@ -43,7 +43,7 @@ class Primitive(Component):
 
     def computeSections(self, nQ, shapes, radii=None):
         nf = len(self.faces)
-        n = self.faces[0].num_cp[1]
+        n = self.faces.values()[0].num_cp[1]
         v = self.variables
 
         rot0, Da, Di, Dj = PGMlib.computerotations(self.ax1, self.ax2, n, 9*(n*3-2), v['pos'], v['nor'])
@@ -57,34 +57,34 @@ class Primitive(Component):
                 scale = v['scl']
             else:
                 scale = radii[f]
-            ni, nj = self.faces[f].num_cp
-            self.faces[f].cp_array[:,:,:], Da, Di, Dj = PGMlib.computesections(self.ax1, self.ax2, ni, nj, ni*nj*27, counter, v['ogn'], scale, v['pos'], rot, shapes[f])
+            ni, nj = self.faces.values()[f].num_cp
+            self.faces.values()[f].cp_array[:,:,:], Da, Di, Dj = PGMlib.computesections(self.ax1, self.ax2, ni, nj, ni*nj*27, counter, v['ogn'], scale, v['pos'], rot, shapes[f])
             self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nQ))
             self.dQs_dv[f] = self.dQs_dv[f] + self.dQs_dv[f].dot(dv_dpos0)
             counter += 3*ni*nj
 
     def setDerivatives(self, var, dV0):
         nf = len(self.faces)
-        n = self.faces[0].num_cp[1]
+        n = self.faces.values()[0].num_cp[1]
         nv = self.dQs_dv[0].shape[1]
         dV = numpy.zeros(nv)
         if var=='scl':
             dV[:3*n] = dV0.T.flatten()
             for f in range(nf):
-                ni, nj = self.faces[f].num_cp
-                self.faces[f].cp_array[:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].dot(dV))
+                ni, nj = self.faces.values()[f].num_cp
+                self.faces.values()[f].cp_array[:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].dot(dV))
         elif var=='pos':
             dV[3*n:6*n] = dV0.T.flatten()
             for f in range(nf):
-                ni, nj = self.faces[f].num_cp
+                ni, nj = self.faces.values()[f].num_cp
                 for i in range(ni):
                     self.faces[f].cp_array[i,:,:] += dV0
-                self.faces[f].cp_array[:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].dot(dV))
+                self.faces.values()[f].cp_array[:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].dot(dV))
         elif var=='rot':
             dV[6*n:9*n] = dV0.T.flatten()
             for f in range(nf):
-                ni, nj = self.faces[f].num_cp
-                self.faces[f].cp_array[:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].dot(dV)*numpy.pi/180.0)
+                ni, nj = self.faces.values()[f].num_cp
+                self.faces.values()[f].cp_array[:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].dot(dV)*numpy.pi/180.0)
         else:
             self.variables[var] += dV0
             self.computeQs()

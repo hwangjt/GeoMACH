@@ -25,15 +25,15 @@ class Shell(Primitive):
 
         super(Shell,self).__init__(nx,ny,nz)
 
-        self.addFace( 2, 1,-0.5)
-        self.addFace( 3, 1, 0.5)
-        self.addFace(-2, 1, 0.5)
-        self.addFace( 2, 1, 0.4,0.4,0.4)
-        self.addFace(-3, 1, 0.4,0.4,0.4)
-        self.addFace(-2, 1,-0.4,0.4,0.4)
+        self.addFace('rt0', 2, 1, -0.5)
+        self.addFace('tp0', 3, 1, 0.5)
+        self.addFace('lt0', -2, 1, 0.5)
+        self.addFace('lt1', 2, 1, 0.4, 0.4, 0.4)
+        self.addFace('tp1', -3, 1, 0.4, 0.4, 0.4)
+        self.addFace('rt1', -2, 1, -0.4, 0.4, 0.4)
         if bottom==2:
-            self.addFace(-3, 1,-0.5)
-            self.addFace( 3, 1,-0.4,0.4,0.4)
+            self.addFace('bt0', -3, 1, -0.5)
+            self.addFace('bt1', 3, 1, -0.4, 0.4, 0.4)
         self.connectEdges(f1=0,v1= 0,f2=5,v2= 0)
         self.connectEdges(f1=0,v1=-1,f2=5,v2=-1)
         self.connectEdges(f1=1,v1= 0,f2=4,v2= 0)
@@ -50,20 +50,20 @@ class Shell(Primitive):
 
     def setDOFs(self):
         faces = self.faces
-        for f in range(len(faces)):
-            faces[f].setC1('surf', val=True)
+        for face in faces.values():
+            face.setC1('surf', val=True)
         if self.bottom==0:
-            faces[0].setC1('surf', i= 0, u= 0, val=False)
-            faces[0].setC1('edge', i= 0, u= 0, val=True)
-            faces[2].setC1('surf', i=-1, u=-1, val=False)
-            faces[2].setC1('edge', i=-1, u=-1, val=True)
+            faces['rt0'].setC1('surf', i= 0, u= 0, val=False)
+            faces['rt0'].setC1('edge', i= 0, u= 0, val=True)
+            faces['lt0'].setC1('surf', i=-1, u=-1, val=False)
+            faces['lt0'].setC1('edge', i=-1, u=-1, val=True)
 
     def initializeVariables(self):
         super(Shell,self).initializeVariables()
         faces = self.faces
-        nx = faces[0].num_cp[1]
-        ny = faces[0].num_cp[0]
-        nz = faces[1].num_cp[0]
+        nx = faces['rt0'].num_cp[1]
+        ny = faces['rt0'].num_cp[0]
+        nz = faces['tp0'].num_cp[0]
         zeros = numpy.zeros
         v = self.variables
         a = self.addParam
@@ -91,9 +91,9 @@ class Shell(Primitive):
 
     def computeQs(self):
         faces = self.faces
-        nx = faces[0].num_cp[1]
-        ny = faces[0].num_cp[0]
-        nz = faces[1].num_cp[0]
+        nx = faces['rt0'].num_cp[1]
+        ny = faces['rt0'].num_cp[0]
+        nz = faces['tp0'].num_cp[0]
         v = self.variables
         b = self.bottom==2
 

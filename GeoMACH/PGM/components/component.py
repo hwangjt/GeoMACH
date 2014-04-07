@@ -1,6 +1,7 @@
 from __future__ import division
 import numpy
 import scipy.sparse
+from collections import OrderedDict
 
 from GeoMACH.PGM import PGMlib
 from GeoMACH.PGM.components import Parameter
@@ -14,7 +15,7 @@ class Component(object):
         self.Ps = []
         self.outers = []
         self.oml0 = None
-        self.faces = []
+        self.faces = OrderedDict()
         self.variables = {}
         self.params = {}
         self.Cv0 = 2
@@ -22,7 +23,7 @@ class Component(object):
 
     def set_oml(self, oml):
         self.oml0 = oml
-        for face in self.faces:
+        for face in self.faces.values():
             face.oml = oml
 
     def computeVs(self):
@@ -36,7 +37,7 @@ class Component(object):
     def addParam(self, name, var, shp, P=None, T=None, Tdim=0, D=None, Ddim=0, B=None, Bdim=0):
         self.params[name] = Parameter(var, shp, self.variables[var].shape, P, T, Tdim, D, Ddim, B, Bdim)
         
-    def addFace(self, axis_u, axis_v, d, ru=0.5, rv=0.5):
+    def addFace(self, name, axis_u, axis_v, d, ru=0.5, rv=0.5):
         """ Creates a set of rectangular surfaces, their IDs, and face dims.
         nu,nv: number of surfaces in the u and v directions
         axis_u,axis_v: {1,2,3} maps to {x,y,z}; negative sign means reverse order
@@ -57,16 +58,15 @@ class Component(object):
                 self.Ps.append(PGMlib.bilinearinterp(nP, ni, nj, i+1, j+1, verts))
 
         if len(self.faces) > 0:
-            counter = numpy.max(self.faces[-1].surf_indices) + 1
+            counter = numpy.max(self.faces.values()[-1].surf_indices) + 1
         else:
             counter = 0
 
-        face = Face(len(self.faces), axis_u, axis_v, ni, nj)
+        self.faces[name] = Face(len(self.faces), axis_u, axis_v, ni, nj)
         for j in range(nj):
             for i in range(ni):
-                face.surf_indices[i,j] = counter
+                self.faces[name].surf_indices[i,j] = counter
                 counter += 1
-        self.faces.append(face)
             
         self.outers.append(numpy.ones((ni,nj),bool))
 
@@ -77,16 +77,16 @@ class Component(object):
 
     def connectEdges(self, f1=0, u1=None, v1=None, f2=0, u2=None, v2=None):
         def edge(f, u, v, kk):
-            surf_indices = self.faces[f].surf_indices
+            surf_indices = self.faces.values()[f].surf_indices
             Ps = self.Ps
             d = 0 if u==None else 1
-            r = self.faces[f].axes[d]
+            r = self.faces.values()[f].axes[d]
             k = kk if r > 0 else -1-kk
             surf = surf_indices[k,v] if d==0 else surf_indices[u,k]
             P = Ps[surf][:,v] if d == 0 else Ps[surf][u,:]
             return P[::-1] if r < 0 else P                
             
-        for k in range(self.faces[f1].num_surf[v1==None]):
+        for k in range(self.faces.values()[f1].num_surf[v1==None]):
             self.averageEdges(edge(f1,u1,v1,k), edge(f2,u2,v2,k))
 
     def removeHiddenDOFs(self):

@@ -80,10 +80,10 @@ def getQ(ms, ns, P0):
 def fitAirfoil(wing,filename):
     airfoil = getAirfoil(filename)
     Qs = []
-    for f in range(2):
-        nsurf = wing.faces[f].num_surf[0]
-        ms = wing.faces[f].num_cp_list[0]
-        ns = wing.faces[f].num_pt_list[0]
+    for f in xrange(2):
+        nsurf = wing.faces.values()[f].num_surf[0]
+        ms = wing.faces.values()[f].num_cp_list[0]
+        ns = wing.faces.values()[f].num_pt_list[0]
         nP = sum(ns) + 1
 
         P = getP(nP, airfoil[f])

@@ -31,20 +31,20 @@ class Cone(Interpolant):
         vtx = lambda f, i, j: self.comp.Ps[self.comp.faces[f].surf_indices[i,j]][i,j,:]
         verts = numpy.zeros((2,2,3),order='F')
         if self.face==0:
-            verts[0,0,:] = vtx(0, -1, 0)
-            verts[1,0,:] = vtx(0, 0, 0)
-            verts[0,1,:] = vtx(2, 0, 0)
-            verts[1,1,:] = vtx(2, -1, 0)
+            verts[0,0,:] = vtx('rgt', -1, 0)
+            verts[1,0,:] = vtx('rgt', 0, 0)
+            verts[0,1,:] = vtx('lft', 0, 0)
+            verts[1,1,:] = vtx('lft', -1, 0)
         else:
-            verts[0,0,:] = vtx(2, 0, -1)
-            verts[1,0,:] = vtx(2, -1, -1)
-            verts[0,1,:] = vtx(0, -1, -1)
-            verts[1,1,:] = vtx(0, 0, -1)
+            verts[0,0,:] = vtx('lft', 0, -1)
+            verts[1,0,:] = vtx('lft', -1, -1)
+            verts[0,1,:] = vtx('rgt', -1, -1)
+            verts[1,1,:] = vtx('rgt', 0, -1)
         ni = sum(self.ni)
         nj = sum(self.nj)
 
         self.Ps = []
-        face = self.faces[0]
+        face = self.faces['def']
         face.surf_indices[:,:] = -1
         for j in range(nj):
             for i in range(ni):
@@ -52,34 +52,35 @@ class Cone(Interpolant):
                 face.surf_indices[i,j] = j*ni + i
 
     def setDOFs(self):
-        faces = self.faces
-        faces[0].setC1('surf', val=True)
+        face = self.faces['def']
+        face.setC1('surf', val=True)
         if self.comp.bottom==0:
-            faces[0].setC1('surf', i=-1, u=-1, val=False)
-            faces[0].setC1('edge', i=-1, u=-1, val=True)
+            face.setC1('surf', i=-1, u=-1, val=False)
+            face.setC1('edge', i=-1, u=-1, val=True)
 
     def computeQs(self):
         getEdge = self.getEdge
         comp_faces = self.comp.faces
+        face = self.faces['def']
         zeros = numpy.zeros((1,3),order='F')
         if self.face==0:
-            W = getEdge(comp_faces[0].cp_array, j=1, d=-1)
-            N = getEdge(comp_faces[1].cp_array, j=1, d=1)
-            E = getEdge(comp_faces[2].cp_array, j=1, d=1)
+            W = getEdge(comp_faces['rgt'].cp_array, j=1, d=-1)
+            N = getEdge(comp_faces['top'].cp_array, j=1, d=1)
+            E = getEdge(comp_faces['lft'].cp_array, j=1, d=1)
             if self.comp.bottom==2:
-                S = getEdge(comp_faces[3].cp_array, j=1, d=-1)
+                S = getEdge(comp_faces['bot'].cp_array, j=1, d=-1)
             else:
-                S = getEdge(comp_faces[1].cp_array, j=1, d=1)
+                S = getEdge(comp_faces['top'].cp_array, j=1, d=1)
         else:
-            E = getEdge(comp_faces[0].cp_array, j=-2, d=-1)
-            N = getEdge(comp_faces[1].cp_array, j=-2, d=-1)
-            W = getEdge(comp_faces[2].cp_array, j=-2, d=1)
+            E = getEdge(comp_faces['rgt'].cp_array, j=-2, d=-1)
+            N = getEdge(comp_faces['top'].cp_array, j=-2, d=-1)
+            W = getEdge(comp_faces['lft'].cp_array, j=-2, d=1)
             if self.comp.bottom==2:
-                S = getEdge(comp_faces[3].cp_array, j=-2, d=1)
+                S = getEdge(comp_faces['bot'].cp_array, j=-2, d=1)
             else:
-                S = getEdge(comp_faces[1].cp_array, j=-2, d=-1)
+                S = getEdge(comp_faces['top'].cp_array, j=-2, d=-1)
 
-        mu, mv = self.faces[0].num_cp_list[:]
+        mu, mv = face.num_cp_list[:]
         nu = range(3)
         nv = range(3)
         for k in range(3):
@@ -87,4 +88,4 @@ class Cone(Interpolant):
             nv[k] = sum(mv[self.sj[k]:self.sj[k+1]])
 
         v = self.variables
-        self.faces[0].cp_array[:,:,:] = PGMlib.computecone(sum(nu)+1, sum(nv)+1, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['scl']*self.comp.faces[0].num_cp[1], v['fC1'], v['mC1'], W, E, N, S, v['shp'])
+        face.cp_array[:,:,:] = PGMlib.computecone(sum(nu)+1, sum(nv)+1, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['scl']*self.comp.faces['rgt'].num_cp[1], v['fC1'], v['mC1'], W, E, N, S, v['shp'])

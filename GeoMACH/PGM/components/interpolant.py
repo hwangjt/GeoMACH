@@ -20,7 +20,7 @@ class Interpolant(Component):
         self.ns.append(numpy.zeros(sum(self.ni),int))
         self.ns.append(numpy.zeros(sum(self.nj),int))
         self.ns.append(None)
-        self.faces.append(Face(0, 1, 2, sum(self.ni), sum(self.nj)))
+        self.faces['def'] = Face(0, 1, 2, sum(self.ni), sum(self.nj))
             
         self.si = numpy.zeros(4,int)
         self.sj = numpy.zeros(4,int)
@@ -33,8 +33,8 @@ class Interpolant(Component):
 
     def initializeVariables(self):
         faces = self.faces
-        ni = faces[0].num_cp[0]
-        nj = faces[0].num_cp[1]
+        ni = faces['def'].num_cp[0]
+        nj = faces['def'].num_cp[1]
         zeros = numpy.zeros
         v = self.variables
         a = self.addParam

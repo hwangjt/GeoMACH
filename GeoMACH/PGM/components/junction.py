@@ -24,23 +24,23 @@ class Junction(Interpolant):
         self.initializeSurfaces()
 
     def setDOFs(self):
-        faces = self.faces
+        face = self.faces['def']
 
-        faces[0].setC1('surf', val=True)
+        face.setC1('surf', val=True)
 
         si = self.si
         sj = self.sj
         for j in range(sj[1],sj[2]):
-            faces[0].setC1('surf', i=si[1]-1, j=j, u=-1, val=False)
-            faces[0].setC1('surf', i=si[2], j=j, u=0, val=False)
+            face.setC1('surf', i=si[1]-1, j=j, u=-1, val=False)
+            face.setC1('surf', i=si[2], j=j, u=0, val=False)
         for i in range(si[1],si[2]):
-            faces[0].setC1('surf', i=i, j=sj[1]-1, v=-1, val=False)
-            faces[0].setC1('surf', i=i, j=sj[2], v=0, val=False)
+            face.setC1('surf', i=i, j=sj[1]-1, v=-1, val=False)
+            face.setC1('surf', i=i, j=sj[2], v=0, val=False)
 
-        faces[0].setC1('surf', i=si[1]-1, j=sj[1]-1, u=-1, v=-1, val=False)
-        faces[0].setC1('surf', i=si[2], j=sj[1]-1, u=0, v=-1, val=False)
-        faces[0].setC1('surf', i=si[1]-1, j=sj[2], u=-1, v=0, val=False)
-        faces[0].setC1('surf', i=si[2], j=sj[2], u=0, v=0, val=False)
+        face.setC1('surf', i=si[1]-1, j=sj[1]-1, u=-1, v=-1, val=False)
+        face.setC1('surf', i=si[2], j=sj[1]-1, u=0, v=-1, val=False)
+        face.setC1('surf', i=si[1]-1, j=sj[2], u=-1, v=0, val=False)
+        face.setC1('surf', i=si[2], j=sj[2], u=0, v=0, val=False)
 
         self.removeSurfaces()
 
@@ -77,7 +77,7 @@ class Junction(Interpolant):
 
     def initializeVerts(self):
         vtx = lambda i, j, u, v: self.rotate(self.fComp.Ps[self.fK[i,j]])[u,v,:]
-        vtxM = lambda f, i, j, u, v: self.mComp.Ps[self.mComp.faces[f].surf_indices[i,j]][u,v,:]
+        vtxM = lambda f, i, j, u, v: self.mComp.Ps[self.mComp.faces.values()[f].surf_indices[i,j]][u,v,:]
 
         verts = numpy.zeros((4,4,3),order='F')
         for i in [0,-1]:
@@ -112,8 +112,8 @@ class Junction(Interpolant):
             edge = P[u,:,:] if not u==None else P[:,v,:]
             return edge if d==1 else edge[::-1,:]
 
-        getM = lambda f, i, j: self.mComp.Ps[self.mComp.faces[f].surf_indices[i,j]]
-        getI = lambda i, j: self.Ps[self.faces[0].surf_indices[i,j]]
+        getM = lambda f, i, j: self.mComp.Ps[self.mComp.faces.values()[f].surf_indices[i,j]]
+        getI = lambda i, j: self.Ps[self.faces['def'].surf_indices[i,j]]
         getF = lambda i, j: self.rotate(self.fComp.Ps[self.fK[i,j]])
 
         def copy(iI, jI, fM, iM, jM, uI=None, vI=None, uM=None, vM=None, d=1):
@@ -135,7 +135,7 @@ class Junction(Interpolant):
         sj = self.sj
 
         self.Ps = []
-        face = self.faces[0]
+        face = self.faces['def']
         face.surf_indices[:,:] = -1
         counter = 0
         for j in range(sj[3]):
@@ -186,13 +186,13 @@ class Junction(Interpolant):
                 self.oml0.visible[fK0[i,j]] = False
 
     def removeHiddenDOFs(self):
-        mu, mv = self.faces[0].num_cp_list[:]
+        mu, mv = self.faces['def'].num_cp_list[:]
         nu = range(4)
         nv = range(4)
         for k in range(4):
             nu[k] = sum(mu[:self.si[k]])
             nv[k] = sum(mv[:self.sj[k]])
-        N = self.faces[0].index_array
+        N = self.faces['def'].index_array
         N[nu[1],nv[1]:nv[2]+1] = -1
         N[nu[2],nv[1]:nv[2]+1] = -1
         N[nu[1]:nu[2]+1,nv[1]] = -1
@@ -209,22 +209,22 @@ class Junction(Interpolant):
 
         getEdge = self.getEdge
         if self.mSide==-1:
-            W = getEdge(self.mComp.faces[2].cp_array, i=-1, d=1)
-            E = getEdge(self.mComp.faces[0].cp_array, i=0, d=1)
-            N = getEdge(self.mComp0.faces[0].cp_array, i=-1, d=-1)
-            S = getEdge(self.mComp1.faces[0].cp_array, i=-1, d=1)
+            W = getEdge(self.mComp.faces['lft'].cp_array, i=-1, d=1)
+            E = getEdge(self.mComp.faces['rgt'].cp_array, i=0, d=1)
+            N = getEdge(self.mComp0.faces['def'].cp_array, i=-1, d=-1)
+            S = getEdge(self.mComp1.faces['def'].cp_array, i=-1, d=1)
         elif self.mSide==0:
             W = numpy.zeros((1,2,3),order='F')
             E = numpy.zeros((1,2,3),order='F')
-            N = getEdge(self.mComp.faces[0].cp_array, j=0, d=-1)
-            S = getEdge(self.mComp.faces[1].cp_array, j=0, d=1)
+            N = getEdge(self.mComp.faces['upp'].cp_array, j=0, d=-1)
+            S = getEdge(self.mComp.faces['low'].cp_array, j=0, d=1)
         elif self.mSide==1:
             W = numpy.zeros((1,2,3),order='F')
             E = numpy.zeros((1,2,3),order='F')
-            N = getEdge(self.mComp.faces[0].cp_array, j=-1, d=1)
-            S = getEdge(self.mComp.faces[1].cp_array, j=-1, d=-1)
+            N = getEdge(self.mComp.faces['upp'].cp_array, j=-1, d=1)
+            S = getEdge(self.mComp.faces['low'].cp_array, j=-1, d=-1)
 
-        mu, mv = self.faces[0].num_cp_list[:]
+        mu, mv = self.faces['def'].num_cp_list[:]
         nu = range(3)
         nv = range(3)
         for k in range(3):
@@ -232,4 +232,4 @@ class Junction(Interpolant):
             nv[k] = sum(mv[self.sj[k]:self.sj[k+1]]) + 1
 
         v = self.variables
-        self.faces[0].cp_array[:,:,:] = PGMlib.computejunction(sum(nu)-2, sum(nv)-2, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['fC1'], v['mC1'], W, E, N, S, fQ, v['shp'])
+        self.faces['def'].cp_array[:,:,:] = PGMlib.computejunction(sum(nu)-2, sum(nv)-2, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['fC1'], v['mC1'], W, E, N, S, fQ, v['shp'])

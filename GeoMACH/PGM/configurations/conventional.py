@@ -28,36 +28,36 @@ class Conventional(Configuration):
         c = self.comps
         comps = {'fu_n': Cone(c['fu'], 0),
                  'fu_t': Cone(c['fu'], 1),
-                 'lp_lw': Junction(c['lw'], 1, 1, [1,0], c['lp'], mSide=0),
-                 'lp_ln': Junction(c['ln'], 1, 2, [1,0], c['lp'], mSide=1),
-                 'rp_rw': Junction(c['rw'], 1, 1, [1,0], c['rp'], mSide=0),
-                 'rp_rn': Junction(c['rn'], 1, 2, [1,0], c['rp'], mSide=1),
-                 'lw_fu': Junction(c['fu'], 2, 0, [2,1], c['lw'], mSide=0),
-                 'rw_fu': Junction(c['fu'], 0, 2, [2,5], c['rw'], mSide=1),
-                 'lt_fu': Junction(c['fu'], 2, 0, [1,9], c['lt'], mSide=0),
-                 'rt_fu': Junction(c['fu'], 0, 2, [1,0], c['rt'], mSide=1),
-                 'vt_fu': Junction(c['fu'], 1, 0, [0,8], c['vt'], mSide=0),
+                 'lp_lw': Junction(c['lw'], 'low', 1, [1,0], c['lp'], mSide=0),
+                 'lp_ln': Junction(c['ln'], 'tp0', 2, [1,0], c['lp'], mSide=1),
+                 'rp_rw': Junction(c['rw'], 'low', 1, [1,0], c['rp'], mSide=0),
+                 'rp_rn': Junction(c['rn'], 'tp0', 2, [1,0], c['rp'], mSide=1),
+                 'lw_fu': Junction(c['fu'], 'lft', 0, [2,1], c['lw'], mSide=0),
+                 'rw_fu': Junction(c['fu'], 'rgt', 2, [2,5], c['rw'], mSide=1),
+                 'lt_fu': Junction(c['fu'], 'lft', 0, [1,9], c['lt'], mSide=0),
+                 'rt_fu': Junction(c['fu'], 'rgt', 2, [1,0], c['rt'], mSide=1),
+                 'vt_fu': Junction(c['fu'], 'top', 0, [0,8], c['vt'], mSide=0),
                  }
         return comps
 
     def set_oml_resolution(self):
         comps = self.comps
-        comps['fu'].faces[0].setm(1,[18,4,4,4,4,8,4,15,4,4,10,4])
-        comps['fu'].faces[0].setm(0,[4,4,4,4])
-        comps['fu'].faces[1].setm(0,[8,8])
-        comps['lw'].faces[0].setm(1,[6,4,4,20])
-        comps['rw'].faces[0].setm(1,[20,4,4,6])
-        comps['lt'].faces[0].setm(1,[15])
-        comps['rt'].faces[0].setm(1,[15])
-        comps['vt'].faces[0].setm(1,[15])
-        comps['ln'].faces[0].setm(1,[4])
-        comps['ln'].faces[5].setm(1,[4])
-        comps['rn'].faces[0].setm(1,[4])
-        comps['rn'].faces[5].setm(1,[4])
-        comps['ln'].faces[0].setm(0,[4])
-        comps['ln'].faces[2].setm(0,[4])
-        comps['rn'].faces[0].setm(0,[4])
-        comps['rn'].faces[2].setm(0,[4])
+        comps['fu'].faces['rgt'].setm(1,[18,4,4,4,4,8,4,15,4,4,10,4])
+        comps['fu'].faces['rgt'].setm(0,[4,4,4,4])
+        comps['fu'].faces['top'].setm(0,[8,8])
+        comps['lw'].faces['upp'].setm(1,[6,4,4,20])
+        comps['rw'].faces['upp'].setm(1,[20,4,4,6])
+        comps['lt'].faces['upp'].setm(1,[15])
+        comps['rt'].faces['upp'].setm(1,[15])
+        comps['vt'].faces['upp'].setm(1,[15])
+        comps['ln'].faces['rt0'].setm(1,[4])
+        comps['ln'].faces['rt1'].setm(1,[4])
+        comps['rn'].faces['rt0'].setm(1,[4])
+        comps['rn'].faces['rt1'].setm(1,[4])
+        comps['ln'].faces['rt0'].setm(0,[4])
+        comps['ln'].faces['lt0'].setm(0,[4])
+        comps['rn'].faces['rt0'].setm(0,[4])
+        comps['rn'].faces['lt0'].setm(0,[4])
 
     def define_oml_parameters(self):
         c = self.comps

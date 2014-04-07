@@ -22,8 +22,8 @@ class Wing(Primitive):
 
         super(Wing,self).__init__(nx,0,nz)
 
-        self.addFace(-1, 3, 0.5)
-        self.addFace( 1, 3,-0.5)
+        self.addFace('upp', -1, 3, 0.5)
+        self.addFace('low', 1, 3, -0.5)
         self.connectEdges(f1=0,u1=0,f2=1,u2=-1)
         self.connectEdges(f1=0,u1=-1,f2=1,u2=0)
         if left==2:
@@ -37,25 +37,25 @@ class Wing(Primitive):
         self.ax2 = 2
 
     def setDOFs(self):
-        faces = self.faces
-        for f in range(2):
-            faces[f].setC1('surf', val=True) #C1 Everywhere
-            faces[f].setC1('surf', i=-f, u=-f, val=False) #C0 trailing edge
-            faces[f].setC1('edge', i=-f, u=-f, val=True) #C0 trailing edge
+        for f in xrange(len(self.faces)):
+            face = self.faces.values()[f]
+            face.setC1('surf', val=True) #C1 Everywhere
+            face.setC1('surf', i=-f, u=-f, val=False) #C0 trailing edge
+            face.setC1('edge', i=-f, u=-f, val=True) #C0 trailing edge
             if self.left==0:  
-                faces[f].setC1('surf', j=-1, v=-1, val=False) #C0 left edge
-                faces[f].setC1('edge', j=-1, v=-1, val=True) #C0 left edge
-                faces[f].setCornerC1(i=-f, j=-1, val=False) #C0 left TE corner
+                face.setC1('surf', j=-1, v=-1, val=False) #C0 left edge
+                face.setC1('edge', j=-1, v=-1, val=True) #C0 left edge
+                face.setCornerC1(i=-f, j=-1, val=False) #C0 left TE corner
             if self.right==0:
-                faces[f].setC1('surf', j=0, v=0, val=False) #C0 right edge
-                faces[f].setC1('edge', j=0, v=0, val=True) #C0 right edge
-                faces[f].setCornerC1(i=-f, j=0, val=False) #C0 right TE corner
+                face.setC1('surf', j=0, v=0, val=False) #C0 right edge
+                face.setC1('edge', j=0, v=0, val=True) #C0 right edge
+                face.setCornerC1(i=-f, j=0, val=False) #C0 right TE corner
 
     def initializeVariables(self):
         super(Wing,self).initializeVariables()
         faces = self.faces
-        ni = faces[0].num_cp[0]
-        nj = faces[0].num_cp[1]
+        ni = faces['upp'].num_cp[0]
+        nj = faces['upp'].num_cp[1]
         zeros = numpy.zeros
         v = self.variables
         a = self.addParam
@@ -75,14 +75,14 @@ class Wing(Primitive):
     def setAirfoil(self,filename="naca0012"):
         Ps = airfoils.fitAirfoil(self,filename)
         for f in range(len(self.faces)):
-            for j in range(self.faces[f].num_cp[1]):
+            for j in range(self.faces.values()[f].num_cp[1]):
                 shape = self.shapeU if f==0 else self.shapeL
                 shape[:,j,:2] = Ps[f][:,:]
         
     def computeQs(self):
         faces = self.faces
-        ni = faces[0].num_cp[0]
-        nj = faces[0].num_cp[1]
+        ni = faces['upp'].num_cp[0]
+        nj = faces['upp'].num_cp[1]
         v = self.variables
 
         #if self.left==2:

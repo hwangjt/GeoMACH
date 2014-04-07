@@ -25,11 +25,11 @@ class Body(Primitive):
 
         super(Body,self).__init__(nx,ny,nz)
 
-        self.addFace( 2, 1,-0.5)
-        self.addFace( 3, 1, 0.5)
-        self.addFace(-2, 1, 0.5)
+        self.addFace('rgt', 2, 1, -0.5)
+        self.addFace('top', 3, 1, 0.5)
+        self.addFace('lft', -2, 1, 0.5)
         if bottom==2:
-            self.addFace(-3, 1,-0.5)
+            self.addFace('bot', -3, 1, -0.5)
 
         self.bottom = bottom
         self.ax1 = 3
@@ -37,20 +37,20 @@ class Body(Primitive):
 
     def setDOFs(self):
         faces = self.faces
-        for f in range(len(faces)):
-            faces[f].setC1('surf', val=True)
+        for face in self.faces.values():
+            face.setC1('surf', val=True)
         if self.bottom==0:
-            faces[0].setC1('surf', i= 0, u= 0, val=False)
-            faces[0].setC1('edge', i= 0, u= 0, val=True)
-            faces[2].setC1('surf', i=-1, u=-1, val=False)
-            faces[2].setC1('edge', i=-1, u=-1, val=True)
+            faces['rgt'].setC1('surf', i= 0, u= 0, val=False)
+            faces['rgt'].setC1('edge', i= 0, u= 0, val=True)
+            faces['lft'].setC1('surf', i=-1, u=-1, val=False)
+            faces['lft'].setC1('edge', i=-1, u=-1, val=True)
 
     def initializeVariables(self):
         super(Body,self).initializeVariables()
         faces = self.faces
-        nx = faces[0].num_cp[1]
-        ny = faces[0].num_cp[0]
-        nz = faces[1].num_cp[0]
+        nx = faces['rgt'].num_cp[1]
+        ny = faces['rgt'].num_cp[0]
+        nz = faces['top'].num_cp[0]
         zeros = numpy.zeros
         v = self.variables
         a = self.addParam
@@ -68,9 +68,9 @@ class Body(Primitive):
 
     def computeQs(self):
         faces = self.faces
-        nx = faces[0].num_cp[1]
-        ny = faces[0].num_cp[0]
-        nz = faces[1].num_cp[0]
+        nx = faces['rgt'].num_cp[1]
+        ny = faces['rgt'].num_cp[0]
+        nz = faces['top'].num_cp[0]
         v = self.variables
         b = self.bottom==2
 
