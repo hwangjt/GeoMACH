@@ -34,13 +34,6 @@ class Primitive(Component):
         v['nor'] = zeros((n,3),order='F')
         v['flt'] = zeros((n,4),order='F')
 
-        a('scl','scl',(1,1),P=[1.0])
-        a('pos','pos',(2,3),P=[[0.,0.,0.],[1.,1.,1.]])
-        a('rot','rot',(1,1),P=[0.0])
-        a('ogn','ogn',(1,3),P=[0.,0.,0.])
-        a('nor','nor',(1,1),P=[1.0])
-        a('flt','flt',(1,1),P=[0.0])
-
     def computeSections(self, nQ, shapes, radii=None):
         nf = len(self.faces)
         n = self.faces.values()[0].num_cp[1]

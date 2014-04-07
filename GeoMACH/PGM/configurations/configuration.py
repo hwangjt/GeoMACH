@@ -138,13 +138,17 @@ class Configuration(object):
 
     def compute_face_ctrlpts(self, full=True, name0=None):
         """ Computes face control points from section properties """
-        if full:
-            for comp in self.comps.values():
-                comp.computeQs()
-        else:
-            for name in self.interpolant_comps.keys():
-                if name != name0:
-                    self.comps[name].computeQs()
+        for comp in self.primitive_comps.values():
+            comp.computeQs()
+        for comp in self.interpolant_comps.values():
+            comp.computeQs()
+        #if full:
+        #    for comp in self.comps.values():
+        #        comp.computeQs()
+        #else:
+        #    for name in self.interpolant_comps.keys():
+        #        if name != name0:
+        #            self.comps[name].computeQs()
 
     def compute_free_ctrlpt_vector(self):
         """ Computes vector of free control points from face control points """

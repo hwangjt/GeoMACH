@@ -60,12 +60,6 @@ class Body(Primitive):
         v['shL'] = zeros((ny,nx),order='F')
         v['shB'] = zeros((nz,nx),order='F')
 
-        a('shR','shR',(1,1),P=[0.0])
-        a('shT','shT',(1,1),P=[0.0])
-        a('shL','shL',(1,1),P=[0.0])
-        a('shB','shB',(1,1),P=[0.0])
-        self.params['pos'].setP(P=[[0.,0.,0.],[1.,0.,0.]])
-
     def computeQs(self):
         faces = self.faces
         nx = faces['rgt'].num_cp[1]

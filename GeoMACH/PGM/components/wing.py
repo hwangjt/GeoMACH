@@ -65,8 +65,7 @@ class Wing(Primitive):
 
         a('shU','shU',(1,1),P=[0.0])
         a('shL','shL',(1,1),P=[0.0])
-        self.params['pos'].setP([[0.,0.,0.],[0.,0.,1.]])
-        self.params['ogn'].setP([0.25,0.,0.])
+        self.addParam('ogn','ogn',[1,3],P=[0.25,0,0])
 
         self.shapeU = zeros((ni,nj,3),order='F')
         self.shapeL = zeros((ni,nj,3),order='F')

@@ -78,17 +78,6 @@ class Shell(Primitive):
         v['sB1'] = zeros((nz,nx),order='F')
         v['thk'] = zeros((nx,3),order='F')
 
-        a('sR0','sR0',(1,1),P=[0.0])
-        a('sT0','sT0',(1,1),P=[0.0])
-        a('sL0','sL0',(1,1),P=[0.0])
-        a('sB0','sB0',(1,1),P=[0.0])
-        a('sR1','sR1',(1,1),P=[0.0])
-        a('sT1','sT1',(1,1),P=[0.0])
-        a('sL1','sL1',(1,1),P=[0.0])
-        a('sB1','sB1',(1,1),P=[0.0])
-        a('thk','thk',(1,1),P=[0.2])
-        self.params['pos'].setP(P=[[0.,0.,0.],[1.,0.,0.]])
-
     def computeQs(self):
         faces = self.faces
         nx = faces['rt0'].num_cp[1]
