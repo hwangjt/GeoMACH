@@ -99,16 +99,19 @@ class Conventional(Configuration):
         #c['rw'].params['aileron2'].setB([[1,1,1,1],[0,0,0,0]],0)
         #c['rw'].params['aileron2'].setB([[1,1,1,1],[1,1,1,1]],1)
 
+        c['lt'].addParam('ogn','ogn',[1,3],P=[0.25,0,0])
         c['lt'].addParam('pos1','pos',[2,3],P=[[0,0,0],[6,0,8]])
         c['lt'].addParam('offset','pos',[1,3],P=[44,0,1.7])
         c['lt'].addParam('scl1','scl',[2,1],P=[4,1])
         c['lt'].addParam('rot1','rot',[2,3],P=[[0,10,0],[0,0,0]])
 
+        c['rt'].addParam('ogn','ogn',[1,3],P=[0.25,0,0])
         c['rt'].addParam('pos1','pos',[2,3],P=[[6,0,-8],[0,0,0]])
         c['rt'].addParam('offset','pos',[1,3],P=[44,0,-1.7])
         c['rt'].addParam('scl1','scl',[2,1],P=[1,4])
         c['rt'].addParam('rot1','rot',[2,3],P=[[0,0,0],[0,-10,0]])
 
+        c['vt'].addParam('ogn','ogn',[1,3],P=[0.25,0,0])
         c['vt'].addParam('nor1','nor',[1,3],P=[1,0,0])
         c['vt'].addParam('pos1','pos',[2,3],P=[[0,0,0],[6,8,0]])
         c['vt'].addParam('offset','pos',[1,3],P=[42,2.0,0])
@@ -119,6 +122,7 @@ class Conventional(Configuration):
         #c['vt'].addParam('aileron2','shL',[2,1],P=[0.0,0.12])
         #c['vt'].params['aileron2'].setT([0.75,1.0],0)
 
+        c['lp'].addParam('ogn','ogn',[1,3],P=[0.25,0,0])
         c['lp'].addParam('nor1','nor',[1,3],P=[1,0,0])
         c['lp'].addParam('pos1','pos',[2,3],P=[[0,0,0],[-2,-0.3,0]])
         c['lp'].addParam('offset','pos',[1,3],P=[21.2,-0.7,9])
@@ -130,6 +134,7 @@ class Conventional(Configuration):
         c['ln'].addParam('scl1','scl',[1,1],P=[1.25])
         c['ln'].addParam('thk1','thk',[3,1],P=[0.15,0.4,0.15],B=[False,True,False])
 
+        c['rp'].addParam('ogn','ogn',[1,3],P=[0.25,0,0])
         c['rp'].addParam('nor1','nor',[1,3],P=[1,0,0])
         c['rp'].addParam('pos1','pos',[2,3],P=[[0,0,0],[-2,-0.3,0]])
         c['rp'].addParam('offset','pos',[1,3],P=[21.2,-0.7,-9])

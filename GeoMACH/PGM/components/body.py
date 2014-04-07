@@ -45,37 +45,25 @@ class Body(Primitive):
             faces['lft'].setC1('surf', i=-1, u=-1, val=False)
             faces['lft'].setC1('edge', i=-1, u=-1, val=True)
 
-    def initializeVariables(self):
-        super(Body,self).initializeVariables()
-        faces = self.faces
-        nx = faces['rgt'].num_cp[1]
-        ny = faces['rgt'].num_cp[0]
-        nz = faces['top'].num_cp[0]
-        zeros = numpy.zeros
-        v = self.variables
-        a = self.addParam
-
-        v['shR'] = zeros((ny,nx),order='F')
-        v['shT'] = zeros((nz,nx),order='F')
-        v['shL'] = zeros((ny,nx),order='F')
-        v['shB'] = zeros((nz,nx),order='F')
+    def declare_properties(self):
+        super(Body, self).declare_properties()
 
     def computeQs(self):
         faces = self.faces
         nx = faces['rgt'].num_cp[1]
         ny = faces['rgt'].num_cp[0]
         nz = faces['top'].num_cp[0]
-        v = self.variables
+        p = self.properties
         b = self.bottom==2
 
-        #v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
-        #v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
+        #p['pos'][0] = 2*p['pos'][1] - p['pos'][2]
+        #p['pos'][-1] = 2*p['pos'][-2] - p['pos'][-3]
 
         shapes = range(4)
-        shapes[0] = PGMlib.computeshape(ny, nx,-b/4.0, 1/4.0, v['flt'], v['shR'])
-        shapes[1] = PGMlib.computeshape(nz, nx, 1/4.0, 3/4.0, v['flt'], v['shT'])
-        shapes[2] = PGMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, v['flt'], v['shL'])
-        shapes[3] = PGMlib.computeshape(nz, nx, 5/4.0, 7/4.0, v['flt'], v['shB'])
+        shapes[0] = PGMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['flt'], p['shp','rgt'])
+        shapes[1] = PGMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['flt'], p['shp','top'])
+        shapes[2] = PGMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['flt'], p['shp','lft'])
+        shapes[3] = PGMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['flt'], p['shp','bot'])
 
         nQ = nx*(9+6*ny+6*nz) if self.bottom==2 else nx*(9+6*ny+3*nz)
         self.computeSections(nQ, shapes)

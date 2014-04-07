@@ -31,23 +31,21 @@ class Interpolant(Component):
     def setDOFs(self):
         self.setC1('surf', 0, val=True)
 
-    def initializeVariables(self):
-        faces = self.faces
-        ni = faces['def'].num_cp[0]
-        nj = faces['def'].num_cp[1]
-        zeros = numpy.zeros
-        v = self.variables
-        a = self.addParam
+    def declare_properties(self):
+        super(Interpolant, self).declare_properties()
 
-        v['scl'] = zeros((1,1),order='F')
-        v['fC1'] = zeros((1,1),order='F')
-        v['mC1'] = zeros((1,1),order='F')
-        v['shp'] = zeros((ni,nj),order='F')
+        props = self.properties
+        props['scl'] = [1,1]
+        props['fC1'] = [1,1]
+        props['mC1'] = [1,1]
 
-        a('scl','scl',(1,1),P=[0.15])
-        a('fC1','fC1',(1,1),P=[1.0])
-        a('mC1','mC1',(1,1),P=[1.0])
-        a('shp','shp',(1,1),P=[0.0])
+    def initialize_properties(self, prop_vec):
+        super(Interpolant, self).initialize_properties(prop_vec)
+
+        add = self.addParam
+        add('scl','scl',(1,1),P=[0.15])
+        add('fC1','fC1',(1,1),P=[1.0])
+        add('mC1','mC1',(1,1),P=[1.0])
 
     def getEdge(self, Q, i=None, j=None, d=1):
         if j==None:
@@ -75,6 +73,6 @@ class Interpolant(Component):
             return P[::-1,:,:]
 
     def setDerivatives(self, var, dV0):
-        self.variables[var] += dV0
+        self.properties[var] += dV0
         self.computeQs()
-        self.variables[var] -= dV0
+        self.properties[var] -= dV0

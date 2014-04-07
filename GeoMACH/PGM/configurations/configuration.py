@@ -99,7 +99,25 @@ class Configuration(object):
 
         for comp in self.comps.values():
             comp.removeHiddenDOFs()
-            comp.initializeVariables()
+
+        num_prop_total = 0
+        for comp in self.comps.values():
+            comp.declare_properties()
+            for prop in comp.properties.values():
+                num_prop_total += prop[0] * prop[1]
+
+        prop_vec = numpy.zeros(num_prop_total)
+        prop_index_vec = numpy.array(
+            numpy.linspace(0, num_prop_total-1, num_prop_total), int)
+            
+        start, end = 0, 0
+        for comp in self.comps.values():
+            size = 0
+            for prop in comp.properties.values():
+                size += prop[0] * prop[1]
+            end += size
+            comp.initialize_properties(prop_vec[start:end])
+            start += size
 
         self.define_oml_parameters()
         self.compute()
@@ -163,7 +181,7 @@ class Configuration(object):
         self.compute_properties()
         self.compute_face_ctrlpts()
         self.compute_free_ctrlpt_vector()
-        V0 = numpy.array(comp.variables[var])
+        V0 = numpy.array(comp.properties[var])
         Q0 = numpy.array(self.oml0.Q[:, :3])
         if useFD:
             par.P[ind[0], ind[1], 0] += step
@@ -175,7 +193,7 @@ class Configuration(object):
             par.P[ind[0], ind[1], 0] += step
             self.compute_properties()
             par.P[ind[0], ind[1], 0] -= step
-            dV = comp.variables[var] - V0
+            dV = comp.properties[var] - V0
             self.compute_properties()
             comp.setDerivatives(var, dV)
             self.compute_face_ctrlpts(False, comp_name)
@@ -218,9 +236,9 @@ class Configuration(object):
         self.compute_free_ctrlpt_vector()
         Q0 = numpy.array(self.oml0.Q[:, :3])
         if useFD:
-            self.comps[comp].variables[var][ind] += step
+            self.comps[comp].properties[var][ind] += step
             self.compute_face_ctrlpts()
-            self.comps[comp].variables[var][ind] -= step
+            self.comps[comp].properties[var][ind] -= step
         else:
             self.comps[comp].setDerivatives(var, ind)
             self.compute_face_ctrlpts(False, comp)
@@ -231,14 +249,14 @@ class Configuration(object):
             self.computePoints()
         return res
 
-    def test_derivatives0(self, comp, variables=[]):
+    def test_derivatives0(self, comp, properties=[]):
         self.compute()
-        if variables == []:
-            variables = self.comps[comp].variables.keys()
+        if properties == []:
+            properties = self.comps[comp].properties.keys()
         step = 1e-5
-        for var in variables:
+        for var in properties:
             if not (var in ['nor', 'origin', 'fillet']):
-                dat = self.comps[comp].variables[var]
+                dat = self.comps[comp].properties[var]
                 for ind, val in numpy.ndenumerate(dat):
                     ind = ind[0] if len(ind) == 1 else ind
                     drv1 = self.get_derivatives(comp, var, ind, clean=False)

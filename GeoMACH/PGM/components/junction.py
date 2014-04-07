@@ -231,5 +231,5 @@ class Junction(Interpolant):
             nu[k] = sum(mu[self.si[k]:self.si[k+1]]) + 1
             nv[k] = sum(mv[self.sj[k]:self.sj[k+1]]) + 1
 
-        v = self.variables
-        self.faces['def'].cp_array[:,:,:] = PGMlib.computejunction(sum(nu)-2, sum(nv)-2, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], v['fC1'], v['mC1'], W, E, N, S, fQ, v['shp'])
+        p = self.properties
+        self.faces['def'].cp_array[:,:,:] = PGMlib.computejunction(sum(nu)-2, sum(nv)-2, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], p['fC1'], p['mC1'], W, E, N, S, fQ, p['shp','def'])

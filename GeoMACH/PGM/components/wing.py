@@ -51,24 +51,13 @@ class Wing(Primitive):
                 face.setC1('edge', j=0, v=0, val=True) #C0 right edge
                 face.setCornerC1(i=-f, j=0, val=False) #C0 right TE corner
 
-    def initializeVariables(self):
-        super(Wing,self).initializeVariables()
-        faces = self.faces
-        ni = faces['upp'].num_cp[0]
-        nj = faces['upp'].num_cp[1]
-        zeros = numpy.zeros
-        v = self.variables
-        a = self.addParam
+    def declare_properties(self):
+        super(Wing, self).declare_properties()
 
-        v['shU'] = zeros((ni,nj),order='F')
-        v['shL'] = zeros((ni,nj),order='F')
-
-        a('shU','shU',(1,1),P=[0.0])
-        a('shL','shL',(1,1),P=[0.0])
-        self.addParam('ogn','ogn',[1,3],P=[0.25,0,0])
-
-        self.shapeU = zeros((ni,nj,3),order='F')
-        self.shapeL = zeros((ni,nj,3),order='F')
+        ni = self.faces['upp'].num_cp[0]
+        nj = self.faces['upp'].num_cp[1]
+        self.shapeU = numpy.zeros((ni,nj,3),order='F')
+        self.shapeL = numpy.zeros((ni,nj,3),order='F')
         self.setAirfoil()
 
     def setAirfoil(self,filename="naca0012"):
@@ -82,7 +71,7 @@ class Wing(Primitive):
         faces = self.faces
         ni = faces['upp'].num_cp[0]
         nj = faces['upp'].num_cp[1]
-        v = self.variables
+        p = self.properties
 
         #if self.left==2:
         #    v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
@@ -90,9 +79,9 @@ class Wing(Primitive):
         #    v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
 
         shapes = [self.shapeU, self.shapeL]
-        shapes[0][:,:,1] += v['shU']
-        shapes[1][:,:,1] -= v['shL']
+        shapes[0][:,:,1] += p['shp','upp']
+        shapes[1][:,:,1] -= p['shp','low']
         nQ = nj*(9+6*ni)
         self.computeSections(nQ, shapes)
-        shapes[0][:,:,1] -= v['shU']
-        shapes[1][:,:,1] += v['shL']
+        shapes[0][:,:,1] -= p['shp','upp']
+        shapes[1][:,:,1] += p['shp','low']

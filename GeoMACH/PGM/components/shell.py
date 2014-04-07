@@ -58,46 +58,31 @@ class Shell(Primitive):
             faces['lt0'].setC1('surf', i=-1, u=-1, val=False)
             faces['lt0'].setC1('edge', i=-1, u=-1, val=True)
 
-    def initializeVariables(self):
-        super(Shell,self).initializeVariables()
-        faces = self.faces
-        nx = faces['rt0'].num_cp[1]
-        ny = faces['rt0'].num_cp[0]
-        nz = faces['tp0'].num_cp[0]
-        zeros = numpy.zeros
-        v = self.variables
-        a = self.addParam
-
-        v['sR0'] = zeros((ny,nx),order='F')
-        v['sT0'] = zeros((nz,nx),order='F')
-        v['sL0'] = zeros((ny,nx),order='F')
-        v['sB0'] = zeros((nz,nx),order='F')
-        v['sR1'] = zeros((ny,nx),order='F')
-        v['sT1'] = zeros((nz,nx),order='F')
-        v['sL1'] = zeros((ny,nx),order='F')
-        v['sB1'] = zeros((nz,nx),order='F')
-        v['thk'] = zeros((nx,3),order='F')
+    def declare_properties(self):
+        super(Shell, self).declare_properties()
+        n = self.faces['rt0'].num_cp[1]
+        self.properties['thk'] = [n,3]
 
     def computeQs(self):
         faces = self.faces
         nx = faces['rt0'].num_cp[1]
         ny = faces['rt0'].num_cp[0]
         nz = faces['tp0'].num_cp[0]
-        v = self.variables
+        p = self.properties
         b = self.bottom==2
 
-        r0 = v['scl'] + v['thk']/2.0
-        r1 = v['scl'] - v['thk']/2.0
+        r0 = p['scl'] + p['thk']/2.0
+        r1 = p['scl'] - p['thk']/2.0
 
         shapes = range(8)
-        shapes[0] = PGMlib.computeshape(ny, nx,-b/4.0, 1/4.0, v['flt'], v['sR0'])
-        shapes[1] = PGMlib.computeshape(nz, nx, 1/4.0, 3/4.0, v['flt'], v['sT0'])
-        shapes[2] = PGMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, v['flt'], v['sL0'])
-        shapes[6] = PGMlib.computeshape(nz, nx, 5/4.0, 7/4.0, v['flt'], v['sB0'])
-        shapes[5] = PGMlib.computeshape(ny, nx, 1/4.0,-b/4.0, v['flt'], v['sR1'])
-        shapes[4] = PGMlib.computeshape(nz, nx, 3/4.0, 1/4.0, v['flt'], v['sT1'])
-        shapes[3] = PGMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, v['flt'], v['sL1'])
-        shapes[7] = PGMlib.computeshape(nz, nx, 7/4.0, 5/4.0, v['flt'], v['sB1'])
+        shapes[0] = PGMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['flt'], p['shp','rt0'])
+        shapes[1] = PGMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['flt'], p['shp','tp0'])
+        shapes[2] = PGMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['flt'], p['shp','lt0'])
+        shapes[6] = PGMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['flt'], p['shp','bt0'])
+        shapes[5] = PGMlib.computeshape(ny, nx, 1/4.0,-b/4.0, p['flt'], p['shp','rt1'])
+        shapes[4] = PGMlib.computeshape(nz, nx, 3/4.0, 1/4.0, p['flt'], p['shp','tp1'])
+        shapes[3] = PGMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, p['flt'], p['shp','lt1'])
+        shapes[7] = PGMlib.computeshape(nz, nx, 7/4.0, 5/4.0, p['flt'], p['shp','bt1'])
         
         nQ = nx*(9+12*ny+12*nz) if self.bottom==2 else nx*(9+12*ny+6*nz)
         radii = [r0,r0,r0,r1,r1,r1,r0,r1]

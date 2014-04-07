@@ -21,37 +21,36 @@ class Primitive(Component):
         self.ns.append(numpy.zeros(ny,int))
         self.ns.append(numpy.zeros(nz,int))
 
-    def initializeVariables(self):
-        n = self.faces.values()[0].num_cp[1]
-        zeros = numpy.zeros
-        v = self.variables
-        a = self.addParam
+    def declare_properties(self):
+        super(Primitive, self).declare_properties()
 
-        v['scl'] = zeros((n,3),order='F')
-        v['pos'] = zeros((n,3),order='F')
-        v['rot'] = zeros((n,3),order='F')
-        v['ogn'] = zeros((n,3),order='F')
-        v['nor'] = zeros((n,3),order='F')
-        v['flt'] = zeros((n,4),order='F')
+        n = self.faces.values()[0].num_cp[1]
+        props = self.properties
+        props['scl'] = [n,3]
+        props['pos'] = [n,3]
+        props['rot'] = [n,3]
+        props['ogn'] = [n,3]
+        props['nor'] = [n,3]
+        props['flt'] = [n,4]
 
     def computeSections(self, nQ, shapes, radii=None):
         nf = len(self.faces)
         n = self.faces.values()[0].num_cp[1]
-        v = self.variables
+        p = self.properties
 
-        rot0, Da, Di, Dj = PGMlib.computerotations(self.ax1, self.ax2, n, 9*(n*3-2), v['pos'], v['nor'])
-        rot = v['rot']*numpy.pi/180.0 + rot0
+        rot0, Da, Di, Dj = PGMlib.computerotations(self.ax1, self.ax2, n, 9*(n*3-2), p['pos'], p['nor'])
+        rot = p['rot']*numpy.pi/180.0 + rot0
         dv_dpos0 = scipy.sparse.csc_matrix((Da,(Di+6*n,Dj+3*n)),shape=(nQ,nQ))
 
         self.dQs_dv = range(nf)
         counter = 0
         for f in range(nf):
             if radii==None:
-                scale = v['scl']
+                scale = p['scl']
             else:
                 scale = radii[f]
             ni, nj = self.faces.values()[f].num_cp
-            self.faces.values()[f].cp_array[:,:,:], Da, Di, Dj = PGMlib.computesections(self.ax1, self.ax2, ni, nj, ni*nj*27, counter, v['ogn'], scale, v['pos'], rot, shapes[f])
+            self.faces.values()[f].cp_array[:,:,:], Da, Di, Dj = PGMlib.computesections(self.ax1, self.ax2, ni, nj, ni*nj*27, counter, p['ogn'], scale, p['pos'], rot, shapes[f])
             self.dQs_dv[f] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nQ))
             self.dQs_dv[f] = self.dQs_dv[f] + self.dQs_dv[f].dot(dv_dpos0)
             counter += 3*ni*nj
@@ -79,6 +78,6 @@ class Primitive(Component):
                 ni, nj = self.faces.values()[f].num_cp
                 self.faces.values()[f].cp_array[:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[f].dot(dV)*numpy.pi/180.0)
         else:
-            self.variables[var] += dV0
+            self.properties[var] += dV0
             self.computeQs()
-            self.variables[var] -= dV0
+            self.properties[var] -= dV0

@@ -16,10 +16,24 @@ class Component(object):
         self.outers = []
         self.oml0 = None
         self.faces = OrderedDict()
-        self.variables = {}
+        self.properties = {}
         self.params = {}
         self.Cv0 = 2
         self.Cv1 = 2
+
+    def declare_properties(self):
+        props = self.properties
+        for face in self.faces:
+            props['shp', face] = self.faces[face].num_cp
+
+    def initialize_properties(self, prop_vec):
+        props = self.properties
+        start, end = 0, 0
+        for name in props:
+            ni, nj = props[name][0], props[name][1]
+            end += ni*nj
+            props[name] = prop_vec[start:end].reshape((ni, nj), order='C')
+            start += ni*nj
 
     def set_oml(self, oml):
         self.oml0 = oml
@@ -27,7 +41,7 @@ class Component(object):
             face.oml = oml
 
     def computeVs(self):
-        vs = self.variables
+        vs = self.properties
         ps = self.params
         for v in vs:
             vs[v][:,:] = 0.0
@@ -35,7 +49,7 @@ class Component(object):
             vs[ps[p].var][:,:] += ps[p].compute()
 
     def addParam(self, name, var, shp, P=None, T=None, Tdim=0, D=None, Ddim=0, B=None, Bdim=0):
-        self.params[name] = Parameter(var, shp, self.variables[var].shape, P, T, Tdim, D, Ddim, B, Bdim)
+        self.params[name] = Parameter(var, shp, self.properties[var].shape, P, T, Tdim, D, Ddim, B, Bdim)
         
     def addFace(self, name, axis_u, axis_v, d, ru=0.5, rv=0.5):
         """ Creates a set of rectangular surfaces, their IDs, and face dims.
