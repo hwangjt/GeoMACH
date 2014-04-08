@@ -56,16 +56,16 @@ class Wing(Primitive):
 
         ni = self.faces['upp'].num_cp[0]
         nj = self.faces['upp'].num_cp[1]
-        self.shapeU = numpy.zeros((ni,nj,3),order='F')
-        self.shapeL = numpy.zeros((ni,nj,3),order='F')
+        self.airfoils = {'upp': numpy.zeros((ni,nj,3),order='F'),
+                         'low': numpy.zeros((ni,nj,3),order='F'),
+                         }
         self.setAirfoil()
 
     def setAirfoil(self,filename="naca0012"):
-        Ps = airfoils.fitAirfoil(self,filename)
-        for f in range(len(self.faces)):
-            for j in range(self.faces.values()[f].num_cp[1]):
-                shape = self.shapeU if f==0 else self.shapeL
-                shape[:,j,:2] = Ps[f][:,:]
+        Ps = airfoils.fitAirfoil(self, filename)
+        for name in self.airfoils:
+            for j in range(self.faces[name].num_cp[1]):
+                self.airfoils[name][:,j,:2] = Ps[name][:,:]
         
     def computeQs(self):
         faces = self.faces
@@ -78,10 +78,8 @@ class Wing(Primitive):
         #if self.right==2:
         #    v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
 
-        shapes = [self.shapeU, self.shapeL]
-        shapes[0][:,:,1] += p['shp','upp']
-        shapes[1][:,:,1] -= p['shp','low']
-        nQ = nj*(9+6*ni)
-        self.computeSections(nQ, shapes)
-        shapes[0][:,:,1] -= p['shp','upp']
-        shapes[1][:,:,1] += p['shp','low']
+        shapes = self.shapes
+        for name in shapes:
+            shapes[name][:,:,:] = self.airfoils[name][:,:,:]
+            shapes[name][:,:,1] += p['shp', name]
+        self.computeSections()

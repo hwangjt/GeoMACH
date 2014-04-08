@@ -39,8 +39,8 @@ class Interpolant(Component):
         props['fC1'] = [1,1]
         props['mC1'] = [1,1]
 
-    def initialize_properties(self, prop_vec):
-        super(Interpolant, self).initialize_properties(prop_vec)
+    def initialize_properties(self, prop_vec, prop_index_vec):
+        super(Interpolant, self).initialize_properties(prop_vec, prop_index_vec)
 
         add = self.addParam
         add('scl','scl',(1,1),P=[0.15])

@@ -74,16 +74,33 @@ class Shell(Primitive):
         r0 = p['scl'] + p['thk']/2.0
         r1 = p['scl'] - p['thk']/2.0
 
-        shapes = range(8)
-        shapes[0] = PGMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['flt'], p['shp','rt0'])
-        shapes[1] = PGMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['flt'], p['shp','tp0'])
-        shapes[2] = PGMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['flt'], p['shp','lt0'])
-        shapes[6] = PGMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['flt'], p['shp','bt0'])
-        shapes[5] = PGMlib.computeshape(ny, nx, 1/4.0,-b/4.0, p['flt'], p['shp','rt1'])
-        shapes[4] = PGMlib.computeshape(nz, nx, 3/4.0, 1/4.0, p['flt'], p['shp','tp1'])
-        shapes[3] = PGMlib.computeshape(ny, nx, (4+b)/4.0, 3/4.0, p['flt'], p['shp','lt1'])
-        shapes[7] = PGMlib.computeshape(nz, nx, 7/4.0, 5/4.0, p['flt'], p['shp','bt1'])
+        theta1 = {'rt0': -b/4.0,
+                  'tp0': 1/4.0,
+                  'lt0': 3/4.0,
+                  'bt0': 5/4.0,
+                  'rt1': 1/4.0,
+                  'tp1': 3/4.0,
+                  'lt1': (4+b)/4.0,
+                  'bt1': 7/4.0,
+                  }
+        theta2 = {'rt0': 1/4.0,
+                  'tp0': 3/4.0,
+                  'lt0': (4+b)/4.0,
+                  'bt0': 7/4.0,
+                  'rt1': -b/4.0,
+                  'tp1': 1/4.0,
+                  'lt1': 3/4.0,
+                  'bt1': 5/4.0,
+                  }
+        for name in self.faces:
+            ni, nj = self.faces[name].num_cp
+            self.shapes[name][:,:,:] = \
+                PGMlib.computeshape(ni, nj, theta1[name], theta2[name],
+                                    p['flt'], p['shp', name])
         
-        nQ = nx*(9+12*ny+12*nz) if self.bottom==2 else nx*(9+12*ny+6*nz)
-        radii = [r0,r0,r0,r1,r1,r1,r0,r1]
-        self.computeSections(nQ, shapes, radii=radii)
+        radii = {}
+        for name in ['rt0', 'tp0', 'lt0', 'bt0']:
+            radii[name] = r0
+        for name in ['rt1', 'tp1', 'lt1', 'bt1']:
+            radii[name] = r1
+        self.computeSections(radii=radii)

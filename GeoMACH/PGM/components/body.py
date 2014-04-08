@@ -59,11 +59,20 @@ class Body(Primitive):
         #p['pos'][0] = 2*p['pos'][1] - p['pos'][2]
         #p['pos'][-1] = 2*p['pos'][-2] - p['pos'][-3]
 
-        shapes = range(4)
-        shapes[0] = PGMlib.computeshape(ny, nx,-b/4.0, 1/4.0, p['flt'], p['shp','rgt'])
-        shapes[1] = PGMlib.computeshape(nz, nx, 1/4.0, 3/4.0, p['flt'], p['shp','top'])
-        shapes[2] = PGMlib.computeshape(ny, nx, 3/4.0, (4+b)/4.0, p['flt'], p['shp','lft'])
-        shapes[3] = PGMlib.computeshape(nz, nx, 5/4.0, 7/4.0, p['flt'], p['shp','bot'])
+        theta1 = {'rgt': -b/4.0, 
+                  'top': 1/4.0,
+                  'lft': 3/4.0,
+                  'bot': 5/4.0,
+                  }
+        theta2 = {'rgt': 1/4.0, 
+                  'top': 3/4.0,
+                  'lft': (4+b)/4.0,
+                  'bot': 7/4.0,
+                  }
+        for name in self.faces:
+            ni, nj = self.faces[name].num_cp
+            self.shapes[name][:,:,:] = \
+                PGMlib.computeshape(ni, nj, theta1[name], theta2[name],
+                                    p['flt'], p['shp', name])
 
-        nQ = nx*(9+6*ny+6*nz) if self.bottom==2 else nx*(9+6*ny+3*nz)
-        self.computeSections(nQ, shapes)
+        self.computeSections()

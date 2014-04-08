@@ -103,8 +103,8 @@ class Configuration(object):
         num_prop_total = 0
         for comp in self.comps.values():
             comp.declare_properties()
-            for prop in comp.properties.values():
-                num_prop_total += prop[0] * prop[1]
+            comp.count_properties()
+            num_prop_total += comp.size_prop
 
         prop_vec = numpy.zeros(num_prop_total)
         prop_index_vec = numpy.array(
@@ -112,12 +112,10 @@ class Configuration(object):
             
         start, end = 0, 0
         for comp in self.comps.values():
-            size = 0
-            for prop in comp.properties.values():
-                size += prop[0] * prop[1]
-            end += size
-            comp.initialize_properties(prop_vec[start:end])
-            start += size
+            end += comp.size_prop
+            comp.initialize_properties(prop_vec[start:end],
+                                       prop_index_vec[start:end])
+            start += comp.size_prop
 
         self.define_oml_parameters()
         self.compute()

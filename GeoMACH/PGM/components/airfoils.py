@@ -40,7 +40,7 @@ def getAirfoil(filename):
                     mark = i
             upper = data[mark::-1,:]
             lower = data[mark+1:,:]
-    return [upper, lower]
+    return {'upp': upper, 'low': lower}
 
 def getP(nP, airfoil):
     P = numpy.zeros((airfoil.shape[0],4,3),order='F')
@@ -79,16 +79,16 @@ def getQ(ms, ns, P0):
 
 def fitAirfoil(wing,filename):
     airfoil = getAirfoil(filename)
-    Qs = []
-    for f in xrange(2):
-        nsurf = wing.faces.values()[f].num_surf[0]
-        ms = wing.faces.values()[f].num_cp_list[0]
-        ns = wing.faces.values()[f].num_pt_list[0]
+    Qs = {}
+    for name in ['upp', 'low']:
+        nsurf = wing.faces[name].num_surf[0]
+        ms = wing.faces[name].num_cp_list[0]
+        ns = wing.faces[name].num_pt_list[0]
         nP = sum(ns) + 1
 
-        P = getP(nP, airfoil[f])
+        P = getP(nP, airfoil[name])
         Q = getQ(ms, ns, P)
-        Qs.append(Q)
+        Qs[name] = Q
 
     return Qs
 

@@ -17,23 +17,34 @@ class Component(object):
         self.oml0 = None
         self.faces = OrderedDict()
         self.properties = {}
+        self.prop_indices = {}
         self.params = {}
         self.Cv0 = 2
         self.Cv1 = 2
 
     def declare_properties(self):
         props = self.properties
-        for face in self.faces:
-            props['shp', face] = self.faces[face].num_cp
+        self.shapes = {}
+        for name in self.faces:
+            ni, nj = self.faces[name].num_cp
+            props['shp', name] = [ni, nj]
+            self.shapes[name] = numpy.zeros((ni, nj, 3), order='F')
 
-    def initialize_properties(self, prop_vec):
+    def initialize_properties(self, prop_vec, prop_index_vec):
         props = self.properties
+        prop_indices = self.prop_indices
         start, end = 0, 0
         for name in props:
             ni, nj = props[name][0], props[name][1]
             end += ni*nj
             props[name] = prop_vec[start:end].reshape((ni, nj), order='C')
+            prop_indices[name] = prop_index_vec[start:end].reshape((ni, nj), order='C')
             start += ni*nj
+
+    def count_properties(self):
+        self.size_prop = 0
+        for prop in self.properties.values():
+            self.size_prop += prop[0] * prop[1]
 
     def set_oml(self, oml):
         self.oml0 = oml
