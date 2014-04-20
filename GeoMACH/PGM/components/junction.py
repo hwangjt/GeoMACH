@@ -197,7 +197,91 @@ class Junction(Interpolant):
         N[nu[2],nv[1]:nv[2]+1] = -1
         N[nu[1]:nu[2]+1,nv[1]] = -1
         N[nu[1]:nu[2]+1,nv[2]] = -1
+
+    def compute_cp_wireframe(self):
+        fu, fv = self.fComp.faces[self.fFace].num_cp_list[:]
+        fu,fv = self.flip(fu,fv)
+        fu1 = sum(fu[:self.fNW[0]])
+        fu2 = sum(fu[:self.fNW[0]+self.si[3]])
+        fv1 = sum(fv[:self.fNW[1]])
+        fv2 = sum(fv[:self.fNW[1]+self.sj[3]])
+        fFace_inds = self.rotate(self.fComp.faces[self.fFace].cp_indices)[fu1:fu2+1,fv1:fv2+1]
         
+        getEdge = self.getEdge2
+        if self.mSide==-1:
+            W = getEdge(self.mComp.faces['lft'].cp_indices, i=-1, d=1)
+            E = getEdge(self.mComp.faces['rgt'].cp_indices, i=0, d=1)
+            N = getEdge(self.mComp0.faces['def'].cp_indices, i=-1, d=-1)
+            S = getEdge(self.mComp1.faces['def'].cp_indices, i=-1, d=1)
+        elif self.mSide==0:
+            W = numpy.zeros((1,2),order='F')
+            E = numpy.zeros((1,2),order='F')
+            N = getEdge(self.mComp.faces['upp'].cp_indices, j=0, d=-1)
+            S = getEdge(self.mComp.faces['low'].cp_indices, j=0, d=1)
+        elif self.mSide==1:
+            W = numpy.zeros((1,2),order='F')
+            E = numpy.zeros((1,2),order='F')
+            N = getEdge(self.mComp.faces['upp'].cp_indices, j=-1, d=1)
+            S = getEdge(self.mComp.faces['low'].cp_indices, j=-1, d=-1)
+
+        mu, mv = self.faces['def'].num_cp_list[:]
+        nu = range(3)
+        nv = range(3)
+        for k in range(3):
+            nu[k] = sum(mu[self.si[k]:self.si[k+1]]) + 1
+            nv[k] = sum(mv[self.sj[k]:self.sj[k+1]]) + 1
+        nu0 = sum(nu)-2
+        nv0 = sum(nv)-2
+
+        nD = 2 * nv0 + 2 * (nu0 - 2)
+        nD += 2
+        if nu[1] != 1:
+            nD += 2
+        nD += 2 * (nv[1] - 2)
+        if nu[1] != 1:
+            nD += 2 * (nu[1] - 2)
+        nD += 4 * 2 * (nu[0] - 2)
+        nD += 4 * 2 * (nu[2] - 2)
+        nD += 4 * (nv[0] - 2)
+        nD += 4 * (nv[2] - 2)
+        if nu[1] != 1:
+            nD += 4 * nv[0] - 2
+            nD += 4 * nv[2] - 2
+
+        p = self.properties
+        Da0, Di0, Dj0 = PGMlib.computewireframe(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], p['fC1'], p['mC1'], W, E, N, S, fFace_inds, self.faces['def'].cp_indices)
+        Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)
+        for coord in xrange(3):
+            Da[coord::3] = Da0
+            Di[coord::3] = 3*Di0 + coord
+            Dj[coord::3] = 3*Dj0 + coord
+        return Da, Di, Dj
+
+    def compute_cp_surfs(self):
+        mu, mv = self.faces['def'].num_cp_list[:]
+        nu = range(3)
+        nv = range(3)
+        for k in range(3):
+            nu[k] = sum(mu[self.si[k]:self.si[k+1]]) + 1
+            nv[k] = sum(mv[self.sj[k]:self.sj[k+1]]) + 1
+        nu0 = sum(nu)-2
+        nv0 = sum(nv)-2
+
+        nD = 0
+        for i in range(3):
+            for j in range(3):
+                if (nu[1] != 1) or (i !=1):
+                    nD += 8 * (nu[i]-2) * (nv[j]-2)
+        
+        Da0, Di0, Dj0 = PGMlib.computecoons(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], self.faces['def'].cp_indices)
+        Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)
+        for coord in xrange(3):
+            Da[coord::3] = Da0
+            Di[coord::3] = 3*Di0 + coord
+            Dj[coord::3] = 3*Dj0 + coord
+        return Da, Di, Dj
+        
+
     def computeQs(self):
         fu, fv = self.fComp.faces[self.fFace].num_cp_list[:]
         fu,fv = self.flip(fu,fv)

@@ -268,9 +268,10 @@ if __name__ == '__main__':
     #aircraft.test_derivatives('lw')
     #aircraft.test_derivatives('fu')
     #aircraft.test_derivatives('lw_fu')
-    aircraft.oml0.plot()
+    #aircraft.oml0.plot()
     #aircraft.meshStructure()
 
+    print numpy.around(aircraft.comps['lw_fu'].faces['def'].cp_array[:7,:7,0], decimals=3)
 
 
 #    cProfile.run('aircraft.meshStructure()')

@@ -63,8 +63,15 @@ class Configuration(object):
         for comp in self.comps.values():
             for face in comp.faces.values():
                 num_cp_total += face.num_cp[0] * face.num_cp[1]
+        num_cp_prim = 0
+        for comp in self.primitive_comps.values():
+            for face in comp.faces.values():
+                num_cp_prim += face.num_cp[0] * face.num_cp[1]
+        self.num_cp_prim = num_cp_prim
         cp_vec = numpy.zeros(3*num_cp_total)
         index_vec = -numpy.ones(num_cp_total, int)
+        cp_indices = numpy.array(
+            numpy.linspace(0, num_cp_total-1, num_cp_total), int)
 
         # Passes views to each face
         start, end = 0, 0
@@ -72,7 +79,8 @@ class Configuration(object):
             for face in comp.faces.values():
                 end += face.num_cp[0] * face.num_cp[1]
                 face.initializeDOFmappings(cp_vec[3*start:3*end],
-                                           index_vec[start:end])
+                                           index_vec[start:end],
+                                           cp_indices[start:end])
                 start += face.num_cp[0] * face.num_cp[1]
 
         # Sets up face-wise cp to oml's free cp vec mapping
@@ -154,10 +162,53 @@ class Configuration(object):
 
     def compute_face_ctrlpts(self, full=True, name0=None):
         """ Computes face control points from section properties """
+        def linspace(n):
+            return numpy.array(numpy.linspace(0,n-1,n), int)
+        
+        self.cp_vec[:] = 0.0
+
+        # Step 1: compute primitives' CPs
         for comp in self.primitive_comps.values():
             comp.computeQs()
+        face_cps = linspace(3*self.num_cp_prim)
+
+        # Step 2: compute interpolants' wireframe CPs
+        Das = []
+        Dis = []
+        Djs = []
         for comp in self.interpolant_comps.values():
-            comp.computeQs()
+            Da, Di, Dj = comp.compute_cp_wireframe()
+            Das.append(Da)
+            Dis.append(Di)
+            Djs.append(Dj)
+        Da = numpy.concatenate(Das + [numpy.ones(face_cps.shape[0])])
+        Di = numpy.concatenate(Dis + [face_cps])
+        Dj = numpy.concatenate(Djs + [face_cps])
+        D1 = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
+                                     shape=(self.cp_vec.shape[0],
+                                            self.cp_vec.shape[0]))
+        self.cp_vec[:] = D1.dot(self.cp_vec)
+        face_grid_cps = numpy.unique(Di)
+        
+        # Step 3: compute interpolants' surface CPs
+        Das = []
+        Dis = []
+        Djs = []
+        for comp in self.interpolant_comps.values():
+            Da, Di, Dj = comp.compute_cp_surfs()
+            Das.append(Da)
+            Dis.append(Di)
+            Djs.append(Dj)
+        Da = numpy.concatenate(Das + [numpy.ones(face_grid_cps.shape[0])])
+        Di = numpy.concatenate(Dis + [face_grid_cps])
+        Dj = numpy.concatenate(Djs + [face_grid_cps])
+        D2 = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
+                                     shape=(self.cp_vec.shape[0],
+                                            self.cp_vec.shape[0]))
+        self.cp_vec[:] = D2.dot(self.cp_vec)
+
+        #for comp in self.interpolant_comps.values():
+        #    comp.computeQs()
         #if full:
         #    for comp in self.comps.values():
         #        comp.computeQs()

@@ -22,6 +22,11 @@ class Component(object):
         self.Cv0 = 2
         self.Cv1 = 2
 
+    def count_properties(self):
+        self.size_prop = 0
+        for prop in self.properties.values():
+            self.size_prop += prop[0] * prop[1]
+
     def declare_properties(self):
         props = self.properties
         self.shapes = {}
@@ -40,11 +45,6 @@ class Component(object):
             props[name] = prop_vec[start:end].reshape((ni, nj), order='C')
             prop_indices[name] = prop_index_vec[start:end].reshape((ni, nj), order='C')
             start += ni*nj
-
-    def count_properties(self):
-        self.size_prop = 0
-        for prop in self.properties.values():
-            self.size_prop += prop[0] * prop[1]
 
     def set_oml(self, oml):
         self.oml0 = oml
@@ -117,6 +117,12 @@ class Component(object):
     def removeHiddenDOFs(self):
         pass
 
+    def compute_cp_wireframe(self):
+        return numpy.zeros(0), numpy.zeros(0), numpy.zeros(0)
+
+    def compute_cp_surfs(self):
+        return numpy.zeros(0), numpy.zeros(0), numpy.zeros(0)
+
 
 class Face(object):
 
@@ -133,7 +139,7 @@ class Face(object):
         self.index_array = None
         self.num_cp = [None, None]
 
-    def initializeDOFmappings(self, cp_vec, index_vec):
+    def initializeDOFmappings(self, cp_vec, index_vec, cp_indices):
         def classify(i, n):
             if i==0:
                 return 0
@@ -156,6 +162,7 @@ class Face(object):
         ni, nj = self.num_cp_list[:]
         self.cp_array = cp_vec.reshape((sum(ni)+1,sum(nj)+1,3), order='C')
         self.index_array = index_vec.reshape((sum(ni)+1,sum(nj)+1), order='C')
+        self.cp_indices = cp_indices.reshape((sum(ni)+1,sum(nj)+1), order='C')
         for j in range(self.num_surf[1]):
             for i in range(self.num_surf[0]):
                 surf = self.surf_indices[i,j]
