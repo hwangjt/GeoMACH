@@ -103,6 +103,10 @@ subroutine computeWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
   integer i, j, iu(4), iv(4), iD
   double precision den, C(4)
 
+  Da(:) = 0.0
+  Di(:) = 0
+  Dj(:) = 0
+
   iu(1) = 1
   iu(2) = (nu1-1) + 1
   iu(3) = (nu1-1) + (nu2-1) + 1
@@ -159,7 +163,7 @@ subroutine computeWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
      iD = iD + 1
      Da(iD) = 1.0
      Di(iD) = inds(i, j)
-     Dj(iD) = N(j,1)
+     Dj(iD) = N(j-iv(2)+1,1)
   end do
 
   ! South
@@ -168,7 +172,7 @@ subroutine computeWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
      iD = iD + 1
      Da(iD) = 1.0
      Di(iD) = inds(i, j)
-     Dj(iD) = S(j,1)
+     Dj(iD) = S(j-iv(2)+1,1)
   end do
 
   if (nu2 .ne. 1) then  
@@ -178,7 +182,7 @@ subroutine computeWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
         iD = iD + 1
         Da(iD) = 1.0
         Di(iD) = inds(i, j)
-        Dj(iD) = W(i,1)
+        Dj(iD) = W(i-iu(2)+1,1)
      end do
 
      ! East
@@ -187,7 +191,7 @@ subroutine computeWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
         iD = iD + 1
         Da(iD) = 1.0
         Di(iD) = inds(i, j)
-        Dj(iD) = E(i,1)
+        Dj(iD) = E(i-iu(2)+1,1)
      end do
   end if
 

@@ -271,7 +271,9 @@ if __name__ == '__main__':
     #aircraft.oml0.plot()
     #aircraft.meshStructure()
 
-    print numpy.around(aircraft.comps['lw_fu'].faces['def'].cp_array[:7,:7,0], decimals=3)
-
-
 #    cProfile.run('aircraft.meshStructure()')
+
+    print aircraft.comps['fu'].faces['lft'].surf_indices
+    print aircraft.comps['fu'].faces['rgt'].surf_indices
+    print aircraft.comps['lw_fu'].fK
+    print aircraft.comps['rw_fu'].fK

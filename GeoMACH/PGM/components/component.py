@@ -132,6 +132,7 @@ class Face(object):
         self.surf_indices = numpy.zeros((ni,nj),int)
         self.num_cp_list = [numpy.zeros(ni, int), numpy.zeros(nj, int)]
         self.num_pt_list = [numpy.zeros(ni, int), numpy.zeros(nj, int)]
+        self.num_cp_list = [3*numpy.ones(ni, int), 3*numpy.ones(nj, int)]
         self.num_surf = [ni, nj]
 
         self.oml = None
