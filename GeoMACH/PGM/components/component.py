@@ -62,25 +62,15 @@ class Component(object):
     def addParam(self, name, var, shp, P=None, T=None, Tdim=0, D=None, Ddim=0, B=None, Bdim=0):
         self.params[name] = Parameter(var, shp, self.properties[var].shape, P, T, Tdim, D, Ddim, B, Bdim)
         
-    def addFace(self, name, axis_u, axis_v, d, ru=0.5, rv=0.5):
+    def addFace(self, name, axis_u, axis_v, d):
         """ Creates a set of rectangular surfaces, their IDs, and face dims.
         nu,nv: number of surfaces in the u and v directions
         axis_u,axis_v: {1,2,3} maps to {x,y,z}; negative sign means reverse order
         d: position of the surfaces in the remaining coordinate axis
         ru,rv: surfaces span -ru to +ru in u dir. and -rv to +rv in v dir.
         """
-        nP = 10
         ni = self.ms[abs(axis_u)-1].shape[0]
         nj = self.ms[abs(axis_v)-1].shape[0]
-        verts = numpy.zeros((2,2,3),order='F')
-        verts[:,:,:] = d
-        verts[0,:,abs(axis_u)-1] = -ru*numpy.sign(axis_u)
-        verts[1,:,abs(axis_u)-1] = ru*numpy.sign(axis_u)
-        verts[:,0,abs(axis_v)-1] = -rv*numpy.sign(axis_v)
-        verts[:,1,abs(axis_v)-1] = rv*numpy.sign(axis_v)
-        for j in range(nj):
-            for i in range(ni):
-                self.Ps.append(PGMlib.bilinearinterp(nP, ni, nj, i+1, j+1, verts))
 
         if len(self.faces) > 0:
             counter = numpy.max(self.faces.values()[-1].surf_indices) + 1
@@ -95,26 +85,7 @@ class Component(object):
             
         self.outers.append(numpy.ones((ni,nj),bool))
 
-    def averageEdges(self, edge1, edge2):
-        avg = 0.5*edge1 + 0.5*edge2
-        edge1[:,:] = avg
-        edge2[:,:] = avg
-
-    def connectEdges(self, f1=0, u1=None, v1=None, f2=0, u2=None, v2=None):
-        def edge(f, u, v, kk):
-            surf_indices = self.faces.values()[f].surf_indices
-            Ps = self.Ps
-            d = 0 if u==None else 1
-            r = self.faces.values()[f].axes[d]
-            k = kk if r > 0 else -1-kk
-            surf = surf_indices[k,v] if d==0 else surf_indices[u,k]
-            P = Ps[surf][:,v] if d == 0 else Ps[surf][u,:]
-            return P[::-1] if r < 0 else P                
-            
-        for k in range(self.faces.values()[f1].num_surf[v1==None]):
-            self.averageEdges(edge(f1,u1,v1,k), edge(f2,u2,v2,k))
-
-    def removeHiddenDOFs(self):
+    def removeHiddenSurfaces(self):
         pass
 
     def compute_cp_wireframe(self):
@@ -139,8 +110,16 @@ class Face(object):
         self.cp_array = None
         self.index_array = None
         self.num_cp = [None, None]
+        for d in xrange(2):
+            self.num_cp[d] = sum(self.num_cp_list[d]) + 1
 
-    def initializeDOFmappings(self, cp_vec, index_vec, cp_indices):
+    def initialize_cp_data(self, cp_vec, index_vec, cp_indices):
+        num_cp = self.num_cp
+        self.cp_array = cp_vec.reshape((num_cp[0],num_cp[1],3), order='C')
+        self.index_array = index_vec.reshape((num_cp[0],num_cp[1]), order='C')
+        self.cp_indices = cp_indices.reshape((num_cp[0],num_cp[1]), order='C')
+
+    def initializeDOFmappings(self):
         def classify(i, n):
             if i==0:
                 return 0
@@ -161,9 +140,6 @@ class Face(object):
 
         oml = self.oml
         ni, nj = self.num_cp_list[:]
-        self.cp_array = cp_vec.reshape((sum(ni)+1,sum(nj)+1,3), order='C')
-        self.index_array = index_vec.reshape((sum(ni)+1,sum(nj)+1), order='C')
-        self.cp_indices = cp_indices.reshape((sum(ni)+1,sum(nj)+1), order='C')
         for j in range(self.num_surf[1]):
             for i in range(self.num_surf[0]):
                 surf = self.surf_indices[i,j]
@@ -196,10 +172,6 @@ class Face(object):
                     self.num_pt_list[1][j] = edgeProperty(surf,2)[1] - 1
         for d in xrange(2):
             self.num_cp[d] = sum(self.num_cp_list[d]) + 1
-
-    def propagateQs(self):
-        PGMlib.updateqs(self.oml.nQ, self.num_cp[0], self.num_cp[1], self.oml.nvar, 
-                        self.index_array, self.cp_array, self.oml.Q)
 
     def setm(self, d, val, ind=[], both=True):
         self.set(1, d, val, ind)

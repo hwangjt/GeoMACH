@@ -43,12 +43,7 @@ class Junction(Interpolant):
         face.setC1('surf', i=si[1]-1, j=sj[2], u=-1, v=0, val=False)
         face.setC1('surf', i=si[2], j=sj[2], u=0, v=0, val=False)
 
-        fK = self.rotate(self.fComp.faces[self.fFace].surf_indices)[self.fNW[0]:self.fNW[0]+sum(self.ni),self.fNW[1]:self.fNW[1]+sum(self.nj)]
-        if self.mSide == -1:
-            self.fK = fK
-        else:
-            self.fK = numpy.vstack((fK[0,:], -numpy.ones(fK.shape[1], int), fK[1,:]))
-        self.removeSurfaces()
+        self.removeHiddenSurfaces()
 
     def initializeIndices(self, ni, nj):
         if not ni==None:
@@ -79,165 +74,61 @@ class Junction(Interpolant):
             self.rotate = lambda P: numpy.swapaxes(P,0,1)[:,::-1]
             self.flip = lambda nu, nv: [nv,nu[::-1]]
 
-        fK = self.rotate(self.fComp.faces[self.fFace].surf_indices)[self.fNW[0]:self.fNW[0]+sum(self.ni),self.fNW[1]:self.fNW[1]+sum(self.nj)]
-        if self.mSide == -1:
-            self.fK = fK
-        else:
-            self.fK = numpy.vstack((fK[0,:], -numpy.ones(fK.shape[1], int), fK[1,:]))
-
-    def initializeVerts(self):
-        vtx = lambda i, j, u, v: self.rotate(self.fComp.Ps[self.fK[i,j]])[u,v,:]
-        vtxM = lambda f, i, j, u, v: self.mComp.Ps[self.mComp.faces.values()[f].surf_indices[i,j]][u,v,:]
-
-        verts = numpy.zeros((4,4,3),order='F')
-        for i in [0,-1]:
-            for j in range(3):
-                verts[i,j,:] = vtx(i, self.sj[j], i, 0)
-                verts[i,j+1,:] = vtx(i, self.sj[j+1]-1, i, -1)
-        if self.mSide==-1:
-            for j in [0,-1]:
-                for i in range(3):
-                    verts[i,j,:] = vtx(self.si[i], j, 0, j)
-                    verts[i+1,j,:] = vtx(self.si[i+1]-1, j, -1, j)
-            verts[1,1,:] = vtxM(2, -1, 0, -1, 0)
-            verts[2,1,:] = vtxM(2, -1, -1, -1, -1)
-            verts[1,2,:] = vtxM(0, 0, 0, 0, 0)
-            verts[2,2,:] = vtxM(0, 0, -1, 0, -1)
-        else:
-            if self.mSide==0:
-                L = vtxM(0, -1, 0, -1, 0)
-                R = vtxM(0, 0, 0, 0, 0)
-            else:
-                L = vtxM(0, 0, -1, 0, -1)
-                R = vtxM(0, -1, -1, -1, -1)
-            verts[1,1,:] = L
-            verts[2,1,:] = L
-            verts[1,2,:] = R
-            verts[2,2,:] = R
-
-        return verts
-
-    def initializeSurfaces(self):
-        def get(P, u, v, d):
-            edge = P[u,:,:] if not u==None else P[:,v,:]
-            return edge if d==1 else edge[::-1,:]
-
-        getM = lambda f, i, j: self.mComp.Ps[self.mComp.faces.values()[f].surf_indices[i,j]]
-        getI = lambda i, j: self.Ps[self.faces['def'].surf_indices[i,j]]
-        getF = lambda i, j: self.rotate(self.fComp.Ps[self.fK[i,j]])
-
-        def copy(iI, jI, fM, iM, jM, uI=None, vI=None, uM=None, vM=None, d=1):
-            edgeI = get(getI(iI, jI), uI, vI, 1)
-            edgeM = get(getM(fM, iM, jM), uM, vM, d)
-            edgeI[:,:] = edgeM[:,:]
-
-        def copy2(i, j, u=None, v=None):
-            edgeI = get(getI(i, j), u, v, 1)
-            edgeF = get(getF(i, j), u, v, 1)
-            edgeI[:,:] = edgeF[:,:]
-
-        verts = self.initializeVerts()
-        
+    def initializeSurfaces(self):        
         nP = self.nP
-        ni = self.ni
-        nj = self.nj
         si = self.si
         sj = self.sj
 
-        self.Ps = []
         face = self.faces['def']
         face.surf_indices[:,:] = -1
         counter = 0
         for j in range(sj[3]):
             for i in range(si[3]):
                 if i<si[1] or i>=si[2] or ((j<sj[1] or j>=sj[2]) and self.mSide==-1):
-                    self.Ps.append(numpy.zeros((nP,nP,3),order='F'))
                     face.surf_indices[i,j] = counter
                     counter += 1
 
-        for b in range(3):
-            for a in range(3):
-                for j in range(nj[b]):
-                    jj = sj[b] + j
-                    for i in range(ni[a]):
-                        ii = si[a] + i
-                        if not face.surf_indices[ii,jj]==-1:
-                            self.Ps[face.surf_indices[ii,jj]][:,:,:] = PGMlib.bilinearinterp(nP, ni[a], nj[b], i+1, j+1, verts[a:a+2,b:b+2,:])
+        return
 
-        for i in [0,-1]:
-            for j in range(face.num_surf[1]):
-                copy2(i, j, u=i)
-        if self.mSide==-1:
-            for j in [0,-1]:
-                for i in range(face.num_surf[0]):
-                    copy2(i, j, v=j)
+    def removeHiddenSurfaces(self):
+        fK = self.rotate(self.fComp.faces[self.fFace].surf_indices)[self.fNW[0]:self.fNW[0]+sum(self.ni),self.fNW[1]:self.fNW[1]+sum(self.nj)]
+        if self.mSide != -1:
+            fK = numpy.vstack((fK[0,:], -numpy.ones(fK.shape[1], int), fK[1,:]))
 
-        if not self.mSide==-1:
-            mComp = self.mComp
-            ii = si[1] - 1
-            for j in range(nj[1]):
-                jj = sj[1] + j
-                if self.mSide==0:
-                    copy(ii, jj, 0, -1-j, 0, uI=-1, vM=0, d=-1)
-                else:
-                    copy(ii, jj, 0, j, -1, uI=-1, vM=-1, d=1)
-            ii = si[2]
-            for j in range(nj[1]):
-                jj = sj[1] + j
-                if self.mSide==0:
-                    copy(ii, jj, 1, j, 0, uI=0, vM=0, d=1)
-                else:
-                    copy(ii, jj, 1, -1-j, -1, uI=0, vM=-1, d=-1)
-
-    def removeSurfaces(self):
-        fK0 = self.fK
-
-        for j in range(fK0.shape[1]):
-            for i in range(fK0.shape[0]):
-                surf = fK0[i,j]
+        for j in range(fK.shape[1]):
+            for i in range(fK.shape[0]):
+                surf = fK[i,j]
                 if surf >= 0:
                     self.oml0.visible[surf] = False
-
-    def removeHiddenDOFs(self):
-        mu, mv = self.faces['def'].num_cp_list[:]
-        nu = range(4)
-        nv = range(4)
-        for k in range(4):
-            nu[k] = sum(mu[:self.si[k]])
-            nv[k] = sum(mv[:self.sj[k]])
-        N = self.faces['def'].index_array
-        #N[nu[1],nv[1]:nv[2]+1] = -1
-        #N[nu[2],nv[1]:nv[2]+1] = -1
-        #N[nu[1]:nu[2]+1,nv[1]] = -1
-        #N[nu[1]:nu[2]+1,nv[2]] = -1
-        if self.mSide != -1:
-            N[nu[1]+1:nu[2],:] = -1
 
     def compute_cp_wireframe(self):
         fu, fv = self.fComp.faces[self.fFace].num_cp_list[:]
         fu,fv = self.flip(fu,fv)
         fu1 = sum(fu[:self.fNW[0]])
         fu2 = sum(fu[:self.fNW[0]+self.si[3]])
+        if self.mSide!=-1:
+            fu2 = sum(fu[:self.fNW[0]+2])
         fv1 = sum(fv[:self.fNW[1]])
         fv2 = sum(fv[:self.fNW[1]+self.sj[3]])
         fFace_inds = self.rotate(self.fComp.faces[self.fFace].cp_indices)[fu1:fu2+1,fv1:fv2+1]
         
-        getEdge = self.getEdge2
+        #getEdge = self.getEdge
         if self.mSide==-1:
-            W = getEdge(self.mComp.faces['lft'].cp_indices, i=-1, d=1)
-            E = getEdge(self.mComp.faces['rgt'].cp_indices, i=0, d=1)
-            N = getEdge(self.mComp0.faces['def'].cp_indices, i=-1, d=-1)
-            S = getEdge(self.mComp1.faces['def'].cp_indices, i=-1, d=1)
+            #W = getEdge(self.mComp.faces['lft'].cp_indices, i=-1, d=1)
+            #E = getEdge(self.mComp.faces['rgt'].cp_indices, i=0, d=1)
+            #N = getEdge(self.mComp0.faces['def'].cp_indices, i=-1, d=-1)
+            #S = getEdge(self.mComp1.faces['def'].cp_indices, i=-1, d=1)
+            pass
         elif self.mSide==0:
             W = numpy.zeros((4,2),order='F')
             E = numpy.zeros((4,2),order='F')
-            N = getEdge(self.mComp.faces['upp'].cp_indices, j=0, d=-1)
-            S = getEdge(self.mComp.faces['low'].cp_indices, j=0, d=1)
+            N = self.mComp.faces['upp'].cp_indices[::-1,:2]
+            S = self.mComp.faces['low'].cp_indices[:,:2]
         elif self.mSide==1:
             W = numpy.zeros((4,2),order='F')
             E = numpy.zeros((4,2),order='F')
-            N = getEdge(self.mComp.faces['upp'].cp_indices, j=-1, d=1)
-            S = getEdge(self.mComp.faces['low'].cp_indices, j=-1, d=-1)
+            N = self.mComp.faces['upp'].cp_indices[:,-1:-3:-1]
+            S = self.mComp.faces['low'].cp_indices[::-1,-1:-3:-1]
 
         mu, mv = self.faces['def'].num_cp_list[:]
         nu = range(3)
@@ -247,6 +138,9 @@ class Junction(Interpolant):
             nv[k] = sum(mv[self.sj[k]:self.sj[k+1]]) + 1
         nu0 = sum(nu)-2
         nv0 = sum(nv)-2
+        fInds = -numpy.ones((nu0, nv0), dtype=int, order='F')
+        fInds[:nu[0],:] = fFace_inds[:nu[0],:]
+        fInds[-nu[2]:,:] = fFace_inds[-nu[2]:,:]
 
         nD = 2 * nv0 + 2 * (nu0 - 2)
         nD += 2
@@ -264,15 +158,14 @@ class Junction(Interpolant):
             nD += 4 * (nv[2] - 2)
 
         p = self.properties
-        fInds = -numpy.ones((nu0, nv0), dtype=int, order='F')
-        fInds[:nu[0],:] = fFace_inds[:nu[0],:]
-        fInds[-nu[2]:,:] = fFace_inds[-nu[2]:,:]
-        Da0, Di0, Dj0 = PGMlib.computewireframe(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], p['fC1'], p['mC1'], W, E, N, S, fInds, self.faces['def'].cp_indices)
+        Da0, Di0, Dj0 = PGMlib.computejunctionwireframe(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], p['fC1'], p['mC1'], W, E, N, S, fInds, self.faces['def'].cp_indices)
+        Da0 = Da0 * (-1 != Dj0)
+        Dj0 = numpy.maximum(0, Dj0)
         Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)
         for coord in xrange(3):
             Da[coord::3] = Da0
             Di[coord::3] = 3*Di0 + coord
-            Dj[coord::3] = numpy.maximum(0, 3*Dj0 + coord)
+            Dj[coord::3] = 3*Dj0 + coord
         return Da, Di, Dj
 
     def compute_cp_surfs(self):
@@ -291,47 +184,10 @@ class Junction(Interpolant):
                 if (nu[1] != 1) or (i !=1):
                     nD += 8 * (nu[i]-2) * (nv[j]-2)
         
-        Da0, Di0, Dj0 = PGMlib.computecoons(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], self.faces['def'].cp_indices)
+        Da0, Di0, Dj0 = PGMlib.computejunctioncoons(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], self.faces['def'].cp_indices)
         Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)
         for coord in xrange(3):
             Da[coord::3] = Da0
             Di[coord::3] = 3*Di0 + coord
             Dj[coord::3] = 3*Dj0 + coord
         return Da, Di, Dj
-        
-
-    def computeQs(self):
-        fu, fv = self.fComp.faces[self.fFace].num_cp_list[:]
-        fu,fv = self.flip(fu,fv)
-        fu1 = sum(fu[:self.fNW[0]])
-        fu2 = sum(fu[:self.fNW[0]+self.si[3]])
-        fv1 = sum(fv[:self.fNW[1]])
-        fv2 = sum(fv[:self.fNW[1]+self.sj[3]])
-        fQ = self.rotate(self.fComp.faces[self.fFace].cp_array)[fu1:fu2+1,fv1:fv2+1,:]
-
-        getEdge = self.getEdge
-        if self.mSide==-1:
-            W = getEdge(self.mComp.faces['lft'].cp_array, i=-1, d=1)
-            E = getEdge(self.mComp.faces['rgt'].cp_array, i=0, d=1)
-            N = getEdge(self.mComp0.faces['def'].cp_array, i=-1, d=-1)
-            S = getEdge(self.mComp1.faces['def'].cp_array, i=-1, d=1)
-        elif self.mSide==0:
-            W = numpy.zeros((1,2,3),order='F')
-            E = numpy.zeros((1,2,3),order='F')
-            N = getEdge(self.mComp.faces['upp'].cp_array, j=0, d=-1)
-            S = getEdge(self.mComp.faces['low'].cp_array, j=0, d=1)
-        elif self.mSide==1:
-            W = numpy.zeros((1,2,3),order='F')
-            E = numpy.zeros((1,2,3),order='F')
-            N = getEdge(self.mComp.faces['upp'].cp_array, j=-1, d=1)
-            S = getEdge(self.mComp.faces['low'].cp_array, j=-1, d=-1)
-
-        mu, mv = self.faces['def'].num_cp_list[:]
-        nu = range(3)
-        nv = range(3)
-        for k in range(3):
-            nu[k] = sum(mu[self.si[k]:self.si[k+1]]) + 1
-            nv[k] = sum(mv[self.sj[k]:self.sj[k+1]]) + 1
-
-        p = self.properties
-        self.faces['def'].cp_array[:,:,:] = PGMlib.computejunction(sum(nu)-2, sum(nv)-2, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], p['fC1'], p['mC1'], W, E, N, S, fQ, p['shp','def'])

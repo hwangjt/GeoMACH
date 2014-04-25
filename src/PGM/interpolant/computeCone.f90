@@ -1,79 +1,236 @@
-subroutine computeCone(nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
-     scale0, f0, m0, W, E, N, S, shape0, Q)
+subroutine computeConeCoons(nD, nu, nv, inds, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, scale0, f0, m0, W, E, N, S, shape0
-  !f2py intent(out) Q
-  !f2py depend(nu) W, E
-  !f2py depend(nv) N, S
-  !f2py depend(nu,nv) shape0, Q
+  !f2py intent(in) nD, nu, nv, inds
+  !f2py intent(out) Da, Di, Dj
+  !f2py depend(nu,nv) inds
+  !f2py depend(nD) Da, Di, Dj
 
   !Input
-  integer, intent(in) ::  nu, nv, nu1, nu2, nu3, nv1, nv2, nv3
-  double precision, intent(in) ::  scale0, f0, m0
-  double precision, intent(in) ::  W(nu,2,3), E(nu,2,3) 
-  double precision, intent(in) ::  N(nv,2,3), S(nv,2,3) 
-  double precision, intent(in) ::  shape0(nu,nv)
+  integer, intent(in) ::  nD, nu, nv
+  integer, intent(in) ::  inds(nu,nv)
 
   !Output
-  double precision, intent(out) ::  Q(nu,nv,3)
+  double precision, intent(out) ::  Da(nD)
+  integer, intent(out) ::  Di(nD), Dj(nD)
 
   !Working
-  integer k, iu(4), iv(4)
-  double precision C(3), C1(3), C2(3), H(3), V(3)
-  double precision tW(3), tE(3), tN(3), tS(3)
-  double precision dQdw(nu,nv,3)
+  integer i, j, iu(4), iv(4), iD, ii, jj
+  double precision denu, denv, u, v
 
   iu(1) = 1
-  iu(2) = nu1 + 1
-  iu(3) = nu1 + nu2 + 1
-  iu(4) = nu1 + nu2 + nu3 + 1
+  iu(2) = int((nu-1)/2) + 1
+  iu(3) = nu
 
   iv(1) = 1
-  iv(2) = nv1 + 1
-  iv(3) = nv1 + nv2 + 1
-  iv(4) = nv1 + nv2 + nv3 + 1
+  iv(2) = int((nv-1)/2) + 1
+  iv(3) = nv
+  
+  iD = 0
 
-  C1 = 0.5*(W(iu(2),1,:) + E(iu(2),1,:))
-  C2 = 0.5*(W(iu(2),2,:) + E(iu(2),2,:))
-  C = C1 + (C1-C2)*scale0
-  H = 0.5*m0*(E(iu(2),1,:) - W(iu(2),1,:))
-  if (nu3 .gt. 0) then
-     V = 0.5*m0*(S(iv(2),1,:) - N(iv(2),1,:))
-  else
-     V = m0*(C1 - N(iv(2),1,:))
-  end if
+  do jj=1,2
+     denv = 1.0 / (iv(jj+1)-iv(jj))
+     do ii=1,2
+        denu = 1.0 / (iu(ii+1)-iu(ii))
+        do j=iv(jj)+1,iv(jj+1)-1
+           v = (j - iv(jj)) * denv
+           do i=iu(ii)+1,iu(ii+1)-1
+              u = (i - iu(ii)) * denu
+              call computeCoons(u, v, inds(i, j), &
+                   inds(iu(ii), j), inds(iu(ii+1), j), &
+                   inds(i, iv(jj)), inds(i, iv(jj+1)), &
+                   inds(iu(ii), iv(jj)), inds(iu(ii+1), iv(jj)), &
+                   inds(iu(ii), iv(jj+1)), inds(iu(ii+1), iv(jj+1)), &
+                   Da(iD+1:iD+8), Di(iD+1:iD+8), Dj(iD+1:iD+8))
+              iD = iD + 8
+           end do
+        end do
+     end do
+  end do
+    
+  if (iD .ne. nD) then
+     print *, 'Error in computeConeCoons', iD, nD
+  end if    
 
-  tW = scale0*f0*(W(iu(2),1,:) - W(iu(2),2,:))
-  tE = scale0*f0*(E(iu(2),2,:) - E(iu(2),1,:))
-  tN = scale0*f0*(N(iv(2),1,:) - N(iv(2),2,:))
-  tS = scale0*f0*(S(iv(2),2,:) - S(iv(2),1,:))
+end subroutine computeConeCoons
 
-  Q(:,:,:) = 0.0
-  Q(:,iv(1),:) = W(:,1,:)
-  Q(:,iv(4),:) = E(:,1,:)
-  Q(iu(1),:,:) = N(:,1,:)
-  if (nu3 .gt. 0) then
-     Q(iu(4),:,:) = S(:,1,:)
-  end if
 
-  call bezierCurve(nv1+1, W(iu(2),1,:), tW, C, -H, Q(iu(2),iv(1):iv(2),:))
-  call bezierCurve(nv3+1, C, H, E(iu(2),1,:), -tE, Q(iu(2),iv(3):iv(4),:))
-  call bezierCurve(nu1+1, N(iv(2),1,:), tN, C, -V, Q(iu(1):iu(2),iv(2),:))
-  if (nu3 .gt. 0) then
-     call bezierCurve(nu3+1, C, V, S(iv(2),1,:), -tS, Q(iu(3):iu(4),iv(2),:))
-  end if
 
-  Q(iu(3),:,:) = Q(iu(2),:,:)
-  Q(:,iv(3),:) = Q(:,iv(2),:)
+subroutine computeConeWireframe(nD, nu, nv, scale0, f0, m0, W, E, N, S, inds, Da, Di, Dj)
 
-  call interpolateFrames(1, nu, nv, iu, iv, Q, dQdw)
-  call interpolateFrames(3, nu, nv, iu, iv, Q, dQdw)
+  implicit none
 
-  do k=1,3
-     Q(:,:,k) = Q(:,:,k) + shape0(:,:)*dQdw(:,:,k)
+  !Fortran-python interface directives
+  !f2py intent(in) nD, nu, nv, scale0, f0, m0, W, E, N, S, inds
+  !f2py intent(out) Da, Di, Dj
+  !f2py depend(nu) W, E
+  !f2py depend(nv) N, S
+  !f2py depend(nu,nv), inds
+  !f2py depend(nD) Da, Di, Dj
+
+  !Input
+  integer, intent(in) ::  nD, nu, nv
+  double precision, intent(in) ::  scale0, f0, m0
+  integer, intent(in) ::  W(nu,2), E(nu,2)
+  integer, intent(in) ::  N(nv,2), S(nv,2)
+  integer, intent(in) ::  inds(nu,nv)
+
+  !Output
+  double precision, intent(out) ::  Da(nD)
+  integer, intent(out) ::  Di(nD), Dj(nD)
+
+  !Working
+  integer i, j, iD, nuC, nvC
+  double precision den, C(4), u, v
+
+  nuC = int((nu-1)/2) + 1
+  nvC = int((nv-1)/2) + 1
+
+  Da(:) = 0.0
+  Di(:) = 0
+  Dj(:) = 0
+  
+  iD = 0
+
+  ! Border: N
+  i = 1
+  do j=1,nv
+     iD = iD + 1
+     Da(iD) = 1.0
+     Di(iD) = inds(i, j)
+     Dj(iD) = N(j, 1)
   end do
 
-end subroutine computeCone
+  ! Border: S
+  i = nu
+  do j=1,nv
+     iD = iD + 1
+     Da(iD) = 1.0
+     Di(iD) = inds(i, j)
+     Dj(iD) = S(j, 1)
+  end do
+
+  ! Border: W
+  j = 1
+  do i=2,nu-1
+     iD = iD + 1
+     Da(iD) = 1.0
+     Di(iD) = inds(i, j)
+     Dj(iD) = W(i, 1)
+  end do
+
+  ! Border: E
+  j = nv
+  do i=2,nu-1
+     iD = iD + 1
+     Da(iD) = 1.0
+     Di(iD) = inds(i, j)
+     Dj(iD) = E(i, 1)
+  end do
+
+  call sparseBezier(dble(0.5), -f0, f0, C)
+
+  i = nuC
+  j = nvC
+  Da(iD+1:iD+4) = 0.5 * C(:)
+  Da(iD+5:iD+8) = 0.5 * C(:)
+  Di(iD+1:iD+8) = inds(i, j)
+  Dj(iD+1) = N(j,1)
+  Dj(iD+2) = N(j,2)
+  Dj(iD+3) = S(j,1)
+  Dj(iD+4) = S(j,2)
+  Dj(iD+5) = W(i,1)
+  Dj(iD+6) = W(i,2)
+  Dj(iD+7) = E(i,1)
+  Dj(iD+8) = E(i,2)
+  iD = iD + 8
+
+  i = nuC
+  den = 1.0 / (nvC-1)
+  do j=2,nvC-1
+     v = den * (j-1)
+     call sparseBezier(v, -f0, f0, C)
+     Da(iD+1:iD+4) = (1-v) * C(:)
+     Di(iD+1:iD+4) = inds(i, j)
+     Dj(iD+1) = W(i,1)
+     Dj(iD+2) = W(i,2)
+     Dj(iD+3) = E(i,1)
+     Dj(iD+4) = E(i,2)
+     iD = iD + 4
+     call sparseBezier(dble(0.5), -f0, f0, C)
+     Da(iD+1:iD+4) = v * C(:)
+     Di(iD+1:iD+4) = inds(i, j)
+     Dj(iD+1) = N(j,1)
+     Dj(iD+2) = N(j,2)
+     Dj(iD+3) = S(j,1)
+     Dj(iD+4) = S(j,2)
+     iD = iD + 4
+  end do
+  do j=nvC+1,nv-1
+     v = den * (j-nvC)
+     call sparseBezier(v, -f0, f0, C)
+     Da(iD+1:iD+4) = v * C(:)
+     Di(iD+1:iD+4) = inds(i, j)
+     Dj(iD+1) = W(i,1)
+     Dj(iD+2) = W(i,2)
+     Dj(iD+3) = E(i,1)
+     Dj(iD+4) = E(i,2)
+     iD = iD + 4
+     call sparseBezier(dble(0.5), -f0, f0, C)
+     Da(iD+1:iD+4) = (1-v) * C(:)
+     Di(iD+1:iD+4) = inds(i, j)
+     Dj(iD+1) = N(j,1)
+     Dj(iD+2) = N(j,2)
+     Dj(iD+3) = S(j,1)
+     Dj(iD+4) = S(j,2)
+     iD = iD + 4
+  end do
+
+  j = nvC
+  den = 1.0 / (nuC-1)
+  do i=2,nuC-1
+     u = den * (i-1)
+     call sparseBezier(u, -f0, f0, C)
+     Da(iD+1:iD+4) = (1-u) * C(:)
+     Di(iD+1:iD+4) = inds(i, j)
+     Dj(iD+1) = N(j,1)
+     Dj(iD+2) = N(j,2)
+     Dj(iD+3) = S(j,1)
+     Dj(iD+4) = S(j,2)
+     iD = iD + 4
+     call sparseBezier(dble(0.5), -f0, f0, C)
+     Da(iD+1:iD+4) = u * C(:)
+     Di(iD+1:iD+4) = inds(i, j)
+     Dj(iD+1) = W(i,1)
+     Dj(iD+2) = W(i,2)
+     Dj(iD+3) = E(i,1)
+     Dj(iD+4) = E(i,2)
+     iD = iD + 4
+  end do
+  do i=nuC+1,nu-1
+     u = den * (i-nuC)
+     call sparseBezier(u, -f0, f0, C)
+     Da(iD+1:iD+4) = u * C(:)
+     Di(iD+1:iD+4) = inds(i, j)
+     Dj(iD+1) = N(j,1)
+     Dj(iD+2) = N(j,2)
+     Dj(iD+3) = S(j,1)
+     Dj(iD+4) = S(j,2)
+     iD = iD + 4
+     call sparseBezier(dble(0.5), -f0, f0, C)
+     Da(iD+1:iD+4) = (1-u) * C(:)
+     Di(iD+1:iD+4) = inds(i, j)
+     Dj(iD+1) = W(i,1)
+     Dj(iD+2) = W(i,2)
+     Dj(iD+3) = E(i,1)
+     Dj(iD+4) = E(i,2)
+     iD = iD + 4
+  end do
+
+  if (iD .ne. nD) then
+     print *, 'Error in computeConeWireframe', iD, nD
+  end if
+
+end subroutine computeConeWireframe

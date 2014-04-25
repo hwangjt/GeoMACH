@@ -28,21 +28,12 @@ class Shell(Primitive):
         self.addFace('rt0', 2, 1, -0.5)
         self.addFace('tp0', 3, 1, 0.5)
         self.addFace('lt0', -2, 1, 0.5)
-        self.addFace('lt1', 2, 1, 0.4, 0.4, 0.4)
-        self.addFace('tp1', -3, 1, 0.4, 0.4, 0.4)
-        self.addFace('rt1', -2, 1, -0.4, 0.4, 0.4)
+        self.addFace('lt1', 2, 1, 0.4)
+        self.addFace('tp1', -3, 1, 0.4)
+        self.addFace('rt1', -2, 1, -0.4)
         if bottom==2:
             self.addFace('bt0', -3, 1, -0.5)
-            self.addFace('bt1', 3, 1, -0.4, 0.4, 0.4)
-        self.connectEdges(f1=0,v1= 0,f2=5,v2= 0)
-        self.connectEdges(f1=0,v1=-1,f2=5,v2=-1)
-        self.connectEdges(f1=1,v1= 0,f2=4,v2= 0)
-        self.connectEdges(f1=1,v1=-1,f2=4,v2=-1)
-        self.connectEdges(f1=2,v1= 0,f2=3,v2= 0)
-        self.connectEdges(f1=2,v1=-1,f2=3,v2=-1)
-        if bottom==2:
-            self.connectEdges(f1=6,v1= 0,f2=7,v2= 0)
-            self.connectEdges(f1=6,v1=-1,f2=7,v2=-1)
+            self.addFace('bt1', 3, 1, -0.4)
 
         self.bottom = bottom
         self.ax1 = 3
@@ -104,3 +95,15 @@ class Shell(Primitive):
         for name in ['rt1', 'tp1', 'lt1', 'bt1']:
             radii[name] = r1
         self.computeSections(radii=radii)
+
+        if self.bottom==2:
+            names = ['rt', 'tp', 'lt', 'bt']
+        else:
+            names = ['rt', 'tp', 'lt']
+            
+        for name in names:
+            for k in range(2):
+                outer = self.faces[name+'0'].cp_array[:,-k,:]
+                inner = self.faces[name+'1'].cp_array[::-1,-k,:]
+                outer[:,:] = 0.5 * (outer + inner)
+                inner[:,:] = outer[:,:]

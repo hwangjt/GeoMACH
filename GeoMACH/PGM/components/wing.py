@@ -24,12 +24,6 @@ class Wing(Primitive):
 
         self.addFace('upp', -1, 3, 0.5)
         self.addFace('low', 1, 3, -0.5)
-        self.connectEdges(f1=0,u1=0,f2=1,u2=-1)
-        self.connectEdges(f1=0,u1=-1,f2=1,u2=0)
-        if left==2:
-            self.connectEdges(f1=0,v1=-1,f2=1,v2=-1)
-        if right==2:
-            self.connectEdges(f1=0,v1=0,f2=1,v2=0)
 
         self.left = left
         self.right = right
@@ -59,7 +53,17 @@ class Wing(Primitive):
         self.airfoils = {'upp': numpy.zeros((ni,nj,3),order='F'),
                          'low': numpy.zeros((ni,nj,3),order='F'),
                          }
-        self.setAirfoil()
+        if self.oml0 is not None:
+            self.setAirfoil()
+        else:
+            self.airfoils['upp'][:,:,:] = 0.0
+            self.airfoils['low'][:,:,:] = 0.0
+            self.airfoils['upp'][1:-1,:,1] = 0.05
+            self.airfoils['low'][1:-1,:,1] = -0.05
+            n = self.airfoils['upp'].shape[0]
+            for i in range(n):
+                self.airfoils['upp'][i,:,0] = 1 - i/(n-1)
+                self.airfoils['low'][i,:,0] = i/(n-1)
 
     def setAirfoil(self,filename="naca0012"):
         Ps = airfoils.fitAirfoil(self, filename)

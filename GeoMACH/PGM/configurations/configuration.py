@@ -22,18 +22,20 @@ class Configuration(object):
         # Adds primitive components and separate them
         self.primitive_comps = self.define_primitive_comps()
         self.comps.update(self.primitive_comps)
-        z_coord = 0
-        for comp in self.primitive_comps.values():
-            for surfs in comp.Ps:
-                surfs[:, :, :] += z_coord
-            z_coord += 4
 
         # Adds interpolant components
         self.interpolant_comps = self.define_interpolant_comps()
         self.comps.update(self.interpolant_comps)
 
+        for name in self.comps:
+            self.comps[name].name = name
+
+        self.initialize_cp_vecs()
+        self.initialize_properties()
+        self.define_oml_parameters()
+        self.compute_properties()
+
         # Assembles initial surfaces and instantiates OML object
-        surfs_list = []
         index_offset = 0
         for comp in self.comps.values():
             for face in comp.faces.values():
@@ -42,14 +44,35 @@ class Configuration(object):
                         if face.surf_indices[ind_i, ind_j] != -1:
                             face.surf_indices[ind_i, ind_j] += index_offset
             index_offset = numpy.max(comp.faces.values()[-1].surf_indices) + 1
-            surfs_list.extend(comp.Ps)
-            comp.Ps = []
+
+        self.compute_face_ctrlpts()
+
+        surfs_list = []
+        for comp in self.comps.values():
+            for face in comp.faces.values():
+                v_start, v_end = 0, 0
+                for ind_j in range(face.num_surf[1]):
+                    v_end += face.num_cp_list[1][ind_j]
+                    u_start, u_end = 0, 0
+                    for ind_i in range(face.num_surf[0]):
+                        u_end += face.num_cp_list[0][ind_i]
+                        if face.surf_indices[ind_i, ind_j] != -1:
+                            surfs_list.append(face.cp_array[u_start:u_end+1,v_start:v_end+1])
+                        u_start += face.num_cp_list[0][ind_i]
+                    v_start += face.num_cp_list[1][ind_j]
         self.oml0 = PUBS.PUBS(surfs_list)
+
+        for comp in self.comps.values():
+            comp.set_oml(self.oml0)
+            #comp.removeHiddenSurfaces()
+
+        self.oml0.write2Tec('test2.dat')
+        #exit()
+        #self.oml0.plot()
 
         # Sets comp data and OML properties
         for name in self.comps:
             comp = self.comps[name]
-            comp.name = name
             comp.set_oml(self.oml0)
             comp.setDOFs()
         self.set_oml_resolution()
@@ -58,6 +81,17 @@ class Configuration(object):
             for face in comp.faces.values():
                 face.compute_num_cp()
 
+        self.initialize_cp_vecs()
+        for comp in self.comps.values():
+            for face in comp.faces.values():
+                face.initializeDOFmappings()
+        self.initialize_cp_jacobian()
+
+        self.initialize_properties()
+        self.define_oml_parameters()
+        self.compute()
+
+    def initialize_cp_vecs(self):
         # Creates global face-wise cp and index vectors
         num_cp_total = 0
         for comp in self.comps.values():
@@ -78,14 +112,23 @@ class Configuration(object):
         for comp in self.comps.values():
             for face in comp.faces.values():
                 end += face.num_cp[0] * face.num_cp[1]
-                face.initializeDOFmappings(cp_vec[3*start:3*end],
-                                           index_vec[start:end],
-                                           cp_indices[start:end])
+                face.initialize_cp_data(cp_vec[3*start:3*end],
+                                        index_vec[start:end],
+                                        cp_indices[start:end])
                 start += face.num_cp[0] * face.num_cp[1]
 
+        self.cp_vec = cp_vec
+        self.index_vec = index_vec
+        self.cp_indices = cp_indices
+        self.num_cp_total = num_cp_total
+        self.num_cp_prim = num_cp_prim
+
+    def initialize_cp_jacobian(self):
+        num_cp_total = self.num_cp_total
+
         # Sets up face-wise cp to oml's free cp vec mapping
-        data0 = numpy.minimum(1, index_vec + 1)
-        rows0 = numpy.maximum(0, index_vec)
+        data0 = numpy.minimum(1, self.index_vec + 1)
+        rows0 = numpy.maximum(0, self.index_vec)
         cols0 = numpy.linspace(0, num_cp_total-1, num_cp_total)
         data = numpy.zeros(3*num_cp_total, int)
         rows = numpy.zeros(3*num_cp_total, int)
@@ -101,13 +144,10 @@ class Configuration(object):
         inv_row_sum = scipy.sparse.diags(1.0/row_sums, 0, format='csr')
         self.cp_jacobian = inv_row_sum.dot(cp_jacobian)
 
-        self.cp_vec = cp_vec
         self.q_vec0 = numpy.zeros((3*self.oml0.nQ))
         self.q_vec = self.q_vec0.reshape((self.oml0.nQ, 3), order='C')
 
-        for comp in self.comps.values():
-            comp.removeHiddenDOFs()
-
+    def initialize_properties(self):
         num_prop_total = 0
         for comp in self.comps.values():
             comp.declare_properties()
@@ -125,8 +165,8 @@ class Configuration(object):
                                        prop_index_vec[start:end])
             start += comp.size_prop
 
-        self.define_oml_parameters()
-        self.compute()
+        self.prop_vec = prop_vec
+        self.prop_index_vec = prop_index_vec
 
     def define_primitive_comps(self):
         """ Virtual method; must be implemented in derived class """
@@ -189,7 +229,7 @@ class Configuration(object):
                                             self.cp_vec.shape[0]))
         self.cp_vec[:] = D1.dot(self.cp_vec)
         face_grid_cps = numpy.unique(Di)
-        
+
         # Step 3: compute interpolants' surface CPs
         Das = []
         Dis = []
@@ -206,16 +246,6 @@ class Configuration(object):
                                      shape=(self.cp_vec.shape[0],
                                             self.cp_vec.shape[0]))
         self.cp_vec[:] = D2.dot(self.cp_vec)
-
-        #for comp in self.interpolant_comps.values():
-        #    comp.computeQs()
-        #if full:
-        #    for comp in self.comps.values():
-        #        comp.computeQs()
-        #else:
-        #    for name in self.interpolant_comps.keys():
-        #        if name != name0:
-        #            self.comps[name].computeQs()
 
     def compute_free_ctrlpt_vector(self):
         """ Computes vector of free control points from face control points """
