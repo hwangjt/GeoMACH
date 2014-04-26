@@ -28,11 +28,9 @@ class Cone(Interpolant):
             self.nj = [int(nz/2),0,int(nz/2)]
 
     def initializeSurfaces(self):
-        ni = sum(self.ni)
-        nj = sum(self.nj)
-
         face = self.faces['def']
         face.surf_indices[:,:] = -1
+        ni, nj = face.surf_indices.shape
         for j in range(nj):
             for i in range(ni):
                 face.surf_indices[i,j] = j*ni + i

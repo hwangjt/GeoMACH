@@ -7,3 +7,4 @@ from shell import Shell
 from interpolant import Interpolant
 from junction import Junction
 from cone import Cone
+from tip import Tip

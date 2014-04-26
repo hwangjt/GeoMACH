@@ -30,6 +30,7 @@ PGMsources = [
     'src/PGM/primitive/computeShape.f90',
     'src/PGM/interpolant/computeCone.f90',
     'src/PGM/interpolant/computeJunction.f90',
+    'src/PGM/interpolant/computeTip.f90',
     'src/PGM/interpolant/coonsPatch.f90',
     'src/PGM/interpolant/interpolant.f90',
     'src/PGM/interpolant/misc.f90',

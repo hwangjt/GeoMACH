@@ -28,6 +28,14 @@ class Interpolant(Component):
             self.si[k] = sum(self.ni[:k])
             self.sj[k] = sum(self.nj[:k])
 
+    def initializeSurfaces(self):
+        face = self.faces['def']
+        face.surf_indices[:,:] = -1
+        ni, nj = face.surf_indices.shape
+        for j in range(nj):
+            for i in range(ni):
+                face.surf_indices[i,j] = j*ni + i
+
     def declare_properties(self):
         super(Interpolant, self).declare_properties()
 

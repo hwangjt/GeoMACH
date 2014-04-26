@@ -3,7 +3,7 @@ from tecplot import Tecplot
 import numpy, time
 import sys
 
-from GeoMACH.PGM.components import Wing, Body, Shell, Junction, Cone
+from GeoMACH.PGM.components import Wing, Body, Shell, Junction, Cone, Tip
 from GeoMACH.PGM.configurations import Configuration
 from GeoMACH.PSM import Airframe
 
@@ -28,6 +28,11 @@ class Conventional(Configuration):
         c = self.comps
         comps = {'fu_n': Cone(c['fu'], 0),
                  'fu_t': Cone(c['fu'], 1),
+                 'lw_T': Tip(c['lw'], 1),
+                 'rw_T': Tip(c['rw'], 0),
+                 'lt_T': Tip(c['lt'], 1),
+                 'rt_T': Tip(c['rt'], 0),
+                 'vt_T': Tip(c['vt'], 1),
                  'lp_lw': Junction(c['lw'], 'low', 1, [1,0], c['lp'], mSide=0),
                  'lp_ln': Junction(c['ln'], 'tp0', 2, [1,0], c['lp'], mSide=1),
                  'rp_rw': Junction(c['rw'], 'low', 1, [1,0], c['rp'], mSide=0),
@@ -58,6 +63,11 @@ class Conventional(Configuration):
         comps['ln'].faces['lt0'].setm(0,[4])
         comps['rn'].faces['rt0'].setm(0,[4])
         comps['rn'].faces['lt0'].setm(0,[4])
+        comps['lw_T'].faces['def'].setm(0,[10])
+        comps['rw_T'].faces['def'].setm(0,[10])
+        comps['lt_T'].faces['def'].setm(0,[10])
+        comps['rt_T'].faces['def'].setm(0,[10])
+        comps['vt_T'].faces['def'].setm(0,[10])
 
     def define_oml_parameters(self):
         c = self.comps
@@ -160,6 +170,11 @@ class Conventional(Configuration):
         c['rp_rn'].params['mC1'].setP([0])
         c['fu_n'].params['fC1'].setP([2])
         c['fu_t'].params['fC1'].setP([2])
+        c['lw_T'].params['fC1'].setP([0.1])
+        c['rw_T'].params['fC1'].setP([0.1])
+        c['lt_T'].params['fC1'].setP([0.5])
+        c['rt_T'].params['fC1'].setP([0.5])
+        c['vt_T'].params['fC1'].setP([0.5])
 
         #c['rw'].params['pos'].setP([[0,0,0],[0,3,30]])
         #c['rw'].params['ogn'].setP([0,0,0])
