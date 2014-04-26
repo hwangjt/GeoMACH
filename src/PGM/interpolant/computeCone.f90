@@ -58,12 +58,12 @@ end subroutine computeConeCoons
 
 
 
-subroutine computeConeWireframe(nD, nu, nv, scale0, f0, m0, W, E, N, S, inds, Da, Di, Dj)
+subroutine computeConeWireframe(nD, nu, nv, a, f0, m0, W, E, N, S, inds, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nD, nu, nv, scale0, f0, m0, W, E, N, S, inds
+  !f2py intent(in) nD, nu, nv, a, f0, m0, W, E, N, S, inds
   !f2py intent(out) Da, Di, Dj
   !f2py depend(nu) W, E
   !f2py depend(nv) N, S
@@ -72,7 +72,7 @@ subroutine computeConeWireframe(nD, nu, nv, scale0, f0, m0, W, E, N, S, inds, Da
 
   !Input
   integer, intent(in) ::  nD, nu, nv
-  double precision, intent(in) ::  scale0, f0, m0
+  double precision, intent(in) ::  a, f0, m0
   integer, intent(in) ::  W(nu,2), E(nu,2)
   integer, intent(in) ::  N(nv,2), S(nv,2)
   integer, intent(in) ::  inds(nu,nv)
@@ -83,7 +83,9 @@ subroutine computeConeWireframe(nD, nu, nv, scale0, f0, m0, W, E, N, S, inds, Da
 
   !Working
   integer i, j, iD, nuC, nvC
-  double precision den, C(4), u, v
+  double precision den, C(4), u, v, t, pi
+
+  pi = 2*acos(0.0)
 
   nuC = int((nu-1)/2) + 1
   nvC = int((nv-1)/2) + 1
@@ -130,8 +132,8 @@ subroutine computeConeWireframe(nD, nu, nv, scale0, f0, m0, W, E, N, S, inds, Da
      Dj(iD) = E(i, 1)
   end do
 
+  ! Center point
   call sparseBezier(dble(0.5), -f0, f0, C)
-
   i = nuC
   j = nvC
   Da(iD+1:iD+4) = 0.5 * C(:)
@@ -148,10 +150,12 @@ subroutine computeConeWireframe(nD, nu, nv, scale0, f0, m0, W, E, N, S, inds, Da
   iD = iD + 8
 
   i = nuC
-  den = 1.0 / (nvC-1)
+  den = 1.0 / (nv-1)
+  ! Bezier: left
   do j=2,nvC-1
      v = den * (j-1)
-     call sparseBezier(v, -f0, f0, C)
+     t = 0.5 * tanh(a*(v-0.5)) / tanh(a*0.5) + 0.5
+     call sparseBezier(t, -f0, f0, C)
      Da(iD+1:iD+4) = (1-v) * C(:)
      Di(iD+1:iD+4) = inds(i, j)
      Dj(iD+1) = W(i,1)
@@ -168,9 +172,11 @@ subroutine computeConeWireframe(nD, nu, nv, scale0, f0, m0, W, E, N, S, inds, Da
      Dj(iD+4) = S(j,2)
      iD = iD + 4
   end do
+  ! Bezier: right
   do j=nvC+1,nv-1
-     v = den * (j-nvC)
-     call sparseBezier(v, -f0, f0, C)
+     v = den * (j-1)
+     t = 0.5 * tanh(a*(v-0.5)) / tanh(a*0.5) + 0.5
+     call sparseBezier(t, -f0, f0, C)
      Da(iD+1:iD+4) = v * C(:)
      Di(iD+1:iD+4) = inds(i, j)
      Dj(iD+1) = W(i,1)
@@ -189,10 +195,12 @@ subroutine computeConeWireframe(nD, nu, nv, scale0, f0, m0, W, E, N, S, inds, Da
   end do
 
   j = nvC
-  den = 1.0 / (nuC-1)
+  den = 1.0 / (nu-1)
+  ! Bezier: top
   do i=2,nuC-1
      u = den * (i-1)
-     call sparseBezier(u, -f0, f0, C)
+     t = 0.5 * tanh(a*(u-0.5)) / tanh(a*0.5) + 0.5
+     call sparseBezier(t, -f0, f0, C)
      Da(iD+1:iD+4) = (1-u) * C(:)
      Di(iD+1:iD+4) = inds(i, j)
      Dj(iD+1) = N(j,1)
@@ -209,9 +217,11 @@ subroutine computeConeWireframe(nD, nu, nv, scale0, f0, m0, W, E, N, S, inds, Da
      Dj(iD+4) = E(i,2)
      iD = iD + 4
   end do
+  ! Bezier: bottom
   do i=nuC+1,nu-1
-     u = den * (i-nuC)
-     call sparseBezier(u, -f0, f0, C)
+     u = den * (i-1)
+     t = 0.5 * tanh(a*(u-0.5)) / tanh(a*0.5) + 0.5
+     call sparseBezier(t, -f0, f0, C)
      Da(iD+1:iD+4) = u * C(:)
      Di(iD+1:iD+4) = inds(i, j)
      Dj(iD+1) = N(j,1)

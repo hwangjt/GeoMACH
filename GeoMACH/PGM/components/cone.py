@@ -67,7 +67,7 @@ class Cone(Interpolant):
         nD += 8
 
         p = self.properties
-        Da0, Di0, Dj0 = PGMlib.computeconewireframe(nD, nu, nv, p['scl']*self.comp.faces['rgt'].num_cp[1], p['fC1'], p['mC1'], W, E, N, S, face.cp_indices)
+        Da0, Di0, Dj0 = PGMlib.computeconewireframe(nD, nu, nv, 1.0, p['fC1'], p['mC1'], W, E, N, S, face.cp_indices)
         Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)
         for coord in xrange(3):
             Da[coord::3] = Da0

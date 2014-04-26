@@ -158,8 +158,8 @@ class Conventional(Configuration):
         c['vt_fu'].params['fC1'].setP([0.1])
         c['lp_ln'].params['mC1'].setP([0])
         c['rp_rn'].params['mC1'].setP([0])
-        c['fu_n'].params['scl'].setP([0.02])
-        c['fu_t'].params['scl'].setP([0.02])
+        c['fu_n'].params['fC1'].setP([2])
+        c['fu_t'].params['fC1'].setP([2])
 
         #c['rw'].params['pos'].setP([[0,0,0],[0,3,30]])
         #c['rw'].params['ogn'].setP([0,0,0])
