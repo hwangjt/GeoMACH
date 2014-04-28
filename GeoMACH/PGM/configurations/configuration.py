@@ -155,18 +155,18 @@ class Configuration(object):
             num_prop_total += comp.size_prop
 
         prop_vec = numpy.zeros(num_prop_total)
-        prop_index_vec = numpy.array(
+        prop_ind = numpy.array(
             numpy.linspace(0, num_prop_total-1, num_prop_total), int)
             
         start, end = 0, 0
         for comp in self.comps.values():
             end += comp.size_prop
             comp.initialize_properties(prop_vec[start:end],
-                                       prop_index_vec[start:end])
+                                       prop_ind[start:end])
             start += comp.size_prop
 
         self.prop_vec = prop_vec
-        self.prop_index_vec = prop_index_vec
+        self.prop_ind = prop_ind
 
     def define_primitive_comps(self):
         """ Virtual method; must be implemented in derived class """

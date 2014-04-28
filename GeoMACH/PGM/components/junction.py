@@ -2,7 +2,7 @@ from __future__ import division
 import numpy, time
 
 from GeoMACH.PGM import PGMlib
-from GeoMACH.PGM.components import Interpolant
+from GeoMACH.PGM.components import Interpolant, Property
         
 
 
@@ -157,8 +157,9 @@ class Junction(Interpolant):
             nD += 4 * (nv[0] - 2)
             nD += 4 * (nv[2] - 2)
 
-        p = self.properties
-        Da0, Di0, Dj0 = PGMlib.computejunctionwireframe(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], p['fC1'], p['mC1'], W, E, N, S, fInds, self.faces['def'].cp_indices)
+        fC1 = self.props['fC1'].prop_vec
+        mC1 = self.props['mC1'].prop_vec
+        Da0, Di0, Dj0 = PGMlib.computejunctionwireframe(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], fC1, mC1, W, E, N, S, fInds, self.faces['def'].cp_indices)
         Da0 = Da0 * (-1 != Dj0)
         Dj0 = numpy.maximum(0, Dj0)
         Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)

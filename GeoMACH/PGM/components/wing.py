@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy
 
-from GeoMACH.PGM.components import Primitive, airfoils
+from GeoMACH.PGM.components import Primitive, airfoils, Property
 
 
 class Wing(Primitive):
@@ -72,11 +72,6 @@ class Wing(Primitive):
                 self.airfoils[name][:,j,:2] = Ps[name][:,:]
         
     def computeQs(self):
-        faces = self.faces
-        ni = faces['upp'].num_cp[0]
-        nj = faces['upp'].num_cp[1]
-        p = self.properties
-
         #if self.left==2:
         #    v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
         #if self.right==2:
@@ -85,5 +80,5 @@ class Wing(Primitive):
         shapes = self.shapes
         for name in shapes:
             shapes[name][:,:,:] = self.airfoils[name][:,:,:]
-            shapes[name][:,:,1] += p['shp', name]
+            shapes[name][:,:,1] += self.props['shp', name].prop_vec
         self.computeSections()

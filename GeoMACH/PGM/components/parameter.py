@@ -6,11 +6,10 @@ from GeoMACH.PGM import PGMlib
 
 class Parameter(object):
 
-    def __init__(self, var, shp, shp0, P, T, Tdim, D, Ddim, B, Bdim):
+    def __init__(self, shp, shp0, P, T, Tdim, D, Ddim, B, Bdim):
 
         mu,mv = shp
         zeros = numpy.zeros
-        self.var = var
         self.shp0 = shp0
         self.P = zeros((shp[0],shp[1],5), order='F')
         self.T = [numpy.linspace(0,1,mu), numpy.linspace(0,1,mv)]

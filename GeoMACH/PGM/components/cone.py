@@ -2,7 +2,7 @@ from __future__ import division
 import numpy, time
 
 from GeoMACH.PGM import PGMlib
-from GeoMACH.PGM.components import Interpolant
+from GeoMACH.PGM.components import Interpolant, Property
 
 
 
@@ -56,8 +56,9 @@ class Cone(Interpolant):
         nD += 8 * (nv - 3 + nu - 3)
         nD += 8
 
-        p = self.properties
-        Da0, Di0, Dj0 = PGMlib.computeconewireframe(nD, nu, nv, 1.0, p['fC1'], p['mC1'], W, E, N, S, face.cp_indices)
+        fC1 = self.props['fC1'].prop_vec
+        mC1 = self.props['mC1'].prop_vec
+        Da0, Di0, Dj0 = PGMlib.computeconewireframe(nD, nu, nv, 1.0, fC1, mC1, W, E, N, S, face.cp_indices)
         Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)
         for coord in xrange(3):
             Da[coord::3] = Da0

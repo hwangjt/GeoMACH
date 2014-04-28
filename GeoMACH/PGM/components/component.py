@@ -16,35 +16,30 @@ class Component(object):
         self.outers = []
         self.oml0 = None
         self.faces = OrderedDict()
-        self.properties = {}
-        self.prop_indices = {}
+        self.props = {}
         self.params = {}
         self.Cv0 = 2
         self.Cv1 = 2
 
     def count_properties(self):
         self.size_prop = 0
-        for prop in self.properties.values():
-            self.size_prop += prop[0] * prop[1]
+        for prop in self.props.values():
+            self.size_prop += prop.ni * prop.nj
 
     def declare_properties(self):
-        props = self.properties
         self.shapes = {}
         for name in self.faces:
             ni, nj = self.faces[name].num_cp
-            props['shp', name] = [ni, nj]
+            self.props['shp', name] = Property(ni, nj)
             self.shapes[name] = numpy.zeros((ni, nj, 3), order='F')
 
-    def initialize_properties(self, prop_vec, prop_index_vec):
-        props = self.properties
-        prop_indices = self.prop_indices
+    def initialize_properties(self, prop_vec, prop_ind):
         start, end = 0, 0
-        for name in props:
-            ni, nj = props[name][0], props[name][1]
-            end += ni*nj
-            props[name] = prop_vec[start:end].reshape((ni, nj), order='C')
-            prop_indices[name] = prop_index_vec[start:end].reshape((ni, nj), order='C')
-            start += ni*nj
+        for prop in self.props.values():
+            end += prop.ni * prop.nj
+            prop.initialize_properties(prop_vec[start:end], 
+                                       prop_ind[start:end])
+            start += prop.ni * prop.nj
 
     def set_oml(self, oml):
         self.oml0 = oml
@@ -52,15 +47,8 @@ class Component(object):
             face.oml = oml
 
     def computeVs(self):
-        vs = self.properties
-        ps = self.params
-        for v in vs:
-            vs[v][:,:] = 0.0
-        for p in ps:
-            vs[ps[p].var][:,:] += ps[p].compute()
-
-    def addParam(self, name, var, shp, P=None, T=None, Tdim=0, D=None, Ddim=0, B=None, Bdim=0):
-        self.params[name] = Parameter(var, shp, self.properties[var].shape, P, T, Tdim, D, Ddim, B, Bdim)
+        for prop in self.props.values():
+            prop.compute()
         
     def addFace(self, name, axis_u, axis_v, d):
         """ Creates a set of rectangular surfaces, their IDs, and face dims.
@@ -264,3 +252,26 @@ class Face(object):
     def setCornerC1(self, i=0, j=0, val=True):
         self.setC1('edge', i=i, j=j, u=i, d=j, val=val)
         self.setC1('edge', i=i, j=j, v=j, d=i, val=val)
+
+
+
+class Property(object):
+
+    def __init__(self, ni, nj):
+        self.ni = ni
+        self.nj = nj
+        self.prop_vec = None
+        self.prop_ind = None
+        self.params = {}
+
+    def initialize_properties(self, prop_vec, prop_ind):
+        self.prop_vec = prop_vec.reshape((self.ni, self.nj), order='C')
+        self.prop_ind = prop_ind.reshape((self.ni, self.nj), order='C')
+
+    def compute(self):
+        self.prop_vec[:,:] = 0.0
+        for param in self.params.values():
+            self.prop_vec[:,:] += param.compute()
+
+    def addParam(self, name, shp, P=None, T=None, Tdim=0, D=None, Ddim=0, B=None, Bdim=0):
+        self.params[name] = Parameter(shp, [self.ni, self.nj], P, T, Tdim, D, Ddim, B, Bdim)

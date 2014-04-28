@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy
 
-from GeoMACH.PGM.components import Component, Face
+from GeoMACH.PGM.components import Component, Face, Property
 
 
 
@@ -39,18 +39,16 @@ class Interpolant(Component):
     def declare_properties(self):
         super(Interpolant, self).declare_properties()
 
-        props = self.properties
-        props['scl'] = [1,1]
-        props['fC1'] = [1,1]
-        props['mC1'] = [1,1]
+        self.props['scl'] = Property(1,1)
+        self.props['fC1'] = Property(1,1)
+        self.props['mC1'] = Property(1,1)
 
     def initialize_properties(self, prop_vec, prop_index_vec):
         super(Interpolant, self).initialize_properties(prop_vec, prop_index_vec)
 
-        add = self.addParam
-        add('scl','scl',(1,1),P=[0.15])
-        add('fC1','fC1',(1,1),P=[1.0])
-        add('mC1','mC1',(1,1),P=[1.0])
+        self.props['scl'].addParam('scl',(1,1),P=[0.15])
+        self.props['fC1'].addParam('fC1',(1,1),P=[1.0])
+        self.props['mC1'].addParam('mC1',(1,1),P=[1.0])
 
     def setDerivatives(self, var, dV0):
         self.properties[var] += dV0

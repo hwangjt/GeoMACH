@@ -2,7 +2,7 @@ from __future__ import division
 import numpy, time
 
 from GeoMACH.PGM import PGMlib
-from GeoMACH.PGM.components import Primitive
+from GeoMACH.PGM.components import Primitive, Property
 
 
 class Shell(Primitive):
@@ -52,18 +52,19 @@ class Shell(Primitive):
     def declare_properties(self):
         super(Shell, self).declare_properties()
         n = self.faces['rt0'].num_cp[1]
-        self.properties['thk'] = [n,3]
+        self.props['thk'] = Property(n,3)
 
     def computeQs(self):
         faces = self.faces
         nx = faces['rt0'].num_cp[1]
         ny = faces['rt0'].num_cp[0]
         nz = faces['tp0'].num_cp[0]
-        p = self.properties
         b = self.bottom==2
 
-        r0 = p['scl'] + p['thk']/2.0
-        r1 = p['scl'] - p['thk']/2.0
+        scl = self.props['scl'].prop_vec
+        thk = self.props['thk'].prop_vec
+        r0 = scl + thk/2.0
+        r1 = scl - thk/2.0
 
         theta1 = {'rt0': -b/4.0,
                   'tp0': 1/4.0,
@@ -83,11 +84,14 @@ class Shell(Primitive):
                   'lt1': 3/4.0,
                   'bt1': 5/4.0,
                   }
+
+        flt = self.props['flt'].prop_vec
         for name in self.faces:
+            shp = self.props['shp', name].prop_vec
             ni, nj = self.faces[name].num_cp
             self.shapes[name][:,:,:] = \
                 PGMlib.computeshape(ni, nj, theta1[name], theta2[name],
-                                    p['flt'], p['shp', name])
+                                    flt, shp)
         
         radii = {}
         for name in ['rt0', 'tp0', 'lt0', 'bt0']:

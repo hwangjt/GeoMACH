@@ -2,7 +2,7 @@ from __future__ import division
 import numpy
 
 from GeoMACH.PGM import PGMlib
-from GeoMACH.PGM.components import Primitive
+from GeoMACH.PGM.components import Primitive, Property
 
 
 class Body(Primitive):
@@ -53,8 +53,9 @@ class Body(Primitive):
         nx = faces['rgt'].num_cp[1]
         ny = faces['rgt'].num_cp[0]
         nz = faces['top'].num_cp[0]
-        p = self.properties
         b = self.bottom==2
+
+        flt = self.props['flt'].prop_vec
 
         #p['pos'][0] = 2*p['pos'][1] - p['pos'][2]
         #p['pos'][-1] = 2*p['pos'][-2] - p['pos'][-3]
@@ -70,9 +71,10 @@ class Body(Primitive):
                   'bot': 7/4.0,
                   }
         for name in self.faces:
+            shp = self.props['shp', name].prop_vec
             ni, nj = self.faces[name].num_cp
             self.shapes[name][:,:,:] = \
                 PGMlib.computeshape(ni, nj, theta1[name], theta2[name],
-                                    p['flt'], p['shp', name])
+                                    flt, shp)
 
         self.computeSections()

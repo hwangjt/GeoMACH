@@ -2,7 +2,7 @@ from __future__ import division
 import numpy, time
 
 from GeoMACH.PGM import PGMlib
-from GeoMACH.PGM.components import Interpolant
+from GeoMACH.PGM.components import Interpolant, Property
 
 
 
@@ -48,8 +48,9 @@ class Tip(Interpolant):
 
         nD = 2*nv + 4 * (nu-2) * nv
 
-        p = self.properties
-        Da0, Di0, Dj0 = PGMlib.computetip(nD, nu, nv, p['fC1'], p['mC1'], N, S, face.cp_indices)
+        fC1 = self.props['fC1'].prop_vec
+        mC1 = self.props['mC1'].prop_vec
+        Da0, Di0, Dj0 = PGMlib.computetip(nD, nu, nv, fC1, mC1, N, S, face.cp_indices)
         Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)
         for coord in xrange(3):
             Da[coord::3] = Da0
