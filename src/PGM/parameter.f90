@@ -1,104 +1,151 @@
-subroutine computeParameter(mu, mv, nu, nv, P, Tu, Tv, Q)
+subroutine computeProps(nD, mu, mv, nu, nv, B, Tu, Tv, &
+     param_inds, prop_inds, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) mu, mv, nu, nv, P, Tu, Tv
-  !f2py intent(out) Q
-  !f2py depend(mu,mv) P
+  !f2py intent(in) nD, mu, mv, nu, nv, B, Tu, Tv, param_inds, prop_inds
+  !f2py intent(out) Da, Di, Dj
+  !f2py depend(mu,mv) B
   !f2py depend(mu) Tu
   !f2py depend(mv) Tv
-  !f2py depend(nu,nv) Q
+  !f2py depend(mu,mv) param_inds
+  !f2py depend(nu,nv) prop_inds
+  !f2py depend(nD) Da, Di, Dj
 
   !Input
-  integer, intent(in) ::  mu, mv, nu, nv
-  double precision, intent(in) ::  P(mu,mv,5), Tu(mu), Tv(mv)
+  integer, intent(in) ::  nD, mu, mv, nu, nv
+  logical, intent(in) ::  B(mu,mv,2)
+  double precision, intent(in) ::  Tu(mu), Tv(mv)
+  integer, intent(in) ::  param_inds(mu,mv,3), prop_inds(nu,nv)
 
   !Output
-  double precision, intent(out) ::  Q(nu,nv)
+  double precision, intent(out) ::  Da(nD)
+  integer, intent(out) ::  Di(nD), Dj(nD)
 
   !Working
-  integer i, j, i0, j0
-  double precision u, v, u0, v0
-  double precision Pu0, Pu1, P0v, P1v
-  double precision evalCubic
+  integer i, j, i0, j0, iD
+  double precision u, v, u0, v0, denu, denv, C(4)
 
-  Q(:,:) = 0.0
+  iD = 0
 
+  Da(:) = 0.0
+  Di(:) = 0
+  Dj(:) = 0
+
+  denu = 1.0 / (nu-1)
+  denv = 1.0 / (nv-1)
   do i0=1,nu
-     u0 = 1.0*(i0-1)/(nu-1)
+     u0 = 1.0*(i0-1) / (nu-1)
      call locateParameter(mu, u0, Tu, i, u)
      do j0=1,nv
-        v0 = 1.0*(j0-1)/(nv-1)
+        v0 = 1.0*(j0-1) / (nv-1)
         call locateParameter(mv, v0, Tv, j, v)
+        Da(iD+1:iD+12) = 0.0
+        Di(iD+1:iD+12) = prop_inds(i0,j0)
         if ((i .gt. 0) .and. (j .gt. 0)) then
-           Pu0 = evalCubic(1, u, P(i,j,:), P(i+1,j,:))
-           Pu1 = evalCubic(1, u, P(i,j+1,:), P(i+1,j+1,:))
-           P0v = evalCubic(2, v, P(i,j,:), P(i,j+1,:))
-           P1v = evalCubic(2, v, P(i+1,j,:), P(i+1,j+1,:))
-           Q(i0,j0) = (1-u)*P0v + u*P1v + (1-v)*Pu0 + v*Pu1 &
-                - (1-u)*(1-v)*P(i,j,1) - u*(1-v)*P(i+1,j,1) &
-                - (1-u)*v*P(i,j+1,1) - u*v*P(i+1,j+1,1)
+           Dj(iD+1:iD+3) = param_inds(i,j,:)
+           Dj(iD+4:iD+6) = param_inds(i+1,j,:)
+           Dj(iD+7:iD+9) = param_inds(i,j+1,:)
+           Dj(iD+10:iD+12) = param_inds(i+1,j+1,:)
+
+           call sparseCubic(1, u, B(i,j,:), B(i+1,j,:), C)
+           Da(iD+1) = Da(iD+1) + C(1) * (1-v)
+           Da(iD+2) = Da(iD+2) + C(2) * (1-v)
+           Da(iD+4) = Da(iD+4) + C(3) * (1-v)
+           Da(iD+5) = Da(iD+5) + C(4) * (1-v)
+           call sparseCubic(1, u, B(i,j+1,:), B(i+1,j+1,:), C)
+           Da(iD+7) = Da(iD+7) + C(1) * v
+           Da(iD+8) = Da(iD+8) + C(2) * v
+           Da(iD+10) = Da(iD+10) + C(3) * v
+           Da(iD+11) = Da(iD+11) + C(4) * v
+           call sparseCubic(2, v, B(i,j,:), B(i,j+1,:), C)
+           Da(iD+1) = Da(iD+1) + C(1) * (1-u)
+           Da(iD+3) = Da(iD+3) + C(2) * (1-u)
+           Da(iD+7) = Da(iD+7) + C(3) * (1-u)
+           Da(iD+9) = Da(iD+9) + C(4) * (1-u)
+           call sparseCubic(2, v, B(i+1,j,:), B(i+1,j+1,:), C)
+           Da(iD+4) = Da(iD+4) + C(1) * u
+           Da(iD+6) = Da(iD+6) + C(2) * u
+           Da(iD+10) = Da(iD+10) + C(3) * u
+           Da(iD+12) = Da(iD+12) + C(4) * u
+
+           Da(iD+1) = Da(iD+1) - (1-u)*(1-v)
+           Da(iD+4) = Da(iD+4) - u*(1-v)
+           Da(iD+7) = Da(iD+7) - (1-u)*v
+           Da(iD+10) = Da(iD+10) - u*v
         else if ((i .eq. 0) .and. (j .eq. 0)) then
-           Q(i0,j0) = P(1,1,1)
+           Da(iD+1) = 1.0
+           Dj(iD+1) = param_inds(1,1,1)
         else if ((i .eq. 0) .and. (j .gt. 0)) then
            i = 1
-           Q(i0,j0) = evalCubic(2, v, P(i,j,:), P(i,j+1,:))
+           Dj(iD+1:iD+3) = param_inds(i,j,:)
+           Dj(iD+7:iD+9) = param_inds(i,j+1,:)
+           call sparseCubic(2, v, B(i,j,:), B(i,j+1,:), C)
+           Da(iD+1) = C(1)
+           Da(iD+3) = C(2)
+           Da(iD+7) = C(3)
+           Da(iD+9) = C(4)
         else if ((i .gt. 0) .and. (j .eq. 0)) then
            j = 1
-           Q(i0,j0) = evalCubic(1, u, P(i,j,:), P(i+1,j,:))
+           Dj(iD+1:iD+3) = param_inds(i,j,:)
+           Dj(iD+4:iD+6) = param_inds(i+1,j,:)
+           call sparseCubic(1, u, B(i,j,:), B(i+1,j,:), C)
+           Da(iD+1) = C(1)
+           Da(iD+2) = C(2)
+           Da(iD+4) = C(3)
+           Da(iD+5) = C(4)
         end if
+        iD = iD + 12
      end do
   end do
 
-end subroutine computeParameter
+  if (iD .ne. nD) then
+     print *, 'Error in computeProps', iD, nD
+  end if
+
+end subroutine computeProps
 
 
 
-function evalCubic(dim, t, V0, V1)
-  
+subroutine sparseCubic(dim, t, W0, W1, C)
+
   implicit none
 
   integer, intent(in) ::  dim
-  double precision, intent(in) ::  t, V0(5), V1(5)
-  double precision ::  evalCubic
-  double precision P0, P1, D0, D1
-  logical B0, B1
-  double precision A, B, C, D
+  double precision, intent(in) ::  t
+  logical, intent(in) ::  W0(2), W1(2)
+  double precision, intent(out) ::  C(4)
+  double precision tA, tB, tC, tD
 
-  P0 = V0(1)
-  D0 = V0(1+dim)
-  B0 = V0(3+dim) .gt. 0.5
+  tA = (1-t)**3
+  tB = 3*t*(1-t)**2
+  tC = 3*t**2*(1-t)
+  tD = t**3
 
-  P1 = V1(1)
-  D1 = V1(1+dim)
-  B1 = V1(3+dim) .gt. 0.5
-
-  if (B0 .and. B1) then
-     A = P0
-     B = D0/3.0 + P0
-     C = -D1/3.0 + P1
-     D = P1
-  else if (B0) then
-     A = P0
-     B = D0/3.0 + P0
-     C = D0/3.0 + 2.0/3.0*P0 + P1/3.0
-     D = P1
-  else if (B1) then
-     A = P0
-     B = -D1/3.0 + 2.0/3.0*P1 + P0/3.0
-     C = -D1/3.0 + P1
-     D = P1
+  if (W0(dim) .and. W1(dim)) then
+     C(1) = tA + tB
+     C(2) = tB/3.0
+     C(3) = tC + tD
+     C(4) = -tC/3.0
+  else if (W0(dim)) then
+     C(1) = tA + tB + 2.0/3.0*tC
+     C(2) = tB/3.0 + tC/3.0
+     C(3) = tC/3.0 + tD
+     C(4) = 0.0
+  else if (W1(dim)) then
+     C(1) = tA + tB/3.0
+     C(2) = 0.0
+     C(3) = 2.0/3.0*tB + tC + tD
+     C(4) = -tB/3.0 - tC/3.0
   else
-     A = P0
-     B = 2.0/3.0*P0 + P1/3.0
-     C = 2.0/3.0*P1 + P0/3.0
-     D = P1
-  end if
-  
-  evalCubic = (1-t)**3*A + 3*t*(1-t)**2*B + 3*t**2*(1-t)*C + t**3*D
+     C(1) = tA + 2.0/3.0*tB + tC/3.0
+     C(2) = 0.0
+     C(3) = tB/3.0 + 2.0/3.0*tC + tD
+     C(4) = 0.0
+  end if  
 
-end function evalCubic
+end subroutine sparseCubic
 
 
 

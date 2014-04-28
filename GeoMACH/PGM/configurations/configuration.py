@@ -33,6 +33,7 @@ class Configuration(object):
         self.initialize_cp_vecs()
         self.initialize_properties()
         self.define_oml_parameters()
+        self.initialize_parameters()
         self.compute_properties()
 
         # Assembles initial surfaces and instantiates OML object
@@ -89,6 +90,7 @@ class Configuration(object):
 
         self.initialize_properties()
         self.define_oml_parameters()
+        self.initialize_parameters()
         self.compute()
 
     def initialize_cp_vecs(self):
@@ -168,6 +170,48 @@ class Configuration(object):
         self.prop_vec = prop_vec
         self.prop_ind = prop_ind
 
+    def initialize_parameters(self):
+        num_param_total = 0
+        for comp in self.comps.values():
+            for prop in comp.props.values():
+                for param in prop.params.values():
+                    num_param_total += 3 * param.mu * param.mv
+
+        param_vec = numpy.zeros(num_param_total)
+        param_ind = numpy.array(
+            numpy.linspace(0, num_param_total-1, num_param_total), int)
+            
+        start, end = 0, 0
+        for comp in self.comps.values():
+            for prop in comp.props.values():
+                for param in prop.params.values():
+                    end += 3 * param.mu * param.mv
+                    param.initialize_parameters(param_vec[start:end],
+                                                param_ind[start:end])
+                    start += 3 * param.mu * param.mv
+
+        self.param_vec = param_vec
+        self.param_ind = param_ind
+
+        Das = []
+        Dis = []
+        Djs = []
+        for comp in self.comps.values():
+            for prop in comp.props.values():
+                for param in prop.params.values():
+                    Da, Di, Dj = param.compute_jacobian(prop.prop_ind)
+                    Das.append(Da)
+                    Dis.append(Di)
+                    Djs.append(Dj)
+        Da = numpy.concatenate(Das)
+        Di = numpy.concatenate(Dis)
+        Dj = numpy.concatenate(Djs)
+
+        self.prop_jac = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
+                                                shape=(self.prop_vec.shape[0],
+                                                       self.param_vec.shape[0]))
+
+
     def define_primitive_comps(self):
         """ Virtual method; must be implemented in derived class """
         pass
@@ -197,8 +241,7 @@ class Configuration(object):
 
     def compute_properties(self):
         """ Computes section properties from parameters """
-        for comp in self.comps.values():
-            comp.computeVs()
+        self.prop_vec[:] = self.prop_jac.dot(self.param_vec)
 
     def compute_face_ctrlpts(self, full=True, name0=None):
         """ Computes face control points from section properties """

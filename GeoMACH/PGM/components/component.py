@@ -265,8 +265,9 @@ class Property(object):
         self.params = {}
 
     def initialize_properties(self, prop_vec, prop_ind):
-        self.prop_vec = prop_vec.reshape((self.ni, self.nj), order='C')
-        self.prop_ind = prop_ind.reshape((self.ni, self.nj), order='C')
+        ni, nj = self.ni, self.nj
+        self.prop_vec = prop_vec.reshape((ni, nj), order='C')
+        self.prop_ind = prop_ind.reshape((ni, nj), order='C')
 
     def compute(self):
         self.prop_vec[:,:] = 0.0
