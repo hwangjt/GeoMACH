@@ -34,20 +34,12 @@ class Configuration(object):
         self.initialize_properties()
         self.define_oml_parameters()
         self.initialize_parameters()
+
         self.compute_properties()
-
-        # Assembles initial surfaces and instantiates OML object
-        index_offset = 0
-        for comp in self.comps.values():
-            for face in comp.faces.values():
-                for ind_j in xrange(face.num_surf[1]):
-                    for ind_i in xrange(face.num_surf[0]):
-                        if face.surf_indices[ind_i, ind_j] != -1:
-                            face.surf_indices[ind_i, ind_j] += index_offset
-            index_offset = numpy.max(comp.faces.values()[-1].surf_indices) + 1
-
         self.compute_face_ctrlpts()
 
+        # Initializes surfaces and instantiates OML object
+        index_offset = 0
         surfs_list = []
         for comp in self.comps.values():
             for face in comp.faces.values():
@@ -58,22 +50,15 @@ class Configuration(object):
                     for ind_i in range(face.num_surf[0]):
                         u_end += face.num_cp_list[0][ind_i]
                         if face.surf_indices[ind_i, ind_j] != -1:
+                            face.surf_indices[ind_i, ind_j] += index_offset
                             surfs_list.append(face.cp_array[u_start:u_end+1,v_start:v_end+1])
                         u_start += face.num_cp_list[0][ind_i]
                     v_start += face.num_cp_list[1][ind_j]
+            index_offset = numpy.max(comp.faces.values()[-1].surf_indices) + 1
         self.oml0 = PUBS.PUBS(surfs_list)
 
-        for comp in self.comps.values():
-            comp.set_oml(self.oml0)
-            #comp.removeHiddenSurfaces()
-
-        self.oml0.write2Tec('test2.dat')
-        #exit()
-        #self.oml0.plot()
-
         # Sets comp data and OML properties
-        for name in self.comps:
-            comp = self.comps[name]
+        for comp in self.comps.values():
             comp.set_oml(self.oml0)
             comp.setDOFs()
         self.set_oml_resolution()
@@ -103,7 +88,7 @@ class Configuration(object):
         for comp in self.primitive_comps.values():
             for face in comp.faces.values():
                 num_cp_prim += face.num_cp[0] * face.num_cp[1]
-        self.num_cp_prim = num_cp_prim
+
         cp_vec = numpy.zeros(3*num_cp_total)
         index_vec = -numpy.ones(num_cp_total, int)
         cp_indices = numpy.array(
@@ -210,7 +195,6 @@ class Configuration(object):
         self.prop_jac = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
                                                 shape=(self.prop_vec.shape[0],
                                                        self.param_vec.shape[0]))
-
 
     def define_primitive_comps(self):
         """ Virtual method; must be implemented in derived class """
