@@ -7,7 +7,7 @@ from GeoMACH.PGM.components import Primitive, airfoils, Property
 class Wing(Primitive):
     """ A component used to model lifting surfaces. """
 
-    def __init__(self, nx=1, nz=1, left=2, right=2):
+    def __init__(self, nx=1, nz=1, left=1, right=1):
         """ Initialization method
         nx: integer
             Number of surfaces in x (chord-wise) direction
@@ -17,7 +17,6 @@ class Wing(Primitive):
             The v[0] and v[-1] sections of the wing
             0: open tip, C0
             1: open tip, C1
-            2: closed tip
         """ 
 
         super(Wing,self).__init__(nx,0,nz)
@@ -67,13 +66,4 @@ class Wing(Primitive):
                 self.shapes[name][:,j,:2] = Ps[name][:,:]
         
     def computeQs(self):
-        #if self.left==2:
-        #    v['pos'][-1] = 2*v['pos'][-2] - v['pos'][-3]
-        #if self.right==2:
-        #    v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
-
-#        shapes = self.shapes
-#        for name in shapes:
-#            shapes[name][:,:,:] = self.airfoils[name][:,:,:]
-#            shapes[name][:,:,1] += self.props['shp', name].prop_vec
         return self.computeSections()

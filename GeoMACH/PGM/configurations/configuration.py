@@ -59,8 +59,6 @@ class Configuration(object):
             index_offset = numpy.max(comp.faces.values()[-1].surf_indices) + 1
         self.oml0 = PUBS.PUBS(surfs_list)
 
-        self.oml0.write2Tec('test2')
-
         # Sets comp data and OML properties
         for comp in self.comps.values():
             comp.set_oml(self.oml0)
@@ -257,10 +255,6 @@ class Configuration(object):
         self.compute_cp_prim()
         self.cp_vec[:] = self.dbezier_dprim.dot(self.cp_vec)
         self.cp_vec[:] = self.dcoons_dbezier.dot(self.cp_vec)
-        print numpy.around(self.comps['lt'].faces['upp'].cp_array[:,:7,2], decimals=2)
-        print numpy.around(self.comps['lt'].faces['upp'].cp_array[:,7:,2], decimals=2)
-        print self.comps['lt'].faces['upp'].cp_indices[:,:,0]
-        print self.comps['lt'].faces['low'].cp_indices[:,:,0]
         print 'Compute CP:', time.time() - time0
 
     def compute_oml(self):

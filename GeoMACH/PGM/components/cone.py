@@ -20,19 +20,12 @@ class Cone(Interpolant):
     def initializeIndices(self):
         ny = self.comp.ms[1].shape[0]
         nz = self.comp.ms[2].shape[0]
-        if self.comp.bottom==2:
-            self.ni = [int(ny/2),0,int(ny/2)]
-            self.nj = [int(nz/2),0,int(nz/2)]
-        else:
-            self.ni = [ny,0,0]
-            self.nj = [int(nz/2),0,int(nz/2)]
+        self.ni = [int(ny/2),0,int(ny/2)]
+        self.nj = [int(nz/2),0,int(nz/2)]
 
     def setDOFs(self):
         face = self.faces['def']
         face.setC1('surf', val=True)
-        if self.comp.bottom==0:
-            face.setC1('surf', i=-1, u=-1, val=False)
-            face.setC1('edge', i=-1, u=-1, val=True)
 
     def compute_cp_wireframe(self):
         comp_faces = self.comp.faces

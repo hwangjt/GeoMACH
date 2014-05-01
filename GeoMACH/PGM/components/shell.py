@@ -8,7 +8,7 @@ from GeoMACH.PGM.components import Primitive, Property
 class Shell(Primitive):
     """ A component used to model hollow bodies. """
 
-    def __init__(self, nx=1, ny=1, nz=1, bottom=2):
+    def __init__(self, nx=1, ny=1, nz=1):
         """ Initialization method
         nx: integer
             Number of surfaces in x direction
@@ -16,11 +16,6 @@ class Shell(Primitive):
             Number of surfaces in y direction
         nz: integer
             Number of surfaces in z direction
-        bottom: integer
-            Bottom of the shell
-            0: open, C0
-            1: open, C1
-            2: closed
         """ 
 
         super(Shell,self).__init__(nx,ny,nz)
@@ -31,11 +26,9 @@ class Shell(Primitive):
         self.addFace('lt1', 2, 1, 0.4)
         self.addFace('tp1', -3, 1, 0.4)
         self.addFace('rt1', -2, 1, -0.4)
-        if bottom==2:
-            self.addFace('bt0', -3, 1, -0.5)
-            self.addFace('bt1', 3, 1, -0.4)
+        self.addFace('bt0', -3, 1, -0.5)
+        self.addFace('bt1', 3, 1, -0.4)
 
-        self.bottom = bottom
         self.ax1 = 3
         self.ax2 = 1
 
@@ -43,11 +36,6 @@ class Shell(Primitive):
         faces = self.faces
         for face in faces.values():
             face.setC1('surf', val=True)
-        if self.bottom==0:
-            faces['rt0'].setC1('surf', i= 0, u= 0, val=False)
-            faces['rt0'].setC1('edge', i= 0, u= 0, val=True)
-            faces['lt0'].setC1('surf', i=-1, u=-1, val=False)
-            faces['lt0'].setC1('edge', i=-1, u=-1, val=True)
 
     def declare_properties(self):
         super(Shell, self).declare_properties()
@@ -59,22 +47,21 @@ class Shell(Primitive):
         nx = faces['rt0'].num_cp[1]
         ny = faces['rt0'].num_cp[0]
         nz = faces['tp0'].num_cp[0]
-        b = self.bottom==2
 
-        theta1 = {'rt0': -b/4.0,
+        theta1 = {'rt0': -1/4.0,
                   'tp0': 1/4.0,
                   'lt0': 3/4.0,
                   'bt0': 5/4.0,
                   'rt1': 1/4.0,
                   'tp1': 3/4.0,
-                  'lt1': (4+b)/4.0,
+                  'lt1': 5/4.0,
                   'bt1': 7/4.0,
                   }
         theta2 = {'rt0': 1/4.0,
                   'tp0': 3/4.0,
-                  'lt0': (4+b)/4.0,
+                  'lt0': 5/4.0,
                   'bt0': 7/4.0,
-                  'rt1': -b/4.0,
+                  'rt1': -1/4.0,
                   'tp1': 1/4.0,
                   'lt1': 3/4.0,
                   'bt1': 5/4.0,
@@ -95,11 +82,7 @@ class Shell(Primitive):
         
         Das, Dis, Djs = self.computeSections()
 
-        if self.bottom==2:
-            names = ['rt', 'tp', 'lt', 'bt']
-        else:
-            names = ['rt', 'tp', 'lt']            
-        for name in names:
+        for name in ['rt', 'tp', 'lt', 'bt']:
             for k in range(2):
                 outer = self.faces[name+'0'].cp_array[:,-k,:]
                 inner = self.faces[name+'1'].cp_array[::-1,-k,:]
