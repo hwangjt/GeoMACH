@@ -93,7 +93,7 @@ class Shell(Primitive):
                                     numpy.ones((nj,3),order='F') + sgn*thk/2.0, 
                                     flt, numpy.zeros((ni,nj),order='F'))
         
-        self.computeSections()
+        Das, Dis, Djs = self.computeSections()
 
         if self.bottom==2:
             names = ['rt', 'tp', 'lt', 'bt']
@@ -105,3 +105,5 @@ class Shell(Primitive):
                 inner = self.faces[name+'1'].cp_array[::-1,-k,:]
                 outer[:,:] = 0.5 * (outer + inner)
                 inner[:,:] = outer[:,:]
+
+        return Das, Dis, Djs

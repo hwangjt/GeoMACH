@@ -104,7 +104,7 @@ class Face(object):
         for d in xrange(2):
             self.num_cp[d] = sum(self.num_cp_list[d]) + 1
 
-    def initialize_cp_data(self, cp_vec, index_vec, cp_indices):
+    def initialize_cp_data(self, cp_vec, cp_indices, index_vec):
         num_cp = self.num_cp
         self.cp_array = cp_vec.reshape((num_cp[0],num_cp[1],3), order='C')
         self.index_array = index_vec.reshape((num_cp[0],num_cp[1],3), order='C')

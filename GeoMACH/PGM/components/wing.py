@@ -76,4 +76,4 @@ class Wing(Primitive):
 #        for name in shapes:
 #            shapes[name][:,:,:] = self.airfoils[name][:,:,:]
 #            shapes[name][:,:,1] += self.props['shp', name].prop_vec
-        self.computeSections()
+        return self.computeSections()

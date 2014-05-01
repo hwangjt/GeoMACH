@@ -74,4 +74,4 @@ class Body(Primitive):
                                     numpy.ones((nj,3),order='F'), 
                                     flt, numpy.zeros((ni,nj),order='F'))
 
-        self.computeSections()
+        return self.computeSections()

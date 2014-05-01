@@ -34,9 +34,11 @@ class Configuration(object):
         self.initialize_properties()
         self.define_oml_parameters()
         self.initialize_parameters()
-
-        self.compute_properties()
-        self.compute_face_ctrlpts()
+        self.prop_vec[:] = self.dprop_dparam.dot(self.param_vec) 
+        self.compute_cp_prim()
+        self.initialize_cp_bezier()
+        self.initialize_cp_coons()
+        self.compute_cp()
 
         # Initializes surfaces and instantiates OML object
         index_offset = 0
@@ -57,6 +59,8 @@ class Configuration(object):
             index_offset = numpy.max(comp.faces.values()[-1].surf_indices) + 1
         self.oml0 = PUBS.PUBS(surfs_list)
 
+        self.oml0.write2Tec('test2')
+
         # Sets comp data and OML properties
         for comp in self.comps.values():
             comp.set_oml(self.oml0)
@@ -72,27 +76,29 @@ class Configuration(object):
             for face in comp.faces.values():
                 face.initializeDOFmappings()
         self.initialize_cp_jacobian()
-
         self.initialize_properties()
         self.define_oml_parameters()
         self.initialize_parameters()
+        self.prop_vec[:] = self.dprop_dparam.dot(self.param_vec) 
+        self.compute_cp_prim()
+        self.initialize_cp_bezier()
+        self.initialize_cp_coons()
         self.compute()
 
     def initialize_cp_vecs(self):
         # Creates global face-wise cp and index vectors
-        num_cp_total = 0
+        num_cp = 0
         for comp in self.comps.values():
             for face in comp.faces.values():
-                num_cp_total += 3 * face.num_cp[0] * face.num_cp[1]
+                num_cp += 3 * face.num_cp[0] * face.num_cp[1]
         num_cp_prim = 0
         for comp in self.primitive_comps.values():
             for face in comp.faces.values():
                 num_cp_prim += 3 * face.num_cp[0] * face.num_cp[1]
 
-        cp_vec = numpy.zeros(num_cp_total)
-        index_vec = -numpy.ones(num_cp_total, int)
-        cp_indices = numpy.array(
-            numpy.linspace(0, num_cp_total-1, num_cp_total), int)
+        cp_vec = numpy.zeros(num_cp)
+        cp_indices = numpy.array(numpy.linspace(0, num_cp-1, num_cp), int)
+        index_vec = -numpy.ones(num_cp, int)
 
         # Passes views to each face
         start, end = 0, 0
@@ -100,44 +106,45 @@ class Configuration(object):
             for face in comp.faces.values():
                 end += 3 * face.num_cp[0] * face.num_cp[1]
                 face.initialize_cp_data(cp_vec[start:end],
-                                        index_vec[start:end],
-                                        cp_indices[start:end])
+                                        cp_indices[start:end],
+                                        index_vec[start:end])
                 start += 3 * face.num_cp[0] * face.num_cp[1]
 
         self.cp_vec = cp_vec
-        self.index_vec = index_vec
         self.cp_indices = cp_indices
-        self.num_cp_total = num_cp_total
+        self.index_vec = index_vec
+        self.num_cp = num_cp
         self.num_cp_prim = num_cp_prim
 
     def initialize_cp_jacobian(self):
-        num_cp_total = self.num_cp_total
+        self.num_cp_dof = 3 * self.oml0.nQ
+
+        num_cp = self.num_cp
+        num_cp_dof = self.num_cp_dof
 
         # Sets up face-wise cp to oml's free cp vec mapping
         data = numpy.minimum(1, self.index_vec + 1)
         rows = numpy.maximum(0, self.index_vec)
-        cols = numpy.array(
-            numpy.linspace(0, num_cp_total-1, num_cp_total), int)
+        cols = numpy.array(numpy.linspace(0, num_cp-1, num_cp), int)
         cp_jacobian = scipy.sparse.csr_matrix((data, (rows, cols)), 
-                                              shape=(3*self.oml0.nQ, 
-                                                     num_cp_total))
-        row_sums = cp_jacobian.dot(numpy.ones(num_cp_total, int))
+                                              shape=(num_cp_dof,
+                                                     num_cp))
+        row_sums = cp_jacobian.dot(numpy.ones(num_cp, int))
         inv_row_sum = scipy.sparse.diags(1.0/row_sums, 0, format='csr')
-        self.cp_jacobian = inv_row_sum.dot(cp_jacobian)
+        self.ddof_dcp = inv_row_sum.dot(cp_jacobian)
 
-        self.q_vec0 = numpy.zeros((3*self.oml0.nQ))
-        self.q_vec = self.q_vec0.reshape((self.oml0.nQ, 3), order='C')
+        self.dof_vec0 = numpy.zeros((num_cp_dof))
+        self.dof_vec = self.dof_vec0.reshape((self.oml0.nQ, 3), order='C')
 
     def initialize_properties(self):
-        num_prop_total = 0
+        num_prop = 0
         for comp in self.comps.values():
             comp.declare_properties()
             comp.count_properties()
-            num_prop_total += comp.size_prop
+            num_prop += comp.size_prop
 
-        prop_vec = numpy.zeros(num_prop_total)
-        prop_ind = numpy.array(
-            numpy.linspace(0, num_prop_total-1, num_prop_total), int)
+        prop_vec = numpy.zeros(num_prop)
+        prop_ind = numpy.array(numpy.linspace(0, num_prop-1, num_prop), int)
             
         start, end = 0, 0
         for comp in self.comps.values():
@@ -148,17 +155,17 @@ class Configuration(object):
 
         self.prop_vec = prop_vec
         self.prop_ind = prop_ind
+        self.num_prop = num_prop
 
     def initialize_parameters(self):
-        num_param_total = 0
+        num_param = 0
         for comp in self.comps.values():
             for prop in comp.props.values():
                 for param in prop.params.values():
-                    num_param_total += 3 * param.mu * param.mv
+                    num_param += 3 * param.mu * param.mv
 
-        param_vec = numpy.zeros(num_param_total)
-        param_ind = numpy.array(
-            numpy.linspace(0, num_param_total-1, num_param_total), int)
+        param_vec = numpy.zeros(num_param)
+        param_ind = numpy.array(numpy.linspace(0, num_param-1, num_param), int)
             
         start, end = 0, 0
         for comp in self.comps.values():
@@ -171,10 +178,9 @@ class Configuration(object):
 
         self.param_vec = param_vec
         self.param_ind = param_ind
+        self.num_param = num_param
 
-        Das = []
-        Dis = []
-        Djs = []
+        Das, Dis, Djs = [], [], []
         for comp in self.comps.values():
             for prop in comp.props.values():
                 for param in prop.params.values():
@@ -186,9 +192,42 @@ class Configuration(object):
         Di = numpy.concatenate(Dis)
         Dj = numpy.concatenate(Djs)
 
-        self.prop_jac = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
-                                                shape=(self.prop_vec.shape[0],
-                                                       self.param_vec.shape[0]))
+        self.dprop_dparam = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
+                                                shape=(self.num_prop,
+                                                       self.num_param))
+
+    def initialize_cp_bezier(self):
+        face_cps = self.face_cps
+
+        Das, Dis, Djs = [], [], []
+        for comp in self.interpolant_comps.values():
+            Da, Di, Dj = comp.compute_cp_wireframe()
+            Das.append(Da)
+            Dis.append(Di)
+            Djs.append(Dj)
+        Da = numpy.concatenate(Das + [numpy.ones(face_cps.shape[0])])
+        Di = numpy.concatenate(Dis + [face_cps])
+        Dj = numpy.concatenate(Djs + [face_cps])
+        self.dbezier_dprim = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
+                                                     shape=(self.num_cp,
+                                                            self.num_cp))
+        self.face_grid_cps = numpy.unique(Di)
+
+    def initialize_cp_coons(self):
+        face_grid_cps = self.face_grid_cps
+
+        Das, Dis, Djs = [], [], []
+        for comp in self.interpolant_comps.values():
+            Da, Di, Dj = comp.compute_cp_surfs()
+            Das.append(Da)
+            Dis.append(Di)
+            Djs.append(Dj)
+        Da = numpy.concatenate(Das + [numpy.ones(face_grid_cps.shape[0])])
+        Di = numpy.concatenate(Dis + [face_grid_cps])
+        Dj = numpy.concatenate(Djs + [face_grid_cps])
+        self.dcoons_dbezier = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
+                                                      shape=(self.num_cp,
+                                                             self.num_cp))
 
     def define_primitive_comps(self):
         """ Virtual method; must be implemented in derived class """
@@ -208,70 +247,45 @@ class Configuration(object):
 
     def compute(self):
         """ Computes OML points based on current parameter values """
+        self.compute_cp()
+        self.compute_oml()
+
+    def compute_cp(self):
         time0 = time.time()
-        self.compute_properties()
-        self.compute_face_ctrlpts()
-        self.compute_free_ctrlpt_vector()
-        time1 = time.time()
-        self.oml0.computePoints()
-        time2 = time.time()
-        print time2-time1, time1-time0
-
-    def compute_properties(self):
-        """ Computes section properties from parameters """
-        self.prop_vec[:] = self.prop_jac.dot(self.param_vec)
-
-    def compute_face_ctrlpts(self, full=True, name0=None):
-        """ Computes face control points from section properties """
-        def linspace(n):
-            return numpy.array(numpy.linspace(0,n-1,n), int)
-        
+        self.prop_vec[:] = self.dprop_dparam.dot(self.param_vec) 
         self.cp_vec[:] = 0.0
+        self.compute_cp_prim()
+        self.cp_vec[:] = self.dbezier_dprim.dot(self.cp_vec)
+        self.cp_vec[:] = self.dcoons_dbezier.dot(self.cp_vec)
+        print numpy.around(self.comps['lt'].faces['upp'].cp_array[:,:7,2], decimals=2)
+        print numpy.around(self.comps['lt'].faces['upp'].cp_array[:,7:,2], decimals=2)
+        print self.comps['lt'].faces['upp'].cp_indices[:,:,0]
+        print self.comps['lt'].faces['low'].cp_indices[:,:,0]
+        print 'Compute CP:', time.time() - time0
 
-        # Step 1: compute primitives' CPs
+    def compute_oml(self):
+        time0 = time.time()
+        self.dof_vec0[:] = self.ddof_dcp.dot(self.cp_vec)
+        self.oml0.Q[:, :3] = self.dof_vec
+        self.oml0.computePoints()
+        print 'Compute OML:', time.time() - time0
+
+    def compute_cp_prim(self):
+        """ Computes face control points from section properties """ 
+        Das, Dis, Djs = [], [], []
         for comp in self.primitive_comps.values():
-            comp.computeQs()
-        face_cps = linspace(self.num_cp_prim)
-
-        # Step 2: compute interpolants' wireframe CPs
-        Das = []
-        Dis = []
-        Djs = []
-        for comp in self.interpolant_comps.values():
-            Da, Di, Dj = comp.compute_cp_wireframe()
-            Das.append(Da)
-            Dis.append(Di)
-            Djs.append(Dj)
-        Da = numpy.concatenate(Das + [numpy.ones(face_cps.shape[0])])
-        Di = numpy.concatenate(Dis + [face_cps])
-        Dj = numpy.concatenate(Djs + [face_cps])
-        D1 = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
-                                     shape=(self.cp_vec.shape[0],
-                                            self.cp_vec.shape[0]))
-        self.cp_vec[:] = D1.dot(self.cp_vec)
-        face_grid_cps = numpy.unique(Di)
-
-        # Step 3: compute interpolants' surface CPs
-        Das = []
-        Dis = []
-        Djs = []
-        for comp in self.interpolant_comps.values():
-            Da, Di, Dj = comp.compute_cp_surfs()
-            Das.append(Da)
-            Dis.append(Di)
-            Djs.append(Dj)
-        Da = numpy.concatenate(Das + [numpy.ones(face_grid_cps.shape[0])])
-        Di = numpy.concatenate(Dis + [face_grid_cps])
-        Dj = numpy.concatenate(Djs + [face_grid_cps])
-        D2 = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
-                                     shape=(self.cp_vec.shape[0],
-                                            self.cp_vec.shape[0]))
-        self.cp_vec[:] = D2.dot(self.cp_vec)
-
-    def compute_free_ctrlpt_vector(self):
-        """ Computes vector of free control points from face control points """
-        self.q_vec0[:] = self.cp_jacobian.dot(self.cp_vec)
-        self.oml0.Q[:, :3] = self.q_vec
+            Da, Di, Dj = comp.computeQs()
+            Das.extend(Da)
+            Dis.extend(Di)
+            Djs.extend(Dj)
+        Da = numpy.concatenate(Das)
+        Di = numpy.concatenate(Dis)
+        Dj = numpy.concatenate(Djs)
+        self.dprim_dprop = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
+                                                   shape=(self.num_cp,
+                                                          self.num_prop))
+        num_cp_prim = self.num_cp_prim
+        self.face_cps = numpy.array(numpy.linspace(0,num_cp_prim-1,num_cp_prim), int)
 
     def get_derivatives(self, comp_name, par_name, ind,
                         clean=True, useFD=False, step=1e-5):

@@ -49,6 +49,7 @@ class Primitive(Component):
         ogn_ind = self.props['ogn'].prop_ind
         scl_ind = self.props['scl'].prop_ind
 
+        Das, Dis, Djs = [], [], []
         for name in self.faces:
             shX = self.props['shX',name].prop_vec + self.shapes[name][:,:,0]
             shY = self.props['shY',name].prop_vec + self.shapes[name][:,:,1]
@@ -63,30 +64,8 @@ class Primitive(Component):
             cp_ind = self.faces[name].cp_indices
 
             self.faces[name].cp_array[:,:,:], Da, Di, Dj = PGMlib.computesections2(self.ax1, self.ax2, ni, nj, ni*nj*3*3*4, ogn, nor, pos, rot, scl, shX, shY, shZ, ogn_ind, nor_ind, pos_ind, rot_ind, scl_ind, shX_ind, shY_ind, shZ_ind, cp_ind)
-
-    def setDerivatives(self, var, dV0):
-        nf = len(self.faces)
-        n = self.faces.values()[0].num_cp[1]
-        nv = self.dQs_dv.values()[0].shape[1]
-        dV = numpy.zeros(nv)
-        if var=='scl':
-            dV[:3*n] = dV0.T.flatten()
-            for name in self.faces:
-                ni, nj = self.faces[name].num_cp
-                self.faces[name].cp_array[:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[name].dot(dV))
-        elif var=='pos':
-            dV[3*n:6*n] = dV0.T.flatten()
-            for name in self.faces:
-                ni, nj = self.faces[name].num_cp
-                for i in range(ni):
-                    self.faces[name].cp_array[i,:,:] += dV0
-                self.faces[name].cp_array[:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[name].dot(dV))
-        elif var=='rot':
-            dV[6*n:9*n] = dV0.T.flatten()
-            for name in self.faces:
-                ni, nj = self.faces[name].num_cp
-                self.faces[name].cp_array[:,:,:] += PGMlib.inflatevector(ni, nj, 3*ni*nj, self.dQs_dv[name].dot(dV)*numpy.pi/180.0)
-        else:
-            self.properties[var] += dV0
-            self.computeQs()
-            self.properties[var] -= dV0
+            Das.append(Da)
+            Dis.append(Di)
+            Djs.append(Dj)
+        return Das, Dis, Djs
+        

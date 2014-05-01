@@ -1,18 +1,18 @@
-subroutine computeRotations2(ax1, ax2, nj, nor, pos, rot, rot_nor, drot_dpos)
+subroutine computeRotations2(ax1, ax2, nj, nor, pos, rot, drot_dpos)
 
   implicit none
 
   !Fortran-python interface directive
-  !f2py intent(in) ax1, ax2, nj, nor, pos, rot
-  !f2py intent(out) rot_nor, drot_dpos
-  !f2py depend(nj) nor, pos, rot, rot_nor, drot_dpos
+  !f2py intent(in) ax1, ax2, nj, nor, pos
+  !f2py intent(out) rot, drot_dpos
+  !f2py depend(nj) nor, pos, rot, drot_dpos
 
   !Input
   integer, intent(in) ::  ax1, ax2, nj
-  double precision, intent(in) ::  nor(nj,3), pos(nj,3), rot(nj,3)
+  double precision, intent(in) ::  nor(nj,3), pos(nj,3)
 
   !Output
-  double precision, intent(out) ::  rot_nor(nj,3), drot_dpos(nj,3,3,3)
+  double precision, intent(out) ::  rot(nj,3), drot_dpos(nj,3,3,3)
 
   !Working
   integer j, k, l
@@ -56,7 +56,7 @@ subroutine computeRotations2(ax1, ax2, nj, nor, pos, rot, rot_nor, drot_dpos)
         dt_dpos_j(:,:) = dt_dta - dt_dtb
         dt_dpos_jp1(:,:) = dt_dtb
      end if
-     call computeAngles(ax1, ax2, t, nor(j,:), rot_nor(j,:), drotj_dt)
+     call computeAngles(ax1, ax2, t, nor(j,:), rot(j,:), drotj_dt)
      do k=1,3
         do l=1,3
            if (j .ne. 1) then
@@ -122,9 +122,14 @@ subroutine computeSections2(ax1, ax2, ni, nj, nD, &
 
   iD = 0
 
+  Da(:) = 0.0
+  Di(:) = 0
+  Dj(:) = 0
+
   ! X_ij,k = T_j,kl * ((shp_ij,l - ogn_j,l) * scl_j,l) + pos_j,k
+  ! (1) scl   (2) rot   (3) shp   (4) pos
   do j=1,nj
-     call computeRotations2(ax1, ax2, nj, nor, pos, rot, &
+     call computeRotations2(ax1, ax2, nj, nor, pos, &
           rot_nor, drot_dpos)
      rot_tot(:,:) = rot(:,:) * pi / 180.0 + rot_nor(:,:)
      call computeRtnMtx(ax1, ax2, ax3, rot_tot(j,:), T, dT_drot)
@@ -139,13 +144,30 @@ subroutine computeSections2(ax1, ax2, ni, nj, nD, &
               Dj(iD+2) = rot_inds(j,l)
               Da(iD+3) = T(k,l)*scl(j,l)
               Dj(iD+3) = shp_inds(i,j,l)
-              Da(iD+4) = 1.0
-              if (j .ne. 1) then
-                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,1),(shp(i,j,:)-ogn(j,:))*scl(j,:)) * drot_dpos(j-1,1,l,3)
+              if (k .eq. l) then
+                 Da(iD+4) = Da(iD+4) + 1.0
               end if
-              Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,1),(shp(i,j,:)-ogn(j,:))*scl(j,:)) * drot_dpos(j,1,l,2)
+              if (j .ne. 1) then
+                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,1),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j-1,1,l,3)
+                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,2),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j-1,2,l,3)
+                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,3),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j-1,3,l,3)
+              end if
+              Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,1),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                   * drot_dpos(j,1,l,2)
+              Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,2),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                   * drot_dpos(j,2,l,2)
+              Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,3),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                   * drot_dpos(j,3,l,2)
               if (j .ne. nj) then
-                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,1),(shp(i,j,:)-ogn(j,:))*scl(j,:)) * drot_dpos(j+1,1,l,1)
+                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,1),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j+1,1,l,1)
+                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,2),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j+1,2,l,1)
+                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,3),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j+1,3,l,1)
               end if
               Dj(iD+4) = pos_inds(j,l)
               iD = iD + 4
