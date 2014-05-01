@@ -255,14 +255,14 @@ class Configuration(object):
         self.compute_cp_prim()
         self.cp_vec[:] = self.dbezier_dprim.dot(self.cp_vec)
         self.cp_vec[:] = self.dcoons_dbezier.dot(self.cp_vec)
-        print 'Compute CP:', time.time() - time0
+        #print 'Compute CP:', time.time() - time0
 
     def compute_oml(self):
         time0 = time.time()
         self.dof_vec0[:] = self.ddof_dcp.dot(self.cp_vec)
         self.oml0.Q[:, :3] = self.dof_vec
         self.oml0.computePoints()
-        print 'Compute OML:', time.time() - time0
+        #print 'Compute OML:', time.time() - time0
 
     def compute_cp_prim(self):
         """ Computes face control points from section properties """ 
@@ -281,99 +281,34 @@ class Configuration(object):
         num_cp_prim = self.num_cp_prim
         self.face_cps = numpy.array(numpy.linspace(0,num_cp_prim-1,num_cp_prim), int)
 
-    def get_derivatives(self, comp_name, par_name, ind,
-                        clean=True, useFD=False, step=1e-5):
-        comp = self.comps[comp_name]
-        par = comp.params[par_name]
-        var = par.var
-        self.compute_properties()
-        self.compute_face_ctrlpts()
-        self.compute_free_ctrlpt_vector()
-        V0 = numpy.array(comp.properties[var])
-        Q0 = numpy.array(self.oml0.Q[:, :3])
-        if useFD:
-            par.P[ind[0], ind[1], 0] += step
-            self.compute_properties()
-            self.compute_face_ctrlpts()
-            par.P[ind[0], ind[1], 0] -= step
-        else:
-            step = 1.0
-            par.P[ind[0], ind[1], 0] += step
-            self.compute_properties()
-            par.P[ind[0], ind[1], 0] -= step
-            dV = comp.properties[var] - V0
-            self.compute_properties()
-            comp.setDerivatives(var, dV)
-            self.compute_face_ctrlpts(False, comp_name)
-        self.compute_free_ctrlpt_vector()
-        res = (self.oml0.Q[:, :3] - Q0)/step
-        if clean:
-            self.compute()
-        return res
-
-    def test_derivatives(self, c, ps=[]):
-        self.compute()
-
-        comp = self.comps[c]
-        if ps == []:
-            ps = comp.params.keys()
+    def test_derivatives(self, comp_names=None, prop_names=None):
+        if comp_names is None:
+            comp_names = self.comps.keys()
+        if prop_names is None:
+            prop_names = ['pos', 'rot', 'scl']
 
         self.compute()
-        step = 1e-5
-        for p in ps:
-            par = comp.params[p]
-            var = par.var
-            if not (var in ['nor', 'ogn', 'flt']):
-                ni, nj = par.P.shape[:2]
-                for i in range(ni):
-                    for j in range(nj):
-                        ind = (i, j)
-                        drv1 = self.get_derivatives(c, p, ind, clean=False)
-                        drv2 = self.get_derivatives(c, p, ind, clean=False,
-                                                    useFD=True, step=step)
-                        norm0 = numpy.linalg.norm(drv1)
-                        norm0 = 1.0 if norm0 == 0 else norm0
-                        error = numpy.linalg.norm(drv2-drv1)/norm0
-                        good = 'O' if error < 1e-4 else 'X'
-                        print good, ' ', c, ' ', p, ' ', ind, ' ', error
-        self.compute()
+        dof = numpy.array(self.dof_vec0)
+        deriv_AN = numpy.array(self.dof_vec0)
+        deriv_FD = numpy.array(self.dof_vec0)
 
-"""
-    def get_derivatives0(self, comp, var, ind, clean=True, useFD=False, step=1e-5):
-        self.compute_face_ctrlpts()
-        self.compute_free_ctrlpt_vector()
-        Q0 = numpy.array(self.oml0.Q[:, :3])
-        if useFD:
-            self.comps[comp].properties[var][ind] += step
-            self.compute_face_ctrlpts()
-            self.comps[comp].properties[var][ind] -= step
-        else:
-            self.comps[comp].setDerivatives(var, ind)
-            self.compute_face_ctrlpts(False, comp)
-            step = 1.0
-        self.compute_free_ctrlpt_vector()
-        res = (self.oml0.Q[:, :3] - Q0)/step
-        if clean:
-            self.computePoints()
-        return res
-
-    def test_derivatives0(self, comp, properties=[]):
-        self.compute()
-        if properties == []:
-            properties = self.comps[comp].properties.keys()
-        step = 1e-5
-        for var in properties:
-            if not (var in ['nor', 'origin', 'fillet']):
-                dat = self.comps[comp].properties[var]
-                for ind, val in numpy.ndenumerate(dat):
-                    ind = ind[0] if len(ind) == 1 else ind
-                    drv1 = self.get_derivatives(comp, var, ind, clean=False)
-                    drv2 = self.get_derivatives(comp, var, ind, clean=False,
-                                               useFD=True, step=step)
-                    norm0 = numpy.linalg.norm(drv2)
-                    norm0 = 1.0 if norm0 == 0 else norm0
-                    error = numpy.linalg.norm(drv2-drv1)/norm0
-                    good = 'O' if error < 1e-4 else 'X'
-                    print good, ' ', comp, ' ', var, ' ', ind, ' ', error
-        self.compute()
-"""
+        h = 1e-3
+        jac = self.ddof_dcp.dot(self.dcoons_dbezier.dot(self.dbezier_dprim.dot(self.dprim_dprop.dot(self.dprop_dparam))))
+        in_vec = numpy.zeros(self.num_param)
+        for comp_name in comp_names:
+            comp = self.comps[comp_name]
+            for prop_name in prop_names:
+                prop = comp.props[prop_name]
+                for param_name in prop.params:
+                    param = prop.params[param_name]
+                    mu, mv = param.mu, param.mv
+                    for i in range(mu):
+                        for j in range(mv):
+                            in_vec[:] = 0.0
+                            in_vec[param.param_ind[i,j,0]] = 1.0
+                            deriv_AN[:] = jac.dot(in_vec)
+                            param.param_vec[i,j,0] += h     
+                            self.compute()
+                            deriv_FD[:] = (self.dof_vec0 - dof) / h
+                            param.param_vec[i,j,0] -= h            
+                            print comp_name, prop_name, param_name, i, j, numpy.linalg.norm(deriv_FD - deriv_AN)

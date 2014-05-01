@@ -280,9 +280,7 @@ if __name__ == '__main__':
     aircraft.oml0.write2Tec(name)
     aircraft.oml0.write2TecC(name)
 
-    #aircraft.test_derivatives('lw')
-    #aircraft.test_derivatives('fu')
-    #aircraft.test_derivatives('lw_fu')
+    aircraft.test_derivatives()
     #aircraft.oml0.plot()
     #aircraft.meshStructure()
 
