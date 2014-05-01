@@ -33,7 +33,7 @@ class Primitive(Component):
         props['nor'] = Property(n,3)
         props['flt'] = Property(n,4)
 
-    def computeSections(self, radii=None):
+    def computeSections(self):
         nf = len(self.faces)
         n = self.faces.values()[0].num_cp[1]
 
@@ -43,26 +43,26 @@ class Primitive(Component):
         ogn = self.props['ogn'].prop_vec
         scl = self.props['scl'].prop_vec
 
-        nQ = 9*n
-        for face in self.faces.values():
-            nQ += 3 * face.num_cp[0] * face.num_cp[1]
+        pos_ind = self.props['pos'].prop_ind
+        nor_ind = self.props['nor'].prop_ind
+        rot_ind = self.props['rot'].prop_ind
+        ogn_ind = self.props['ogn'].prop_ind
+        scl_ind = self.props['scl'].prop_ind
 
-        rot0, Da, Di, Dj = PGMlib.computerotations(self.ax1, self.ax2, n, 9*(n*3-2), pos, nor)
-        rot = rot*numpy.pi/180.0 + rot0
-        dv_dpos0 = scipy.sparse.csc_matrix((Da,(Di+6*n,Dj+3*n)),shape=(nQ,nQ))
-
-        self.dQs_dv = {}
-        counter = 0
         for name in self.faces:
-            if radii==None:
-                scl = self.props['scl'].prop_vec
-            else:
-                scl = radii[name]
+            shX = self.props['shX',name].prop_vec + self.shapes[name][:,:,0]
+            shY = self.props['shY',name].prop_vec + self.shapes[name][:,:,1]
+            shZ = self.props['shZ',name].prop_vec + self.shapes[name][:,:,2]
+
+            shX_ind = self.props['shX',name].prop_ind
+            shY_ind = self.props['shY',name].prop_ind
+            shZ_ind = self.props['shZ',name].prop_ind
+
             ni, nj = self.faces[name].num_cp
-            self.faces[name].cp_array[:,:,:], Da, Di, Dj = PGMlib.computesections(self.ax1, self.ax2, ni, nj, ni*nj*27, counter, ogn, scl, pos, rot, self.shapes[name])
-            self.dQs_dv[name] = scipy.sparse.csc_matrix((Da,(Di,Dj)),shape=(3*ni*nj,nQ))
-            self.dQs_dv[name] = self.dQs_dv[name] + self.dQs_dv[name].dot(dv_dpos0)
-            counter += 3*ni*nj
+            
+            cp_ind = self.faces[name].cp_indices
+
+            self.faces[name].cp_array[:,:,:], Da, Di, Dj = PGMlib.computesections2(self.ax1, self.ax2, ni, nj, ni*nj*3*3*4, ogn, nor, pos, rot, scl, shX, shY, shZ, ogn_ind, nor_ind, pos_ind, rot_ind, scl_ind, shX_ind, shY_ind, shZ_ind, cp_ind)
 
     def setDerivatives(self, var, dV0):
         nf = len(self.faces)

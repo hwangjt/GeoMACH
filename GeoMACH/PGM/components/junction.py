@@ -120,15 +120,15 @@ class Junction(Interpolant):
             #S = getEdge(self.mComp1.faces['def'].cp_indices, i=-1, d=1)
             pass
         elif self.mSide==0:
-            W = numpy.zeros((4,2),order='F')
-            E = numpy.zeros((4,2),order='F')
-            N = self.mComp.faces['upp'].cp_indices[::-1,:2]
-            S = self.mComp.faces['low'].cp_indices[:,:2]
+            W = numpy.zeros((4,2,3),order='F')
+            E = numpy.zeros((4,2,3),order='F')
+            N = self.mComp.faces['upp'].cp_indices[::-1,:2,:]
+            S = self.mComp.faces['low'].cp_indices[:,:2,:]
         elif self.mSide==1:
-            W = numpy.zeros((4,2),order='F')
-            E = numpy.zeros((4,2),order='F')
-            N = self.mComp.faces['upp'].cp_indices[:,-1:-3:-1]
-            S = self.mComp.faces['low'].cp_indices[::-1,-1:-3:-1]
+            W = numpy.zeros((4,2,3),order='F')
+            E = numpy.zeros((4,2,3),order='F')
+            N = self.mComp.faces['upp'].cp_indices[:,-1:-3:-1,:]
+            S = self.mComp.faces['low'].cp_indices[::-1,-1:-3:-1,:]
 
         mu, mv = self.faces['def'].num_cp_list[:]
         nu = range(3)
@@ -138,35 +138,30 @@ class Junction(Interpolant):
             nv[k] = sum(mv[self.sj[k]:self.sj[k+1]]) + 1
         nu0 = sum(nu)-2
         nv0 = sum(nv)-2
-        fInds = -numpy.ones((nu0, nv0), dtype=int, order='F')
+        fInds = -numpy.ones((nu0, nv0, 3), dtype=int, order='F')
         fInds[:nu[0],:] = fFace_inds[:nu[0],:]
         fInds[-nu[2]:,:] = fFace_inds[-nu[2]:,:]
 
-        nD = 2 * nv0 + 2 * (nu0 - 2)
-        nD += 2
+        nD = 3 * 2 * nv0 + 3 * 2 * (nu0 - 2)
+        nD += 3 * 2
         if nu[1] != 1:
-            nD += 2
-        nD += 2 * (nv[1] - 2)
+            nD += 3 * 2
+        nD += 3 * 2 * (nv[1] - 2)
         if nu[1] != 1:
-            nD += 2 * (nu[1] - 2)
-        nD += 4 * 2 * (nu[0] - 2)
-        nD += 4 * 2 * (nu[2] - 2)
-        nD += 4 * (nv[0] - 2)
-        nD += 4 * (nv[2] - 2)
+            nD += 3 * 2 * (nu[1] - 2)
+        nD += 3 * 4 * 2 * (nu[0] - 2)
+        nD += 3 * 4 * 2 * (nu[2] - 2)
+        nD += 3 * 4 * (nv[0] - 2)
+        nD += 3 * 4 * (nv[2] - 2)
         if nu[1] != 1:
-            nD += 4 * (nv[0] - 2)
-            nD += 4 * (nv[2] - 2)
+            nD += 3 * 4 * (nv[0] - 2)
+            nD += 3 * 4 * (nv[2] - 2)
 
         fC1 = self.props['fC1'].prop_vec
         mC1 = self.props['mC1'].prop_vec
-        Da0, Di0, Dj0 = PGMlib.computejunctionwireframe(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], fC1, mC1, W, E, N, S, fInds, self.faces['def'].cp_indices)
-        Da0 = Da0 * (-1 != Dj0)
-        Dj0 = numpy.maximum(0, Dj0)
-        Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)
-        for coord in xrange(3):
-            Da[coord::3] = Da0
-            Di[coord::3] = 3*Di0 + coord
-            Dj[coord::3] = 3*Dj0 + coord
+        Da, Di, Dj = PGMlib.computejunctionwireframe(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], fC1, mC1, W, E, N, S, fInds, self.faces['def'].cp_indices)
+        Da = Da * (-1 != Dj)
+        Dj = numpy.maximum(0, Dj)
         return Da, Di, Dj
 
     def compute_cp_surfs(self):
@@ -183,12 +178,7 @@ class Junction(Interpolant):
         for i in range(3):
             for j in range(3):
                 if (nu[1] != 1) or (i !=1):
-                    nD += 8 * (nu[i]-2) * (nv[j]-2)
+                    nD += 3 * 8 * (nu[i]-2) * (nv[j]-2)
         
-        Da0, Di0, Dj0 = PGMlib.computejunctioncoons(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], self.faces['def'].cp_indices)
-        Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)
-        for coord in xrange(3):
-            Da[coord::3] = Da0
-            Di[coord::3] = 3*Di0 + coord
-            Dj[coord::3] = 3*Dj0 + coord
+        Da, Di, Dj = PGMlib.computejunctioncoons(nD, nu0, nv0, nu[0], nu[1], nu[2], nv[0], nv[1], nv[2], self.faces['def'].cp_indices)
         return Da, Di, Dj

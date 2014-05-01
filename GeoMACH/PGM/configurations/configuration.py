@@ -83,13 +83,13 @@ class Configuration(object):
         num_cp_total = 0
         for comp in self.comps.values():
             for face in comp.faces.values():
-                num_cp_total += face.num_cp[0] * face.num_cp[1]
+                num_cp_total += 3 * face.num_cp[0] * face.num_cp[1]
         num_cp_prim = 0
         for comp in self.primitive_comps.values():
             for face in comp.faces.values():
-                num_cp_prim += face.num_cp[0] * face.num_cp[1]
+                num_cp_prim += 3 * face.num_cp[0] * face.num_cp[1]
 
-        cp_vec = numpy.zeros(3*num_cp_total)
+        cp_vec = numpy.zeros(num_cp_total)
         index_vec = -numpy.ones(num_cp_total, int)
         cp_indices = numpy.array(
             numpy.linspace(0, num_cp_total-1, num_cp_total), int)
@@ -98,11 +98,11 @@ class Configuration(object):
         start, end = 0, 0
         for comp in self.comps.values():
             for face in comp.faces.values():
-                end += face.num_cp[0] * face.num_cp[1]
-                face.initialize_cp_data(cp_vec[3*start:3*end],
+                end += 3 * face.num_cp[0] * face.num_cp[1]
+                face.initialize_cp_data(cp_vec[start:end],
                                         index_vec[start:end],
                                         cp_indices[start:end])
-                start += face.num_cp[0] * face.num_cp[1]
+                start += 3 * face.num_cp[0] * face.num_cp[1]
 
         self.cp_vec = cp_vec
         self.index_vec = index_vec
@@ -114,20 +114,14 @@ class Configuration(object):
         num_cp_total = self.num_cp_total
 
         # Sets up face-wise cp to oml's free cp vec mapping
-        data0 = numpy.minimum(1, self.index_vec + 1)
-        rows0 = numpy.maximum(0, self.index_vec)
-        cols0 = numpy.linspace(0, num_cp_total-1, num_cp_total)
-        data = numpy.zeros(3*num_cp_total, int)
-        rows = numpy.zeros(3*num_cp_total, int)
-        cols = numpy.zeros(3*num_cp_total, int)
-        for coord in xrange(3):
-            data[coord::3] = data0
-            rows[coord::3] = 3*rows0 + coord
-            cols[coord::3] = 3*cols0 + coord
+        data = numpy.minimum(1, self.index_vec + 1)
+        rows = numpy.maximum(0, self.index_vec)
+        cols = numpy.array(
+            numpy.linspace(0, num_cp_total-1, num_cp_total), int)
         cp_jacobian = scipy.sparse.csr_matrix((data, (rows, cols)), 
                                               shape=(3*self.oml0.nQ, 
-                                                     3*num_cp_total))
-        row_sums = cp_jacobian.dot(numpy.ones(3*num_cp_total, int))
+                                                     num_cp_total))
+        row_sums = cp_jacobian.dot(numpy.ones(num_cp_total, int))
         inv_row_sum = scipy.sparse.diags(1.0/row_sums, 0, format='csr')
         self.cp_jacobian = inv_row_sum.dot(cp_jacobian)
 
@@ -237,7 +231,7 @@ class Configuration(object):
         # Step 1: compute primitives' CPs
         for comp in self.primitive_comps.values():
             comp.computeQs()
-        face_cps = linspace(3*self.num_cp_prim)
+        face_cps = linspace(self.num_cp_prim)
 
         # Step 2: compute interpolants' wireframe CPs
         Das = []

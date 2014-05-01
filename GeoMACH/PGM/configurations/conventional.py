@@ -142,7 +142,7 @@ class Conventional(Configuration):
         c['ln'].props['pos'].addParam('pos1',[2,3],P=[[0,0,0],[4.5,0,0]])
         c['ln'].props['pos'].addParam('offset',[1,3],P=[16,-2.4,9])
         c['ln'].props['scl'].addParam('scl1',[1,1],P=[1.25])
-        c['ln'].props['thk'].addParam('thk1',[3,1],P=[0.15,0.4,0.15],B=[False,True,False])
+        c['ln'].props['thk'].addParam('thk1',[3,1],P=[0.08,0.2,0.08],B=[False,True,False])
 
         c['rp'].props['ogn'].addParam('ogn',[1,3],P=[0.25,0,0])
         c['rp'].props['nor'].addParam('nor1',[1,3],P=[1,0,0])
@@ -154,7 +154,7 @@ class Conventional(Configuration):
         c['rn'].props['pos'].addParam('pos1',[2,3],P=[[0,0,0],[4.5,0,0]])
         c['rn'].props['scl'].addParam('scl1',[1,1],P=[1.25])
         c['rn'].props['pos'].addParam('offset',[1,3],P=[16,-2.4,-9])
-        c['rn'].props['thk'].addParam('thk1',[3,1],P=[0.15,0.4,0.15],B=[False,True,False])
+        c['rn'].props['thk'].addParam('thk1',[3,1],P=[0.08,0.2,0.08],B=[False,True,False])
 
         c['lw_fu'].props['mC1'].params['mC1'].setP([1.5])
         c['lw_fu'].props['fC1'].params['fC1'].setP([0.5])

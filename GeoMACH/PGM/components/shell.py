@@ -61,11 +61,6 @@ class Shell(Primitive):
         nz = faces['tp0'].num_cp[0]
         b = self.bottom==2
 
-        scl = self.props['scl'].prop_vec
-        thk = self.props['thk'].prop_vec
-        r0 = scl + thk/2.0
-        r1 = scl - thk/2.0
-
         theta1 = {'rt0': -b/4.0,
                   'tp0': 1/4.0,
                   'lt0': 3/4.0,
@@ -86,25 +81,24 @@ class Shell(Primitive):
                   }
 
         flt = self.props['flt'].prop_vec
+        thk = self.props['thk'].prop_vec
         for name in self.faces:
-            shp = self.props['shp', name].prop_vec
             ni, nj = self.faces[name].num_cp
+            if name[2] == '0':
+                sgn = 1.0
+            elif name[2] == '1':
+                sgn = -1.0
             self.shapes[name][:,:,:] = \
                 PGMlib.computeshape(ni, nj, theta1[name], theta2[name],
-                                    flt, shp)
+                                    numpy.ones((nj,3),order='F') + sgn*thk/2.0, 
+                                    flt, numpy.zeros((ni,nj),order='F'))
         
-        radii = {}
-        for name in ['rt0', 'tp0', 'lt0', 'bt0']:
-            radii[name] = r0
-        for name in ['rt1', 'tp1', 'lt1', 'bt1']:
-            radii[name] = r1
-        self.computeSections(radii=radii)
+        self.computeSections()
 
         if self.bottom==2:
             names = ['rt', 'tp', 'lt', 'bt']
         else:
-            names = ['rt', 'tp', 'lt']
-            
+            names = ['rt', 'tp', 'lt']            
         for name in names:
             for k in range(2):
                 outer = self.faces[name+'0'].cp_array[:,-k,:]

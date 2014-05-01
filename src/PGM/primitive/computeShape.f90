@@ -1,17 +1,17 @@
-subroutine computeShape(ni, nj, t1, t2, fillet, shape0, Q)
+subroutine computeShape(ni, nj, t1, t2, radius, fillet, shape0, Q)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) ni, nj, t1, t2, fillet, shape0
+  !f2py intent(in) ni, nj, t1, t2, radius, fillet, shape0
   !f2py intent(out) Q
-  !f2py depend(nj) fillet
+  !f2py depend(nj) radius, fillet
   !f2py depend(ni,nj) shape0, Q
 
   !Input
   integer, intent(in) ::  ni, nj
   double precision, intent(in) ::  t1, t2
-  double precision, intent(in) ::  fillet(nj,4)
+  double precision, intent(in) ::  radius(nj,3), fillet(nj,4)
   double precision, intent(in) ::  shape0(ni,nj)
 
   !Output
@@ -29,7 +29,7 @@ subroutine computeShape(ni, nj, t1, t2, fillet, shape0, Q)
      tbU = atan(1.0/fillet(j,2))/pi
      taL = atan(fillet(j,3))/pi
      tbL = atan(1.0/fillet(j,4))/pi
-     call computeRoundedSection(ni, one, one, taU, tbU, taL, tbL, &
+     call computeRoundedSection(ni, radius(j,1), radius(j,2), taU, tbU, taL, tbL, &
           t1, t2, shape0(:,j), Q(:,j,1), Q(:,j,2))
   end do
      

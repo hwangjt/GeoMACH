@@ -30,7 +30,10 @@ class Component(object):
         self.shapes = {}
         for name in self.faces:
             ni, nj = self.faces[name].num_cp
-            self.props['shp', name] = Property(ni, nj)
+            self.props['shN', name] = Property(ni, nj)
+            self.props['shX', name] = Property(ni, nj)
+            self.props['shY', name] = Property(ni, nj)
+            self.props['shZ', name] = Property(ni, nj)
             self.shapes[name] = numpy.zeros((ni, nj, 3), order='F')
 
     def initialize_properties(self, prop_vec, prop_ind):
@@ -104,8 +107,8 @@ class Face(object):
     def initialize_cp_data(self, cp_vec, index_vec, cp_indices):
         num_cp = self.num_cp
         self.cp_array = cp_vec.reshape((num_cp[0],num_cp[1],3), order='C')
-        self.index_array = index_vec.reshape((num_cp[0],num_cp[1]), order='C')
-        self.cp_indices = cp_indices.reshape((num_cp[0],num_cp[1]), order='C')
+        self.index_array = index_vec.reshape((num_cp[0],num_cp[1],3), order='C')
+        self.cp_indices = cp_indices.reshape((num_cp[0],num_cp[1],3), order='C')
 
     def initializeDOFmappings(self):
         def classify(i, n):
@@ -146,7 +149,10 @@ class Face(object):
                                     DOF = DOF and not getC1(self,surf,u=int(uType/2),d=int(vType/2))
                                     DOF = DOF and not getC1(self,surf,v=int(vType/2),d=int(uType/2))
                             if DOF:
-                                self.index_array[ii,jj] = oml.getIndex(surf,u,v,2)
+                                if oml.getIndex(surf,u,v,2) >= 0:
+                                    self.index_array[ii,jj,0] = 3*oml.getIndex(surf,u,v,2) + 0
+                                    self.index_array[ii,jj,1] = 3*oml.getIndex(surf,u,v,2) + 1
+                                    self.index_array[ii,jj,2] = 3*oml.getIndex(surf,u,v,2) + 2
 
     def compute_num_cp(self):
         edgeProperty = self.oml.edgeProperty

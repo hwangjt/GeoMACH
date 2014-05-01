@@ -55,11 +55,6 @@ class Body(Primitive):
         nz = faces['top'].num_cp[0]
         b = self.bottom==2
 
-        flt = self.props['flt'].prop_vec
-
-        #p['pos'][0] = 2*p['pos'][1] - p['pos'][2]
-        #p['pos'][-1] = 2*p['pos'][-2] - p['pos'][-3]
-
         theta1 = {'rgt': -b/4.0, 
                   'top': 1/4.0,
                   'lft': 3/4.0,
@@ -70,11 +65,13 @@ class Body(Primitive):
                   'lft': (4+b)/4.0,
                   'bot': 7/4.0,
                   }
+
+        flt = self.props['flt'].prop_vec
         for name in self.faces:
-            shp = self.props['shp', name].prop_vec
             ni, nj = self.faces[name].num_cp
             self.shapes[name][:,:,:] = \
                 PGMlib.computeshape(ni, nj, theta1[name], theta2[name],
-                                    flt, shp)
+                                    numpy.ones((nj,3),order='F'), 
+                                    flt, numpy.zeros((ni,nj),order='F'))
 
         self.computeSections()

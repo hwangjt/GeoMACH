@@ -48,28 +48,23 @@ class Wing(Primitive):
     def declare_properties(self):
         super(Wing, self).declare_properties()
 
-        ni = self.faces['upp'].num_cp[0]
-        nj = self.faces['upp'].num_cp[1]
-        self.airfoils = {'upp': numpy.zeros((ni,nj,3),order='F'),
-                         'low': numpy.zeros((ni,nj,3),order='F'),
-                         }
         if self.oml0 is not None:
             self.setAirfoil()
         else:
-            self.airfoils['upp'][:,:,:] = 0.0
-            self.airfoils['low'][:,:,:] = 0.0
-            self.airfoils['upp'][1:-1,:,1] = 0.05
-            self.airfoils['low'][1:-1,:,1] = -0.05
-            n = self.airfoils['upp'].shape[0]
+            self.shapes['upp'][:,:,:] = 0.0
+            self.shapes['low'][:,:,:] = 0.0
+            self.shapes['upp'][1:-1,:,1] = 0.05
+            self.shapes['low'][1:-1,:,1] = -0.05
+            n = self.shapes['upp'].shape[0]
             for i in range(n):
-                self.airfoils['upp'][i,:,0] = 1 - i/(n-1)
-                self.airfoils['low'][i,:,0] = i/(n-1)
+                self.shapes['upp'][i,:,0] = 1 - i/(n-1)
+                self.shapes['low'][i,:,0] = i/(n-1)
 
     def setAirfoil(self,filename="naca0012"):
         Ps = airfoils.fitAirfoil(self, filename)
-        for name in self.airfoils:
+        for name in self.shapes:
             for j in range(self.faces[name].num_cp[1]):
-                self.airfoils[name][:,j,:2] = Ps[name][:,:]
+                self.shapes[name][:,j,:2] = Ps[name][:,:]
         
     def computeQs(self):
         #if self.left==2:
@@ -77,8 +72,8 @@ class Wing(Primitive):
         #if self.right==2:
         #    v['pos'][0] = 2*v['pos'][1] - v['pos'][2]
 
-        shapes = self.shapes
-        for name in shapes:
-            shapes[name][:,:,:] = self.airfoils[name][:,:,:]
-            shapes[name][:,:,1] += self.props['shp', name].prop_vec
+#        shapes = self.shapes
+#        for name in shapes:
+#            shapes[name][:,:,:] = self.airfoils[name][:,:,:]
+#            shapes[name][:,:,1] += self.props['shp', name].prop_vec
         self.computeSections()

@@ -39,42 +39,32 @@ class Cone(Interpolant):
         face = self.faces['def']
         
         if self.face == 0:
-            W = comp_faces['rgt'].cp_indices[::-1,:2]
-            N = comp_faces['top'].cp_indices[:,:2]
-            E = comp_faces['lft'].cp_indices[:,:2]
-            S = comp_faces['bot'].cp_indices[::-1,:2]
+            W = comp_faces['rgt'].cp_indices[::-1,:2,:]
+            N = comp_faces['top'].cp_indices[:,:2,:]
+            E = comp_faces['lft'].cp_indices[:,:2,:]
+            S = comp_faces['bot'].cp_indices[::-1,:2,:]
         else:
-            E = comp_faces['rgt'].cp_indices[::-1,-1:-3:-1]
-            N = comp_faces['top'].cp_indices[::-1,-1:-3:-1]
-            W = comp_faces['lft'].cp_indices[:,-1:-3:-1]
-            S = comp_faces['bot'].cp_indices[:,-1:-3:-1]
+            E = comp_faces['rgt'].cp_indices[::-1,-1:-3:-1,:]
+            N = comp_faces['top'].cp_indices[::-1,-1:-3:-1,:]
+            W = comp_faces['lft'].cp_indices[:,-1:-3:-1,:]
+            S = comp_faces['bot'].cp_indices[:,-1:-3:-1,:]
 
         nu, nv = face.num_cp[:]
 
         nD = 0
-        nD += 2 * nv + 2 * (nu - 2)
-        nD += 8 * (nv - 3 + nu - 3)
-        nD += 8
+        nD += 3 * 2 * nv + 3 * 2 * (nu - 2)
+        nD += 3 * 8 * (nv - 3 + nu - 3)
+        nD += 3 * 8
 
         fC1 = self.props['fC1'].prop_vec
         mC1 = self.props['mC1'].prop_vec
-        Da0, Di0, Dj0 = PGMlib.computeconewireframe(nD, nu, nv, 1.0, fC1, mC1, W, E, N, S, face.cp_indices)
-        Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)
-        for coord in xrange(3):
-            Da[coord::3] = Da0
-            Di[coord::3] = 3*Di0 + coord
-            Dj[coord::3] = 3*Dj0 + coord
+        Da, Di, Dj = PGMlib.computeconewireframe(nD, nu, nv, 1.0, fC1, mC1, W, E, N, S, face.cp_indices)
         return Da, Di, Dj
 
     def compute_cp_surfs(self):
         nu, nv = self.faces['def'].num_cp[:]
 
-        nD = 8 * 4 * ((nu-1)/2 -1) * ((nv-1)/2 -1)
+        nD = 3 * 8 * 4 * ((nu-1)/2 -1) * ((nv-1)/2 -1)
 
-        Da0, Di0, Dj0 = PGMlib.computeconecoons(nD, nu, nv, self.faces['def'].cp_indices)
-        Da, Di, Dj = numpy.zeros(3*nD), numpy.zeros(3*nD, int), numpy.zeros(3*nD, int)
-        for coord in xrange(3):
-            Da[coord::3] = Da0
-            Di[coord::3] = 3*Di0 + coord
-            Dj[coord::3] = 3*Dj0 + coord
+        Da, Di, Dj = PGMlib.computeconecoons(nD, nu, nv, self.faces['def'].cp_indices)
         return Da, Di, Dj
