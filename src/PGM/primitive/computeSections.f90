@@ -32,8 +32,10 @@ subroutine computeRotations2(ax1, ax2, nj, nor, pos, rot, drot_dpos)
         t = pos(j+1,:) - pos(j,:)
         dt_dpos_jp1(:,:) = I
         dt_dpos_j(:,:) = -I
+        dt_dpos_jm1(:,:) = 0.0
      else if (j .eq. nj) then
         t = pos(j,:) - pos(j-1,:)
+        dt_dpos_jp1(:,:) = 0.0
         dt_dpos_j(:,:) = I
         dt_dpos_jm1(:,:) = -I
      else
@@ -137,23 +139,18 @@ subroutine computeSections2(ax1, ax2, ni, nj, nD, &
         cp_array(i,j,:) = matmul(T,(shp(i,j,:)-ogn(j,:))*scl(j,:)) + pos(j,:)
         do k=1,3
            do l=1,3
-              Di(iD+1:iD+4) = cp_inds(i,j,k)
+              Di(iD+1:iD+6) = cp_inds(i,j,k)
+
               Da(iD+1) = T(k,l)*(shp(i,j,l)-ogn(j,l))
               Dj(iD+1) = scl_inds(j,l)
               Da(iD+2) = dot_product(dT_drot(k,:,l),(shp(i,j,:)-ogn(j,:))*scl(j,:)) * pi / 180.0
               Dj(iD+2) = rot_inds(j,l)
               Da(iD+3) = T(k,l)*scl(j,l)
               Dj(iD+3) = shp_inds(i,j,l)
+
+              Dj(iD+4) = pos_inds(j,l)
               if (k .eq. l) then
                  Da(iD+4) = Da(iD+4) + 1.0
-              end if
-              if (j .ne. 1) then
-                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,1),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
-                      * drot_dpos(j-1,1,l,3)
-                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,2),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
-                      * drot_dpos(j-1,2,l,3)
-                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,3),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
-                      * drot_dpos(j-1,3,l,3)
               end if
               Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,1),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
                    * drot_dpos(j,1,l,2)
@@ -161,16 +158,27 @@ subroutine computeSections2(ax1, ax2, ni, nj, nD, &
                    * drot_dpos(j,2,l,2)
               Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,3),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
                    * drot_dpos(j,3,l,2)
-              if (j .ne. nj) then
-                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,1),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
-                      * drot_dpos(j+1,1,l,1)
-                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,2),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
-                      * drot_dpos(j+1,2,l,1)
-                 Da(iD+4) = Da(iD+4) + dot_product(dT_drot(k,:,3),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
-                      * drot_dpos(j+1,3,l,1)
+
+              if (j .ne. 1) then
+                 Dj(iD+5) = pos_inds(j-1,l)
+                 Da(iD+5) = Da(iD+5) + dot_product(dT_drot(k,:,1),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j,1,l,1)
+                 Da(iD+5) = Da(iD+5) + dot_product(dT_drot(k,:,2),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j,2,l,1)
+                 Da(iD+5) = Da(iD+5) + dot_product(dT_drot(k,:,3),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j,3,l,1)
               end if
-              Dj(iD+4) = pos_inds(j,l)
-              iD = iD + 4
+
+              if (j .ne. nj) then
+                 Dj(iD+6) = pos_inds(j+1,l)
+                 Da(iD+6) = Da(iD+6) + dot_product(dT_drot(k,:,1),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j,1,l,3)
+                 Da(iD+6) = Da(iD+6) + dot_product(dT_drot(k,:,2),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j,2,l,3)
+                 Da(iD+6) = Da(iD+6) + dot_product(dT_drot(k,:,3),(shp(i,j,:)-ogn(j,:))*scl(j,:)) &
+                      * drot_dpos(j,3,l,3)
+              end if
+              iD = iD + 6
            end do
         end do
      end do

@@ -63,7 +63,7 @@ class Primitive(Component):
             
             cp_ind = self.faces[name].cp_indices
 
-            self.faces[name].cp_array[:,:,:], Da, Di, Dj = PGMlib.computesections2(self.ax1, self.ax2, ni, nj, ni*nj*3*3*4, ogn, nor, pos, rot, scl, shX, shY, shZ, ogn_ind, nor_ind, pos_ind, rot_ind, scl_ind, shX_ind, shY_ind, shZ_ind, cp_ind)
+            self.faces[name].cp_array[:,:,:], Da, Di, Dj = PGMlib.computesections2(self.ax1, self.ax2, ni, nj, ni*nj*3*3*6, ogn, nor, pos, rot, scl, shX, shY, shZ, ogn_ind, nor_ind, pos_ind, rot_ind, scl_ind, shX_ind, shY_ind, shZ_ind, cp_ind)
             Das.append(Da)
             Dis.append(Di)
             Djs.append(Dj)
