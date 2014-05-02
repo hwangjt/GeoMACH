@@ -297,18 +297,24 @@ class Configuration(object):
         in_vec = numpy.zeros(self.num_param)
         for comp_name in comp_names:
             comp = self.comps[comp_name]
-            for prop_name in prop_names:
-                prop = comp.props[prop_name]
-                for param_name in prop.params:
-                    param = prop.params[param_name]
-                    mu, mv = param.mu, param.mv
-                    for i in range(mu):
-                        for j in range(mv):
-                            in_vec[:] = 0.0
-                            in_vec[param.param_ind[i,j,0]] = 1.0
-                            deriv_AN[:] = jac.dot(in_vec)
-                            param.param_vec[i,j,0] += h     
-                            self.compute()
-                            deriv_FD[:] = (self.dof_vec0 - dof) / h
-                            param.param_vec[i,j,0] -= h            
-                            print comp_name, prop_name, param_name, i, j, numpy.linalg.norm(deriv_FD - deriv_AN)
+            for prop_name in prop_names + \
+                [('shX', name) for name in comp.faces] + \
+                [('shY', name) for name in comp.faces] + \
+                [('shZ', name) for name in comp.faces]:
+                if prop_name in comp.props:
+                    prop = comp.props[prop_name]
+                    for param_name in prop.params:
+                        param = prop.params[param_name]
+                        mu, mv = param.mu, param.mv
+                        for i in range(mu):
+                            for j in range(mv):
+                                in_vec[:] = 0.0
+                                in_vec[param.param_ind[i,j,0]] = 1.0
+                                deriv_AN[:] = jac.dot(in_vec)
+                                param.param_vec[i,j,0] += h     
+                                self.compute()
+                                deriv_FD[:] = (self.dof_vec0 - dof) / h
+                                param.param_vec[i,j,0] -= h            
+                                print '%6s %6s %6s %3i %3i %17.10e' % \
+                                    (comp_name, prop_name, param_name, i, j, 
+                                     numpy.linalg.norm(deriv_FD - deriv_AN) / numpy.linalg.norm(deriv_FD))
