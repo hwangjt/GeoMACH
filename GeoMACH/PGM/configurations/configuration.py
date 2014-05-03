@@ -89,10 +89,6 @@ class Configuration(object):
         for comp in self.comps.values():
             for face in comp.faces.values():
                 num_cp += 3 * face.num_cp[0] * face.num_cp[1]
-        num_cp_prim = 0
-        for comp in self.primitive_comps.values():
-            for face in comp.faces.values():
-                num_cp_prim += 3 * face.num_cp[0] * face.num_cp[1]
 
         cp_vec = numpy.zeros(num_cp)
         cp_indices = numpy.array(numpy.linspace(0, num_cp-1, num_cp), int)
@@ -112,7 +108,6 @@ class Configuration(object):
         self.cp_indices = cp_indices
         self.index_vec = index_vec
         self.num_cp = num_cp
-        self.num_cp_prim = num_cp_prim
 
     def initialize_cp_jacobian(self):
         self.num_cp_dof = 3 * self.oml0.nQ
@@ -278,8 +273,7 @@ class Configuration(object):
         self.dprim_dprop = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
                                                    shape=(self.num_cp,
                                                           self.num_prop))
-        num_cp_prim = self.num_cp_prim
-        self.face_cps = numpy.array(numpy.linspace(0,num_cp_prim-1,num_cp_prim), int)
+        self.face_cps = numpy.unique(Di)
 
     def test_derivatives(self, comp_names=None, prop_names=None):
         if comp_names is None:
