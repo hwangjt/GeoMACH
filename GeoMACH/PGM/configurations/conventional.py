@@ -279,7 +279,8 @@ if __name__ == '__main__':
     aircraft.oml0.computePoints()
     aircraft.oml0.write2Tec(name)
     aircraft.oml0.write2TecC(name)
-    aircraft.comps['lw'].add_thickness_constraints_grid(10, 10, 0.1,0.9,0.1,0.9)
+
+    aircraft.comps['lw'].add_thk_con('name', 10, 10, [0.1,0.9], [0.1,0.9], 0.25)
 
     #aircraft.test_derivatives()
     #aircraft.oml0.plot()

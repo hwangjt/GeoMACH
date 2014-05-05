@@ -12,14 +12,11 @@ class Component(object):
 
     def __init__(self):
         self.name = None
-        self.Ps = []
         self.outers = []
         self.oml0 = None
         self.faces = OrderedDict()
         self.props = {}
-        self.params = {}
-        self.Cv0 = 2
-        self.Cv1 = 2
+        self.funcs = {}
 
     def count_properties(self):
         self.size_prop = 0

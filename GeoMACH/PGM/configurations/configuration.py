@@ -242,6 +242,7 @@ class Configuration(object):
         """ Computes OML points based on current parameter values """
         self.compute_cp()
         self.compute_oml()
+        self.jac = self.ddof_dcp.dot(self.dcoons_dbezier.dot(self.dbezier_dprim.dot(self.dprim_dprop.dot(self.dprop_dparam))))
 
     def compute_cp(self):
         time0 = time.time()
@@ -287,14 +288,13 @@ class Configuration(object):
         deriv_FD = numpy.array(self.dof_vec0)
 
         h = 1e-3
-        jac = self.ddof_dcp.dot(self.dcoons_dbezier.dot(self.dbezier_dprim.dot(self.dprim_dprop.dot(self.dprop_dparam))))
         in_vec = numpy.zeros(self.num_param)
         for comp_name in comp_names:
             comp = self.comps[comp_name]
             for prop_name in prop_names + \
-                [('shX', name) for name in comp.faces] + \
-                [('shY', name) for name in comp.faces] + \
-                [('shZ', name) for name in comp.faces]:
+                    [('shX', name) for name in comp.faces] + \
+                    [('shY', name) for name in comp.faces] + \
+                    [('shZ', name) for name in comp.faces]:
                 if prop_name in comp.props:
                     prop = comp.props[prop_name]
                     for param_name in prop.params:
@@ -304,7 +304,7 @@ class Configuration(object):
                             for j in range(mv):
                                 in_vec[:] = 0.0
                                 in_vec[param.param_ind[i,j,0]] = 1.0
-                                deriv_AN[:] = jac.dot(in_vec)
+                                deriv_AN[:] = self.jac.dot(in_vec)
                                 param.param_vec[i,j,0] += h     
                                 self.compute()
                                 deriv_FD[:] = (self.dof_vec0 - dof) / h

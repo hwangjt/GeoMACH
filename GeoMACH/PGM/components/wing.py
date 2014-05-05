@@ -2,6 +2,7 @@ from __future__ import division
 import numpy
 
 from GeoMACH.PGM.components import Primitive, airfoils, Property
+import scipy.sparse
 
 
 class Wing(Primitive):
@@ -68,18 +69,26 @@ class Wing(Primitive):
     def computeQs(self):
         return self.computeSections()
 
-    def add_thickness_constraints_grid(self, nu, nv, u1, u2, v1, v2):
+    def add_thk_con(self, name, nu, nv, urange, vrange, factor):
+        self.funcs[name] = WingThicknessFunction(self, nu, nv, urange, vrange, factor)
+
+
+
+class WingFunction(object):
+
+    def __init__(self, comp):
+        self.oml = comp.oml0
+        self.comp = comp
+
+    def get_grid(self, nu, nv, urange, vrange):
         locations = numpy.zeros((nu,nv,2))
         for i in range(nu):
             for j in range(nv):
-                locations[i,j,0] = u1 + (u2-u1) * i/(nu-1)
-                locations[i,j,1] = v1 + (v2-v1) * j/(nv-1)
-        self.add_thickness_constraints(locations)
+                locations[i,j,0] = urange[0] + (urange[1]-urange[0]) * i/(nu-1)
+                locations[i,j,1] = vrange[0] + (vrange[1]-vrange[1]) * j/(nv-1)
+        ni, nj = nu, nv
 
-    def add_thickness_constraints(self, locations):
-        ni, nj = locations.shape[:2]
-
-        face = self.faces['upp']
+        face = self.comp.faces['upp']
         increments = [[None, None], [None, None]]
         for f in xrange(2):
             for d in xrange(2):
@@ -110,7 +119,68 @@ class Wing(Primitive):
                                 loc_surf[d] = k
                     if loc_surf[0] == -1 or loc_surf[1] == -1:
                         raise Exception('Invalid thickness constraint locations')
-                    surf[f,i,j] = self.faces.values()[f].surf_indices[loc_surf[0], loc_surf[1]]
+                    surf[f,i,j] = self.comp.faces.values()[f].surf_indices[loc_surf[0], loc_surf[1]]
 
-        J = self.oml0.evaluateBases(surf.flatten(order='F'), locs[0].flatten(order='F'), locs[1].flatten(order='F'))
-        self.oml0.export.write2TecScatter('thk.dat', J.dot(self.oml0.C[:,:3]), ['x','y','z'])
+        J = self.oml.evaluateBases(surf.flatten(order='F'), locs[0].flatten(order='F'), locs[1].flatten(order='F'))
+        J = scipy.sparse.block_diag((J, J, J), format='csc')
+        return J
+
+
+class WingThicknessFunction(WingFunction):
+
+    def __init__(self, comp, nu, nv, urange, vrange, factor):
+        super(WingThicknessFunction, self).__init__(comp)
+        self.J = self.get_grid(nu, nv, urange, vrange)
+        self.M = scipy.sparse.block_diag((self.oml.M, self.oml.M, self.oml.M), format='csc')
+        self.factor = factor
+        self.nu, self.nv = nu, nv
+
+        self.pts = numpy.zeros(2*nu*nv*3,)
+        self.pts_array = self.pts.reshape((2,nu,nv,3), order='F')
+
+        self.func = numpy.zeros(nu*nv)
+        self.func_array = self.func.reshape((nu,nv), order='F')
+
+        self.func0 = numpy.array(self.func)
+        
+#        self.oml.export.write2TecScatter('thk.dat', self.pts.reshape((2*nu*nv,3),order='F'), ['x','y','z'])
+
+    def initialize(self):
+        self.compute()
+        self.func0[:] = self.func[:]
+
+    def compute(self):
+        self.pts[:] = self.J.dot(self.oml.C[:,:3].reshape(3*self.oml.nC, order='F'))
+
+        self.func_array[:,:] = 0.0
+        for k in xrange(3):
+            self.func_array[:,:] += (self.pts_array[0,:,:,k] - self.pts_array[1,:,:,k])**2
+        self.func_array[:,:] = self.func_array**0.5
+
+    def get_func(self):
+        self.compute()
+        return self.factor * self.func0[:] - self.func[:]
+
+    def get_jacobian(self):
+        self.compute()
+        nu, nv = self.nu, self.nv
+
+        nD = 6 * nu * nv
+        Da = numpy.zeros((2,nu,nv,3), order='F')
+        Di = numpy.zeros((2,nu,nv,3), dtype=int, order='F')
+        Dj = numpy.zeros((2,nu,nv,3), dtype=int, order='F')
+        
+        pts_indices = numpy.array(numpy.linspace(0, 2*nu*nv*3-1, 2*nu*nv*3), int).reshape((2,nu,nv,3), order='F')
+
+        for f in xrange(2):
+            for k in xrange(3):
+                Da[f,:,:,k] = -(self.pts_array[f,:,:,k] - self.pts_array[1-f,:,:,k]) / self.func_array[:,:]
+                Di[f,:,:,k] = numpy.linspace(0, nu*nv-1, nu*nv).reshape((nu,nv), order='F')
+                Dj[f,:,:,k] = pts_indices[f,:,:,k]
+
+        Da = Da.reshape(2*nu*nv*3, order='F')
+        Di = Di.reshape(2*nu*nv*3, order='F')
+        Dj = Dj.reshape(2*nu*nv*3, order='F')
+        D = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
+                                    shape=(nu*nv, 2*nu*nv*3))
+        return D.dot(self.J)
