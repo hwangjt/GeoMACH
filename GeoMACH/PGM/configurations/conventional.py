@@ -280,7 +280,10 @@ if __name__ == '__main__':
     aircraft.oml0.write2Tec(name)
     aircraft.oml0.write2TecC(name)
 
-    aircraft.comps['lw'].add_thk_con('name', 10, 10, [0.1,0.9], [0.1,0.9], 0.25)
+    aircraft.comps['lw'].add_thk_con('name', 
+                                     numpy.linspace(0.1,0.9,10),
+                                     numpy.linspace(0.1,0.9,10),
+                                     0.25)
 
     #aircraft.test_derivatives()
     #aircraft.oml0.plot()

@@ -69,8 +69,8 @@ class Wing(Primitive):
     def computeQs(self):
         return self.computeSections()
 
-    def add_thk_con(self, name, nu, nv, urange, vrange, factor):
-        self.funcs[name] = WingThicknessFunction(self, nu, nv, urange, vrange, factor)
+    def add_thk_con(self, name, urange, vrange, factor):
+        self.funcs[name] = WingThicknessFunction(self, urange, vrange, factor)
 
 
 
@@ -80,12 +80,14 @@ class WingFunction(object):
         self.oml = comp.oml0
         self.comp = comp
 
-    def get_grid(self, nu, nv, urange, vrange):
+    def get_grid(self, urange, vrange):
+        nu, nv = self.nu, self.nv
+
         locations = numpy.zeros((nu,nv,2))
         for i in range(nu):
             for j in range(nv):
-                locations[i,j,0] = urange[0] + (urange[1]-urange[0]) * i/(nu-1)
-                locations[i,j,1] = vrange[0] + (vrange[1]-vrange[1]) * j/(nv-1)
+                locations[i,j,0] = urange[i]
+                locations[i,j,1] = vrange[j]
         ni, nj = nu, nv
 
         face = self.comp.faces['upp']
@@ -126,14 +128,15 @@ class WingFunction(object):
         return J
 
 
+
 class WingThicknessFunction(WingFunction):
 
-    def __init__(self, comp, nu, nv, urange, vrange, factor):
-        super(WingThicknessFunction, self).__init__(comp)
-        self.J = self.get_grid(nu, nv, urange, vrange)
-        self.M = scipy.sparse.block_diag((self.oml.M, self.oml.M, self.oml.M), format='csc')
+    def __init__(self, comp, urange, vrange, factor):
+        self.nu, self.nv = len(urange), len(vrange)
         self.factor = factor
-        self.nu, self.nv = nu, nv
+        super(WingThicknessFunction, self).__init__(comp)
+        self.J = self.get_grid(urange, vrange)
+        nu, nv = self.nu, self.nv
 
         self.pts = numpy.zeros(2*nu*nv*3,)
         self.pts_array = self.pts.reshape((2,nu,nv,3), order='F')
@@ -143,7 +146,8 @@ class WingThicknessFunction(WingFunction):
 
         self.func0 = numpy.array(self.func)
         
-#        self.oml.export.write2TecScatter('thk.dat', self.pts.reshape((2*nu*nv,3),order='F'), ['x','y','z'])
+        self.pts[:] = self.J.dot(self.oml.C[:,:3].reshape(3*self.oml.nC, order='F'))
+        self.oml.export.write2TecScatter('thk.dat', self.pts.reshape((2*nu*nv,3),order='F'), ['x','y','z'])
 
     def initialize(self):
         self.compute()
