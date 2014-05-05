@@ -76,19 +76,22 @@ class Wing(Primitive):
 
 class WingFunction(object):
 
-    def __init__(self, comp):
+    def __init__(self, comp, urange, vrange, factor):
         self.oml = comp.oml0
         self.comp = comp
+        self.nu, self.nv = len(urange), len(vrange)
+        self.factor = factor
 
-    def get_grid(self, urange, vrange):
         nu, nv = self.nu, self.nv
+        self.pts = numpy.zeros(2*nu*nv*3)
+        self.pts_array = self.pts.reshape((2,nu,nv,3), order='F')
 
-        locations = numpy.zeros((nu,nv,2))
-        for i in range(nu):
-            for j in range(nv):
+        ni, nj = self.nu, self.nv
+        locations = numpy.zeros((ni,nj,2))
+        for i in range(ni):
+            for j in range(nj):
                 locations[i,j,0] = urange[i]
                 locations[i,j,1] = vrange[j]
-        ni, nj = nu, nv
 
         face = self.comp.faces['upp']
         increments = [[None, None], [None, None]]
@@ -124,34 +127,31 @@ class WingFunction(object):
                     surf[f,i,j] = self.comp.faces.values()[f].surf_indices[loc_surf[0], loc_surf[1]]
 
         J = self.oml.evaluateBases(surf.flatten(order='F'), locs[0].flatten(order='F'), locs[1].flatten(order='F'))
-        J = scipy.sparse.block_diag((J, J, J), format='csc')
-        return J
+        self.J = scipy.sparse.block_diag((J, J, J), format='csc')
+
+        self.pts[:] = self.J.dot(self.oml.C[:,:3].reshape(3*self.oml.nC, order='F'))
+        self.oml.export.write2TecScatter('func.dat', self.pts.reshape((2*nu*nv,3),order='F'), ['x','y','z'])
+
+    def initialize(self):
+        self.compute()
+        self.func0[:] = self.func[:]
+
+    def get_func(self):
+        self.compute()
+        return self.factor * self.func0[:] - self.func[:]
 
 
 
 class WingThicknessFunction(WingFunction):
 
     def __init__(self, comp, urange, vrange, factor):
-        self.nu, self.nv = len(urange), len(vrange)
-        self.factor = factor
-        super(WingThicknessFunction, self).__init__(comp)
-        self.J = self.get_grid(urange, vrange)
+        super(WingThicknessFunction, self).__init__(comp, urange, vrange, factor)
         nu, nv = self.nu, self.nv
-
-        self.pts = numpy.zeros(2*nu*nv*3,)
-        self.pts_array = self.pts.reshape((2,nu,nv,3), order='F')
 
         self.func = numpy.zeros(nu*nv)
         self.func_array = self.func.reshape((nu,nv), order='F')
 
         self.func0 = numpy.array(self.func)
-        
-        self.pts[:] = self.J.dot(self.oml.C[:,:3].reshape(3*self.oml.nC, order='F'))
-        self.oml.export.write2TecScatter('thk.dat', self.pts.reshape((2*nu*nv,3),order='F'), ['x','y','z'])
-
-    def initialize(self):
-        self.compute()
-        self.func0[:] = self.func[:]
 
     def compute(self):
         self.pts[:] = self.J.dot(self.oml.C[:,:3].reshape(3*self.oml.nC, order='F'))
@@ -160,10 +160,6 @@ class WingThicknessFunction(WingFunction):
         for k in xrange(3):
             self.func_array[:,:] += (self.pts_array[0,:,:,k] - self.pts_array[1,:,:,k])**2
         self.func_array[:,:] = self.func_array**0.5
-
-    def get_func(self):
-        self.compute()
-        return self.factor * self.func0[:] - self.func[:]
 
     def get_jacobian(self):
         self.compute()
@@ -188,3 +184,18 @@ class WingThicknessFunction(WingFunction):
         D = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
                                     shape=(nu*nv, 2*nu*nv*3))
         return D.dot(self.J)
+
+
+
+class WingVolumeFunction(WingFunction):
+
+    def __init__(self, comp, urange, vrange, factor):
+        super(WingVolumeFunction, self).__init__(comp, urange, vrange, factor)
+
+        self.func = numpy.zeros(1)
+        self.func0 = numpy.zeros(1)
+
+    def compute(self):
+        self.pts[:] = self.J.dot(self.oml.C[:,:3].reshape(3*self.oml.nC, order='F'))
+        
+        self.func[0] = 0.0

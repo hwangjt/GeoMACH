@@ -30,6 +30,24 @@ class Configuration(object):
         for name in self.comps:
             self.comps[name].name = name
 
+        self.initialize()
+        self.compute_cp()
+
+        self.initialize_oml()
+        for comp in self.comps.values():
+            comp.set_oml(self.oml0)
+            comp.setDOFs()
+        self.set_oml_resolution()
+        self.oml0.update()
+        for comp in self.comps.values():
+            for face in comp.faces.values():
+                face.compute_num_cp()
+
+        self.initialize()
+        self.initialize_cp_jacobian()
+        self.compute()
+
+    def initialize(self):
         self.initialize_cp_vecs()
         self.initialize_properties()
         self.define_oml_parameters()
@@ -37,10 +55,9 @@ class Configuration(object):
         self.prop_vec[:] = self.dprop_dparam.dot(self.param_vec) 
         self.compute_cp_prim()
         self.initialize_cp_bezier()
-        self.initialize_cp_coons()
-        self.compute_cp()
+        self.initialize_cp_coons()  
 
-        # Initializes surfaces and instantiates OML object
+    def initialize_oml(self):
         index_offset = 0
         surfs_list = []
         for comp in self.comps.values():
@@ -58,30 +75,6 @@ class Configuration(object):
                     v_start += face.num_cp_list[1][ind_j]
             index_offset = numpy.max(comp.faces.values()[-1].surf_indices) + 1
         self.oml0 = PUBS.PUBS(surfs_list)
-
-        # Sets comp data and OML properties
-        for comp in self.comps.values():
-            comp.set_oml(self.oml0)
-            comp.setDOFs()
-        self.set_oml_resolution()
-        self.oml0.update()
-        for comp in self.comps.values():
-            for face in comp.faces.values():
-                face.compute_num_cp()
-
-        self.initialize_cp_vecs()
-        for comp in self.comps.values():
-            for face in comp.faces.values():
-                face.initializeDOFmappings()
-        self.initialize_cp_jacobian()
-        self.initialize_properties()
-        self.define_oml_parameters()
-        self.initialize_parameters()
-        self.prop_vec[:] = self.dprop_dparam.dot(self.param_vec) 
-        self.compute_cp_prim()
-        self.initialize_cp_bezier()
-        self.initialize_cp_coons()
-        self.compute()
 
     def initialize_cp_vecs(self):
         # Creates global face-wise cp and index vectors
@@ -110,6 +103,10 @@ class Configuration(object):
         self.num_cp = num_cp
 
     def initialize_cp_jacobian(self):
+        for comp in self.comps.values():
+            for face in comp.faces.values():
+                face.initializeDOFmappings()
+
         self.num_cp_dof = 3 * self.oml0.nQ
 
         num_cp = self.num_cp
