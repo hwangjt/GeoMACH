@@ -18,6 +18,7 @@ class Configuration(object):
     def __init__(self):
         """ Initializes the outer mold line (OML) and parametrization """
         self.comps = OrderedDict()
+        self.dvs = {}
 
         # Adds primitive components and separate them
         self.primitive_comps = self.define_primitive_comps()
@@ -31,6 +32,7 @@ class Configuration(object):
             self.comps[name].name = name
 
         self.initialize()
+        self.initialize_dvs()
         self.compute_cp()
 
         self.initialize_oml()
@@ -56,6 +58,46 @@ class Configuration(object):
         self.compute_cp_prim()
         self.initialize_cp_bezier()
         self.initialize_cp_coons()  
+
+    def add_dv(self, name, shape, val=0.0, lower=None, upper=None, scale=1.0):
+        self.dvs[name] = DV(name, shape, val, lower, upper, scale)
+
+    def initialize_dvs(self):
+        self.define_dvs()
+
+        num_dv = 0
+        for dv in self.dvs.values():
+            num_dv += numpy.prod(dv.shape)
+
+        dv_vec = numpy.zeros(num_dv)
+        dv_ind = numpy.array(numpy.linspace(0, num_dv-1, num_dv), int)
+            
+        start, end = 0, 0
+        for dv in self.dvs.values():
+            end += numpy.prod(dv.shape)
+            dv.vec = dv_vec[start:end].reshape(dv.shape, order='F')
+            dv.ind = dv_ind[start:end].reshape(dv.shape, order='F')
+            start += numpy.prod(dv.shape)
+            dv.vec[:] = dv.val
+
+        self.num_dv = num_dv
+
+    def compute_dvs(self):
+        Das, Dis, Djs = self.apply_dvs()
+        for i in xrange(len(Das)):
+            Das[i] = numpy.atleast_1d(Das[i])
+        for i in xrange(len(Dis)):
+            Dis[i] = numpy.atleast_1d(Dis[i])
+        for i in xrange(len(Djs)):
+            Djs[i] = numpy.atleast_1d(Djs[i])
+
+        Da = numpy.concatenate(Das)
+        Di = numpy.concatenate(Dis)
+        Dj = numpy.concatenate(Djs)
+
+        self.dparam_ddv = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
+                                                  shape=(self.num_param,
+                                                         self.num_dv))
 
     def initialize_oml(self):
         index_offset = 0
@@ -239,10 +281,11 @@ class Configuration(object):
         """ Computes OML points based on current parameter values """
         self.compute_cp()
         self.compute_oml()
-        self.jac = self.ddof_dcp.dot(self.dcoons_dbezier.dot(self.dbezier_dprim.dot(self.dprim_dprop.dot(self.dprop_dparam))))
+        self.jac = self.ddof_dcp.dot(self.dcoons_dbezier.dot(self.dbezier_dprim.dot(self.dprim_dprop.dot(self.dprop_dparam.dot(self.dparam_ddv)))))
 
     def compute_cp(self):
         time0 = time.time()
+        self.compute_dvs()
         self.prop_vec[:] = self.dprop_dparam.dot(self.param_vec) 
         self.cp_vec[:] = 0.0
         self.compute_cp_prim()
@@ -283,6 +326,7 @@ class Configuration(object):
         dof = numpy.array(self.dof_vec0)
         deriv_AN = numpy.array(self.dof_vec0)
         deriv_FD = numpy.array(self.dof_vec0)
+        jac = self.ddof_dcp.dot(self.dcoons_dbezier.dot(self.dbezier_dprim.dot(self.dprim_dprop.dot(self.dprop_dparam))))
 
         h = 1e-3
         in_vec = numpy.zeros(self.num_param)
@@ -301,7 +345,7 @@ class Configuration(object):
                             for j in range(mv):
                                 in_vec[:] = 0.0
                                 in_vec[param.param_ind[i,j,0]] = 1.0
-                                deriv_AN[:] = self.jac.dot(in_vec)
+                                deriv_AN[:] = jac.dot(in_vec)
                                 param.param_vec[i,j,0] += h     
                                 self.compute()
                                 deriv_FD[:] = (self.dof_vec0 - dof) / h
@@ -309,3 +353,15 @@ class Configuration(object):
                                 print '%6s %6s %6s %3i %3i %17.10e' % \
                                     (comp_name, prop_name, param_name, i, j, 
                                      numpy.linalg.norm(deriv_FD - deriv_AN) / numpy.linalg.norm(deriv_FD))
+
+
+class DV(object):
+
+    def __init__(self, name, shape, val, lower, upper, scale):
+        self.name = name
+        self.shape = shape
+        self.val = val
+        self.lower = lower
+        self.upper = upper
+        self.scale = scale
+        self.size = numpy.prod(shape)

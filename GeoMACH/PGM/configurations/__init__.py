@@ -1,1 +1,2 @@
 from configuration import Configuration
+from configurationMACH import ConfigurationMACH

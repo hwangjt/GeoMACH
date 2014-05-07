@@ -76,8 +76,8 @@ subroutine evaluateProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
         mind = 1e10
         u0 = 1
         v0 = 1
-        do u=1,nu,ceiling(nu/100.0)
-           do v=1,nv,ceiling(nv/100.0)
+        do u=1,nu!,ceiling(nu/100.0)
+           do v=1,nv!,ceiling(nv/100.0)
               Pc = bufferP(u,v,:)
               d = abs(dot_product(Pc-P0(k,:),Pc-P0(k,:)))
               if (d .lt. mind) then
@@ -103,7 +103,7 @@ subroutine evaluateProjection(nP0, ns, nD, nT, nC, nP, nsurf, nedge, ngroup, &
                 surf_vert,surf_edge,edge_group,group_d,& 
                 surf_index_C,edge_index_C,knot_index,C,Pu)
            call evaluatePoint(surf,0,1,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
-                surf_vert,surf_edge,edge_group,group_d,& 
+                surf_vert,surf_edge,edge_group,group_d,&  
                 surf_index_C,edge_index_C,knot_index,C,Pv)
            call evaluatePoint(surf,2,0,ku,kv,mu,mv,3,nD,nC,nsurf,nedge,ngroup,nvert,x(1),x(2),& 
                 surf_vert,surf_edge,edge_group,group_d,& 

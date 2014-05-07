@@ -585,22 +585,29 @@ class PUBS(object):
 
     def exportSurfs(self):
         nsurf = self.nsurf
-        ks = numpy.zeros((nsurf,2),int,order='F')
-        ms = numpy.zeros((nsurf,2),int,order='F')
+        ks = []
+        ms = []
         ds = [[],[]]
         Cs = []
         for s in range(nsurf):
             if self.visible2(s):
-                for d in range(2):
-                    group = self.edge_group[abs(self.surf_edge[s,d,0])-1]
-                    ks[s,d] = self.group_k[group-1]
-                    ms[s,d] = self.group_m[group-1]
-                    ds[d].append(self.group_d[self.knot_index[group-1,0]:self.knot_index[group-1,1]])
-                C = numpy.zeros((ms[s,0],ms[s,1],3),order='F')
-                for j in range(ms[s,1]):
-                    for i in range(ms[s,0]):
+                ugroup = self.edge_group[abs(self.surf_edge[s,0,0])-1]
+                vgroup = self.edge_group[abs(self.surf_edge[s,1,0])-1]
+                ku, kv = self.group_k[ugroup-1], self.group_k[vgroup-1]
+                mu, mv = self.group_m[ugroup-1], self.group_m[vgroup-1]
+                du = self.group_d[self.knot_index[ugroup-1,0]:self.knot_index[ugroup-1,1]]
+                dv = self.group_d[self.knot_index[vgroup-1,0]:self.knot_index[vgroup-1,1]]
+                C = numpy.zeros((mu,mv,3),order='F')
+                for j in range(mv):
+                    for i in range(mu):
                         C[i,j,:] = self.C[self.getIndex(s,i,j,1),:3]
-                    Cs.append(C)
+                ks.append([ku,kv])
+                ms.append([mu,mv])
+                ds[0].append(du)
+                ds[1].append(dv)
+                Cs.append(C)
+        ks = numpy.array(ks)
+        ms = numpy.array(ms)
         return ks, ms, ds, Cs
 
     def plot(self):

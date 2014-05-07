@@ -45,6 +45,20 @@ class Conventional(Configuration):
                  }
         return comps
 
+    def define_dvs(self):
+        self.add_dv('dv1', [1], 19)
+
+    def apply_dvs(self):
+        pos1 = self.comps['lw'].props['pos'].params['pos1']
+        dv1 = self.dvs['dv1']
+
+        pos1.param_vec[1,0,0] = dv1.vec[0]
+        Das = [numpy.ones(1)]
+        Dis = [numpy.array([pos1.param_ind[1,0,0]])]
+        Djs = [numpy.array([dv1.ind[0]])]
+
+        return Das, Dis, Djs
+
     def set_oml_resolution(self):
         comps = self.comps
         comps['fu'].faces['rgt'].setm(1,[18,4,4,4,4,8,4,15,4,4,10,4])
@@ -279,6 +293,7 @@ if __name__ == '__main__':
     aircraft.oml0.computePoints()
     aircraft.oml0.write2Tec(name)
     aircraft.oml0.write2TecC(name)
+    aircraft.oml0.write2IGES(name)
 
     aircraft.comps['lw'].add_thk_con('name', 
                                      numpy.linspace(0.1,0.9,10),
