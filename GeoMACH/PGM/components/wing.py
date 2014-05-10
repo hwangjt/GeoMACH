@@ -48,9 +48,8 @@ class Wing(Primitive):
     def declare_properties(self):
         super(Wing, self).declare_properties()
 
-        if self.oml0 is not None:
-            self.setAirfoil()
-        else:
+        self.setAirfoil()
+        if self.oml0 is None:
             self.shapes['upp'][:,:,:] = 0.0
             self.shapes['low'][:,:,:] = 0.0
             self.shapes['upp'][1:-1,:,1] = 0.05
@@ -61,10 +60,11 @@ class Wing(Primitive):
                 self.shapes['low'][i,:,0] = i/(n-1)
 
     def setAirfoil(self,filename="naca0012"):
-        Ps = airfoils.fitAirfoil(self, filename)
-        for name in self.shapes:
-            for j in range(self.faces[name].num_cp[1]):
-                self.shapes[name][:,j,:2] = Ps[name][:,:]
+        if self.oml0 is not None:
+            Ps = airfoils.fitAirfoil(self, filename)
+            for name in self.shapes:
+                for j in range(self.faces[name].num_cp[1]):
+                    self.shapes[name][:,j,:2] = Ps[name][:,:]
         
     def computeQs(self):
         return self.computeSections()

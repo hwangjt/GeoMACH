@@ -85,6 +85,10 @@ class Conventional(Configuration):
 
     def define_oml_parameters(self):
         c = self.comps
+
+        c['lw'].setAirfoil('rae2822.dat')
+        c['rw'].setAirfoil('rae2822.dat')
+
         c['fu'].props['nor'].addParam('nor1',[1,1],P=[1.0])
         c['fu'].props['pos'].addParam('pos1',[2,3],P=[[0,0,0],[50,0,0]])
         c['fu'].props['pos'].addParam('nose',[2,3],P=[[0,-1.1,0],[0,0,0]],T=[0,0.13],B=[False,True])

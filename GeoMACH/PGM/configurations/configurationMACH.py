@@ -34,11 +34,13 @@ class ConfigurationMACH(Configuration):
         dv_dict = {}
         for dv in self.dvs.values():
             dv_dict[dv.name] = dv.vec.reshape(dv.size, order='F')
+        return dv_dict
 
     def update(self, pt_name, childDelta=True):
         self.compute()
-        self.points[pt_name] = self.jacobians[pt_name].dot(self.oml0.C)
+        self.points[pt_name] = self.jacobians[pt_name].dot(self.oml0.C[:,:3])
         self.updated[pt_name] = True
+        return self.points[pt_name]
 
     def pointSetUpToDate(self, pt_name):
         return self.updated[pt_name]
@@ -50,21 +52,27 @@ class ConfigurationMACH(Configuration):
         num_dv = 0
         for dv in self.dvs.values():
             num_dv += dv.size
+        return num_dv
 
-    def totalSensitivity(self, dfunc_dpt_T, pt_name, comm=None, child=False, nDVStore=0):
+    def totalSensitivity(self, dfunc_dpt_T, ptSetName, comm=None, child=False, nDVStore=0):
+        pt_name = ptSetName
+
         dfunc_dpt_T = numpy.atleast_3d(dfunc_dpt_T)
-        num_func = dfunc_dpt.shape[2]
+        num_func = dfunc_dpt_T.shape[2]
         num_dv = self.getNDV()
         num_pt = self.points[pt_name].shape[0]
         nQ = self.oml0.nQ
 
         dfunc_ddv_T = numpy.zeros((num_dv, num_func))
-        ones = numpy.ones(oml0.nQ)
+        ones = numpy.ones(nQ)
         lins = numpy.array(numpy.linspace(0, nQ-1, nQ), int)
         for k in range(3):
-            P = scipy.sparse.csr_matrix((ones, (lins, lins + k*nQ)), 
+            P = scipy.sparse.csr_matrix((ones, (lins, 3*lins + k)), 
                                         shape=(nQ, 3*nQ))
-            dfunc_ddv_T[:,:] += self.jacobians[pt_name].dot(self.oml0.M.dot(P.dot(self.jac))).transpose().dot(dfunc_dpt_T)
+            dfunc_ddv_T[:,:] += self.jacobians[pt_name].dot(self.oml0.M.dot(P.dot(self.jac))).transpose().dot(dfunc_dpt_T[:,k,:])
+
+        if comm:
+            dfunc_ddv_T = comm.allreduce(dfunc_ddv_T)           
 
         return self.convertSensitivityToDict(dfunc_ddv_T)
 

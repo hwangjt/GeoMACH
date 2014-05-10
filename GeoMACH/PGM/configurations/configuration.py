@@ -67,20 +67,21 @@ class Configuration(object):
 
         num_dv = 0
         for dv in self.dvs.values():
-            num_dv += numpy.prod(dv.shape)
+            num_dv += dv.size
 
         dv_vec = numpy.zeros(num_dv)
         dv_ind = numpy.array(numpy.linspace(0, num_dv-1, num_dv), int)
             
         start, end = 0, 0
         for dv in self.dvs.values():
-            end += numpy.prod(dv.shape)
+            end += dv.size
             dv.vec = dv_vec[start:end].reshape(dv.shape, order='F')
             dv.ind = dv_ind[start:end].reshape(dv.shape, order='F')
-            start += numpy.prod(dv.shape)
+            start += dv.size
             dv.vec[:] = dv.val
 
         self.num_dv = num_dv
+        self.dv_vec = dv_vec
 
     def compute_dvs(self):
         Das, Dis, Djs = self.apply_dvs()
@@ -315,6 +316,33 @@ class Configuration(object):
                                                    shape=(self.num_cp,
                                                           self.num_prop))
         self.face_cps = numpy.unique(Di)
+
+    def test_derivatives_dv(self):
+        self.compute()
+
+        dof = numpy.array(self.dof_vec0)
+        deriv_AN = numpy.array(self.dof_vec0)
+        deriv_FD = numpy.array(self.dof_vec0)
+
+        h = 1e-3
+        in_vec = numpy.zeros(self.num_dv)
+        ind = 0
+        for dv in self.dvs.values():
+            for k in xrange(dv.size):
+                in_vec[ind] = 1.0
+                deriv_AN[:] = self.jac.dot(in_vec)
+                in_vec[ind] = 0.0
+
+                self.dv_vec[ind] += h
+                self.compute()
+                deriv_FD[:] = (self.dof_vec0 - dof) / h
+                self.dv_vec[ind] -= h
+
+                ind += 1
+
+                print '%6s %3i %17.10e' % \
+                    (dv.name, k, 
+                     numpy.linalg.norm(deriv_FD - deriv_AN) / numpy.linalg.norm(deriv_FD))
 
     def test_derivatives(self, comp_names=None, prop_names=None):
         if comp_names is None:
