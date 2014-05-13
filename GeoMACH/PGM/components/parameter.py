@@ -114,13 +114,9 @@ class Parameter2(object):
         Ci = numpy.zeros(nC, int)
         Cj = numpy.array(numpy.linspace(0,nC-1,nC), int)
         indices = Cj.reshape((mu0, mv0), order='F')
-        Cmap = numpy.zeros((nC,2), int)
         for indv in xrange(mv0):
             for indu in xrange(mu0):
-                ind = indices[indu,indv]
-                Ci[ind] = oml.getIndex(0, indu, indv, 1)
-                Cmap[ind,:] = [indu if self.ku!=1 else 0, 
-                               indv if self.kv!=1 else 0]
+                Ci[indices[indu,indv]] = oml.getIndex(0, indu, indv, 1)
         Cmtx = scipy.sparse.csr_matrix((Ca, (Ci, Cj)), shape=(nC, nC))
 
         nP = self.nu * self.nv
@@ -128,18 +124,28 @@ class Parameter2(object):
         Pi = numpy.array(numpy.linspace(0,nP-1,nP), int)
         Pj = numpy.zeros(nP, int)
         indices = Pi.reshape((self.nu, self.nv), order='F')
+        for indv in xrange(self.nv):
+            for indu in xrange(self.nu):
+                Pj[indices[indu,indv]] = oml.getIndex(0, indu, indv, 0)
+        Pmtx = scipy.sparse.csr_matrix((Pa, (Pi, Pj)), shape=(nP, nP))
+
+        indices = Cj.reshape((mu0, mv0), order='F')
+        Cmap = numpy.zeros((nC,2), int)
+        for indv in xrange(mv0):
+            for indu in xrange(mu0):
+                Cmap[indices[indu,indv],:] = [indu if self.ku!=1 else 0, 
+                                              indv if self.kv!=1 else 0]
+
+        indices = Pi.reshape((self.nu, self.nv), order='F')
         Pmap = numpy.zeros((nP,2), int)
         for indv in xrange(self.nv):
             for indu in xrange(self.nu):
-                ind = indices[indu,indv]
-                Pj[ind] = oml.getIndex(0, indu, indv, 0)
-                Pmap[ind,:] = [self.urange[indu], self.vrange[indv]]
-        Pmtx = scipy.sparse.csr_matrix((Pa, (Pi, Pj)), shape=(nP, nP))
+                Pmap[indices[indu,indv],:] = [self.urange[indu], 
+                                              self.vrange[indv]]
 
-        jac = Pmtx.dot(oml.J.dot(Cmtx)).tocoo(True)        
-
-        Da = jac.data
-        Di = prop_ind[Pmap[jac.row,0], Pmap[jac.row,1]]
-        Dj = self.param_ind[Cmap[jac.col,0], Cmap[jac.col,1]]
+        jac = Pmtx.dot(oml.J.dot(Cmtx)).tocoo(True)
+        Da = numpy.array(jac.data)
+        Di = numpy.array(prop_ind[Pmap[jac.row,0], Pmap[jac.row,1]])
+        Dj = numpy.array(self.param_ind[Cmap[jac.col,0], Cmap[jac.col,1]])
         return Da, Di, Dj
         

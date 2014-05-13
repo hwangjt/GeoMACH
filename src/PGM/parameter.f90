@@ -43,7 +43,8 @@ subroutine computeProps(nD, mu, mv, nu, nv, B, Tu, Tv, &
         call locateParameter(mv, v0, Tv, j, v)
         Da(iD+1:iD+12) = 0.0
         Di(iD+1:iD+12) = prop_inds(i0,j0)
-        if ((i .gt. 0) .and. (j .gt. 0)) then
+        if ((i .gt. 0) .and. (j .gt. 0) .and. &
+             (i .lt. mu) .and. (j .lt. mv)) then
            Dj(iD+1:iD+3) = param_inds(i,j,:)
            Dj(iD+4:iD+6) = param_inds(i+1,j,:)
            Dj(iD+7:iD+9) = param_inds(i,j+1,:)
@@ -74,10 +75,11 @@ subroutine computeProps(nD, mu, mv, nu, nv, B, Tu, Tv, &
            Da(iD+4) = Da(iD+4) - u*(1-v)
            Da(iD+7) = Da(iD+7) - (1-u)*v
            Da(iD+10) = Da(iD+10) - u*v
-        else if ((i .eq. 0) .and. (j .eq. 0)) then
+        else if ((i .eq. 0) .and. (j .eq. 0) .or. &
+             ((mu .eq. 1) .and. (mv .eq. 1))) then
            Da(iD+1) = 1.0
            Dj(iD+1) = param_inds(1,1,1)
-        else if ((i .eq. 0) .and. (j .gt. 0)) then
+        else if ((i .eq. 0) .and. (j .gt. 0) .or. (mu .eq. 1)) then
            i = 1
            Dj(iD+1:iD+3) = param_inds(i,j,:)
            Dj(iD+7:iD+9) = param_inds(i,j+1,:)
@@ -86,7 +88,7 @@ subroutine computeProps(nD, mu, mv, nu, nv, B, Tu, Tv, &
            Da(iD+3) = C(2)
            Da(iD+7) = C(3)
            Da(iD+9) = C(4)
-        else if ((i .gt. 0) .and. (j .eq. 0)) then
+        else if ((i .gt. 0) .and. (j .eq. 0) .or. (mv .eq. 1)) then
            j = 1
            Dj(iD+1:iD+3) = param_inds(i,j,:)
            Dj(iD+4:iD+6) = param_inds(i+1,j,:)
@@ -95,6 +97,8 @@ subroutine computeProps(nD, mu, mv, nu, nv, B, Tu, Tv, &
            Da(iD+2) = C(2)
            Da(iD+4) = C(3)
            Da(iD+5) = C(4)
+        !else
+        !   print *, 'Error in computeProps'
         end if
         iD = iD + 12
      end do
