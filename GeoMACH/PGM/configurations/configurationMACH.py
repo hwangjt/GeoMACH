@@ -66,12 +66,13 @@ class ConfigurationMACH(Configuration):
         nQ = self.oml0.nQ
 
         dfunc_ddv_T = numpy.zeros((num_dv, num_func))
-        ones = numpy.ones(nQ)
-        lins = numpy.array(numpy.linspace(0, nQ-1, nQ), int)
-        for k in range(3):
-            P = scipy.sparse.csr_matrix((ones, (lins, 3*lins + k)), 
-                                        shape=(nQ, 3*nQ))
-            dfunc_ddv_T[:,:] += self.jacobians[pt_name].dot(self.oml0.M.dot(P.dot(self.jac))).transpose().dot(dfunc_dpt_T[:,k,:])
+        if self.points[pt_name].shape[0] > 0:
+            ones = numpy.ones(nQ)
+            lins = numpy.array(numpy.linspace(0, nQ-1, nQ), int)
+            for k in range(3):
+                P = scipy.sparse.csr_matrix((ones, (lins, 3*lins + k)), 
+                                            shape=(nQ, 3*nQ))
+                dfunc_ddv_T[:,:] += self.jacobians[pt_name].dot(self.oml0.M.dot(P.dot(self.jac))).transpose().dot(dfunc_dpt_T[:,k,:])
 
         if comm:
             dfunc_ddv_T = comm.allreduce(dfunc_ddv_T)           
@@ -109,6 +110,7 @@ class ConfigurationMACH(Configuration):
                                     jac={dv_name:funcsSens[func.name][dv_name] for dv_name in self.dvs})
 
     def evalFunctions(self, funcs):
+        self.compute()
         for comp in self.comps.values():
             for func in comp.funcs.values():
                 funcs[func.name] = func.get_func()
