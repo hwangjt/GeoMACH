@@ -30,7 +30,11 @@ def getAirfoil(filename):
         upper[:,1] = ys[::-1] + yc[::-1]
         lower[:,1] = -ys + yc
     else:
-        data = numpy.genfromtxt('../components/airfoils/'+filename)    
+        path = __import__(__name__).__file__
+        index_slash = path[::-1].index('/')
+        path = path[:-index_slash]
+        data = numpy.genfromtxt(path+'PGM/components/airfoils/'+filename)
+
         if data[0,0] > data[1,0]:
             mark = numpy.argmin(data,0)[0]
             upper = data[:mark+1,:]
