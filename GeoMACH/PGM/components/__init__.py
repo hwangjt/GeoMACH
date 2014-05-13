@@ -1,4 +1,4 @@
-from parameter import Parameter
+from parameter import Parameter, Parameter2
 from component import Component, Face, Property
 from primitive import Primitive
 from wing import Wing

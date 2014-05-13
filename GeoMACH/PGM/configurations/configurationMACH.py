@@ -92,4 +92,33 @@ class ConfigurationMACH(Configuration):
             optProb.addVarGroup(dv.name, dv.size, 'c', 
                                 value=dv.val, lower=dv.lower, upper=dv.upper,
                                 scale=dv.scale)
-        
+
+    def addConstraintsPyOpt(self, optProb):
+        for comp in self.comps.values():
+            for func in comp.funcs.values():
+                func.initialize()
+                optProb.addConGroup(func.name, func.size, upper=0)
+
+    def evalFunctions(self, funcs):
+        for comp in self.comps.values():
+            for func in comp.funcs.values():
+                funcs[func.name] = func.get_func()
+
+    def evalFunctionsSens(self, funcsSens):
+        M = scipy.sparse.block_diag((self.oml0.M, self.oml0.M, self.oml0.M), 
+                                    format='csc')
+        for comp in self.comps.values():
+            for func in comp.funcs.values():
+                if func.name not in funcsSens:
+                    funcsSens[func.name] = {}
+
+        start = 0
+        for dv in self.dvs.values():
+            ones = numpy.ones(dv.size)
+            lins = numpy.array(numpy.linspace(0, dv.size-1, dv.size), int)
+            P = scipy.sparse.csr_matrix((ones, (start+lins, lins)), 
+                                        shape=(self.num_dv, dv.size))
+            for comp in self.comps.values():
+                for func in comp.funcs.values():
+                    funcsSens[func.name][dv.name] = func.get_jacobian().dot(M.dot(self.jac.dot(P)))
+            start += dv.size

@@ -195,7 +195,7 @@ class Configuration(object):
         for comp in self.comps.values():
             for prop in comp.props.values():
                 for param in prop.params.values():
-                    num_param += 3 * param.mu * param.mv
+                    num_param += param.count_parameters()
 
         param_vec = numpy.zeros(num_param)
         param_ind = numpy.array(numpy.linspace(0, num_param-1, num_param), int)
@@ -204,10 +204,10 @@ class Configuration(object):
         for comp in self.comps.values():
             for prop in comp.props.values():
                 for param in prop.params.values():
-                    end += 3 * param.mu * param.mv
+                    end += param.count_parameters()
                     param.initialize_parameters(param_vec[start:end],
                                                 param_ind[start:end])
-                    start += 3 * param.mu * param.mv
+                    start += param.count_parameters()
 
         self.param_vec = param_vec
         self.param_ind = param_ind
@@ -340,8 +340,10 @@ class Configuration(object):
 
                 ind += 1
 
-                print '%6s %3i %17.10e' % \
+                print '%6s %3i %17.10e %17.10e %17.10e' % \
                     (dv.name, k, 
+                     numpy.linalg.norm(deriv_FD),
+                     numpy.linalg.norm(deriv_AN),
                      numpy.linalg.norm(deriv_FD - deriv_AN) / numpy.linalg.norm(deriv_FD))
 
     def test_derivatives(self, comp_names=None, prop_names=None):
@@ -378,8 +380,10 @@ class Configuration(object):
                                 self.compute()
                                 deriv_FD[:] = (self.dof_vec0 - dof) / h
                                 param.param_vec[i,j,0] -= h            
-                                print '%6s %6s %6s %3i %3i %17.10e' % \
+                                print '%6s %6s %6s %3i %3i %17.10e %17.10e %17.10e' % \
                                     (comp_name, prop_name, param_name, i, j, 
+                                     numpy.linalg.norm(deriv_FD),
+                                     numpy.linalg.norm(deriv_AN),
                                      numpy.linalg.norm(deriv_FD - deriv_AN) / numpy.linalg.norm(deriv_FD))
 
 

@@ -46,16 +46,34 @@ class Conventional(Configuration):
         return comps
 
     def define_dvs(self):
-        self.add_dv('dv1', [1], 19)
+        self.add_dv('sweep', [1], val=19, lower=15, upper=23)
+        self.add_dv('shape', [1], val=0.1, lower=0.0, upper=1.0)
+        self.add_dv('rot', [1], val=0.1, lower=0.0, upper=1.0)
 
     def apply_dvs(self):
         pos1 = self.comps['lw'].props['pos'].params['pos1']
-        dv1 = self.dvs['dv1']
+        shp1 = self.comps['lt'].props['shY','upp'].params['shp']
+        rot1 = self.comps['lt'].props['rot'].params['rot2']
+        sweep = self.dvs['sweep']
+        shape = self.dvs['shape']
+        rot = self.dvs['rot']
 
-        pos1.param_vec[1,0,0] = dv1.vec[0]
-        Das = [numpy.ones(1)]
-        Dis = [numpy.array([pos1.param_ind[1,0,0]])]
-        Djs = [numpy.array([dv1.ind[0]])]
+        Das, Dis, Djs = [], [], []
+
+        pos1.param_vec[1,0,0] = sweep.vec[0]
+        Das.append(1.0)
+        Dis.append(pos1.param_ind[1,0,0])
+        Djs.append(sweep.ind[0])
+
+        shp1.param_vec[5,5] = shape.vec[0]
+        Das.append(1.0)
+        Dis.append(shp1.param_ind[5,5])
+        Djs.append(shape.ind[0])
+
+        rot1.param_vec[1,2] = rot.vec[0]
+        Das.append(1.0)
+        Dis.append(rot1.param_ind[1,2])
+        Djs.append(rot.ind[0])
 
         return Das, Dis, Djs
 
@@ -132,6 +150,11 @@ class Conventional(Configuration):
         c['lt'].props['pos'].addParam('offset',[1,3],P=[44,0,1.7])
         c['lt'].props['scl'].addParam('scl1',[2,1],P=[4,1])
         c['lt'].props['rot'].addParam('rot1',[2,3],P=[[0,10,0],[0,0,0]])
+
+        c['lt'].props['rot'].addParam2('rot2', [6,3])
+        c['lt'].props['rot'].params['rot2'].param0[1,2] = 15
+        c['lt'].props['shY','upp'].addParam2('shp', [10,10])
+        c['lt'].props['shY','upp'].params['shp'].param0[5,5] = 1.0
 
         c['rt'].props['ogn'].addParam('ogn',[1,3],P=[0.25,0,0])
         c['rt'].props['pos'].addParam('pos1',[2,3],P=[[6,0,-8],[0,0,0]])
@@ -299,12 +322,12 @@ if __name__ == '__main__':
     aircraft.oml0.write2TecC(name)
     aircraft.oml0.write2IGES(name)
 
-    aircraft.comps['lw'].add_thk_con('name', 
+    aircraft.comps['lw'].add_thk_con('name',
                                      numpy.linspace(0.1,0.9,10),
                                      numpy.linspace(0.1,0.9,10),
                                      0.25)
 
-    #aircraft.test_derivatives()
+    aircraft.test_derivatives_dv()
     #aircraft.oml0.plot()
     #aircraft.meshStructure()
 

@@ -252,7 +252,7 @@ class PUBS(object):
 
         self.nJ = PUBSlib.computejnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_k,self.group_n,self.edge_count)
         Ja, Ji, Jj = PUBSlib.computejacobian(self.nJ, self.nT, self.nD, self.nsurf, self.nedge, self.ngroup, self.nvert, self.surf_vert, self.surf_edge, self.edge_group, self.group_k, self.group_m, self.group_n, self.group_d, self.surf_index_P, self.edge_index_P, self.surf_index_C, self.edge_index_C, self.knot_index, self.edge_count, self.T)
-        self.J = scipy.sparse.csc_matrix((Ja,(Ji,Jj)))
+        self.J = scipy.sparse.csc_matrix((Ja,(Ji,Jj)), shape=(self.nP, self.nC))
 
         self.Nuv = PUBSlib.getsurfacesizes(self.nsurf, self.nedge, self.ngroup, self.surf_edge, self.edge_group, self.group_n)
         self.Np0 = numpy.zeros(self.nsurf+1)
@@ -272,7 +272,7 @@ class PUBS(object):
 
         self.nM = PUBSlib.computemnnz(self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C, self.edge_index_Q, self.vert_index_Q, self.edge_count, self.surf_c1, self.edge_c1)
         Ma, Mi, Mj = PUBSlib.computedofmapping(self.nM,self.nsurf,self.nedge,self.ngroup,self.nvert,self.surf_vert,self.surf_edge,self.edge_group,self.group_m,self.surf_index_C,self.edge_index_C,self.edge_index_Q,self.vert_index_Q, self.edge_count,self.surf_c1,self.edge_c1)
-        self.M = scipy.sparse.csc_matrix((Ma,(Mi,Mj)))
+        self.M = scipy.sparse.csc_matrix((Ma,(Mi,Mj)), shape=(self.nC, self.nQ))
         self.JM = self.J.dot(self.M)
 
         if self.printInfo:

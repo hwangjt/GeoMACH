@@ -4,7 +4,7 @@ import scipy.sparse
 from collections import OrderedDict
 
 from GeoMACH.PGM import PGMlib
-from GeoMACH.PGM.components import Parameter
+from GeoMACH.PGM.components import Parameter, Parameter2
 
 
 class Component(object):
@@ -279,3 +279,10 @@ class Property(object):
 
     def addParam(self, name, shp, P=None, T=None, Tdim=0, D=None, Ddim=0, B=None, Bdim=0):
         self.params[name] = Parameter(shp, [self.ni, self.nj], P, T, Tdim, D, Ddim, B, Bdim)
+
+    def addParam2(self, name, shp, P=None, Tu=None, Tv=None, ku=None, kv=None):
+        Tu = Tu if Tu is not None else [0,1]
+        Tv = Tv if Tv is not None else [0,1]
+        ku = min(4, shp[0])
+        kv = min(4, shp[1])
+        self.params[name] = Parameter2(shp, [self.ni, self.nj], P, Tu, Tv, ku, kv)

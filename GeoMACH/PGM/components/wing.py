@@ -70,15 +70,16 @@ class Wing(Primitive):
         return self.computeSections()
 
     def add_thk_con(self, name, urange, vrange, factor):
-        self.funcs[name] = WingThicknessFunction(self, urange, vrange, factor)
+        self.funcs[name] = WingThicknessFunction(self, name, urange, vrange, factor)
 
 
 
 class WingFunction(object):
 
-    def __init__(self, comp, urange, vrange, factor):
+    def __init__(self, comp, name, urange, vrange, factor):
         self.oml = comp.oml0
         self.comp = comp
+        self.name = name
         self.nu, self.nv = len(urange), len(vrange)
         self.factor = factor
 
@@ -129,8 +130,8 @@ class WingFunction(object):
         J = self.oml.evaluateBases(surf.flatten(order='F'), locs[0].flatten(order='F'), locs[1].flatten(order='F'))
         self.J = scipy.sparse.block_diag((J, J, J), format='csc')
 
-        self.pts[:] = self.J.dot(self.oml.C[:,:3].reshape(3*self.oml.nC, order='F'))
-        self.oml.export.write2TecScatter('func.dat', self.pts.reshape((2*nu*nv,3),order='F'), ['x','y','z'])
+        #self.pts[:] = self.J.dot(self.oml.C[:,:3].reshape(3*self.oml.nC, order='F'))
+        #self.oml.export.write2TecScatter('func.dat', self.pts.reshape((2*nu*nv,3),order='F'), ['x','y','z'])
 
     def initialize(self):
         self.compute()
@@ -144,8 +145,9 @@ class WingFunction(object):
 
 class WingThicknessFunction(WingFunction):
 
-    def __init__(self, comp, urange, vrange, factor):
-        super(WingThicknessFunction, self).__init__(comp, urange, vrange, factor)
+    def __init__(self, comp, name, urange, vrange, factor):
+        super(WingThicknessFunction, self).__init__(comp, name, urange, vrange, factor)
+        self.size = self.nu * self.nv
         nu, nv = self.nu, self.nv
 
         self.func = numpy.zeros(nu*nv)
@@ -189,8 +191,8 @@ class WingThicknessFunction(WingFunction):
 
 class WingVolumeFunction(WingFunction):
 
-    def __init__(self, comp, urange, vrange, factor):
-        super(WingVolumeFunction, self).__init__(comp, urange, vrange, factor)
+    def __init__(self, comp, name, urange, vrange, factor):
+        super(WingVolumeFunction, self).__init__(comp, name, urange, vrange, factor)
 
         self.func = numpy.zeros(1)
         self.func0 = numpy.zeros(1)

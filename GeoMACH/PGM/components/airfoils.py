@@ -12,6 +12,7 @@ def getAirfoil(filename):
         p = int(filename[5])/10.0
         t = int(filename[6:8])/100.0
         x = numpy.linspace(0,1,n)**2
+        x = 0.5*(1-numpy.cos(numpy.pi*numpy.linspace(0,1,n)))
         ys = t/0.2*(0.2969*x**0.5 - 0.1260*x - 0.3516*x**2 + 0.2843*x**3 - 0.1036*x**4)
         yc = numpy.zeros(n)
         if p != 0:
