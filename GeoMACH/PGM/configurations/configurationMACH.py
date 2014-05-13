@@ -104,7 +104,7 @@ class ConfigurationMACH(Configuration):
             for func in comp.funcs.values():
                 optProb.addConGroup(func.name, func.size, upper=0, 
                                     wrt=[dv_name for dv_name in self.dvs],
-                                    jac=[funcsSens[func.name][dv_name] for dv_name in self.dvs])
+                                    jac={dv_name:funcsSens[func.name][dv_name] for dv_name in self.dvs})
 
     def evalFunctions(self, funcs):
         for comp in self.comps.values():
