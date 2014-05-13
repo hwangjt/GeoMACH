@@ -2,7 +2,7 @@ from __future__ import division
 import numpy
 import time
 import scipy.sparse
-import pylab
+#import pylab
 
 from GeoMACH.PSM import PSMlib, QUADlib, CDTlib, BLSlib
 

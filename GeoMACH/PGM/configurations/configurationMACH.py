@@ -105,8 +105,9 @@ class ConfigurationMACH(Configuration):
                 funcs[func.name] = func.get_func()
 
     def evalFunctionsSens(self, funcsSens):
-        M = scipy.sparse.block_diag((self.oml0.M, self.oml0.M, self.oml0.M), 
-                                    format='csc')
+        M = scipy.sparse.bmat([[self.oml0.M, None, None],
+                               [None, self.oml0.M, None],
+                               [None, None, self.oml0.M]], format='csc')
         for comp in self.comps.values():
             for func in comp.funcs.values():
                 if func.name not in funcsSens:

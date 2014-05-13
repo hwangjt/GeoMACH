@@ -163,7 +163,9 @@ class Configuration(object):
                                               shape=(num_cp_dof,
                                                      num_cp))
         row_sums = cp_jacobian.dot(numpy.ones(num_cp, int))
-        inv_row_sum = scipy.sparse.diags(1.0/row_sums, 0, format='csr')
+        lins = numpy.array(numpy.linspace(0, num_cp_dof-1, num_cp_dof), int)
+        inv_row_sum = scipy.sparse.csr_matrix((1.0/row_sums, (lins, lins)),
+                                              shape=(num_cp_dof, num_cp_dof))
         self.ddof_dcp = inv_row_sum.dot(cp_jacobian)
 
         self.dof_vec0 = numpy.zeros((num_cp_dof))

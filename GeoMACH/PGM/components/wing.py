@@ -128,7 +128,9 @@ class WingFunction(object):
                     surf[f,i,j] = self.comp.faces.values()[f].surf_indices[loc_surf[0], loc_surf[1]]
 
         J = self.oml.evaluateBases(surf.flatten(order='F'), locs[0].flatten(order='F'), locs[1].flatten(order='F'))
-        self.J = scipy.sparse.block_diag((J, J, J), format='csc')
+        self.J = scipy.sparse.bmat([[J, None, None],
+                                    [None, J, None],
+                                    [None, None, J]], format='csc')
 
         #self.pts[:] = self.J.dot(self.oml.C[:,:3].reshape(3*self.oml.nC, order='F'))
         #self.oml.export.write2TecScatter('func.dat', self.pts.reshape((2*nu*nv,3),order='F'), ['x','y','z'])
