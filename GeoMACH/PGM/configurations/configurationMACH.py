@@ -97,8 +97,14 @@ class ConfigurationMACH(Configuration):
         for comp in self.comps.values():
             for func in comp.funcs.values():
                 func.initialize()
+
+        funcsSens = {}
+        self.evalFunctionsSens(funcsSens)
+        for comp in self.comps.values():
+            for func in comp.funcs.values():
                 optProb.addConGroup(func.name, func.size, upper=0, 
-                                    wrt=[dv_name for dv_name in self.dvs])
+                                    wrt=[dv_name for dv_name in self.dvs],
+                                    jac=[funcsSens[func.name][dv_name] for dv_name in self.dvs])
 
     def evalFunctions(self, funcs):
         for comp in self.comps.values():
