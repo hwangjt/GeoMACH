@@ -115,6 +115,18 @@ class ConfigurationMACH(Configuration):
         M = scipy.sparse.bmat([[self.oml0.M, None, None],
                                [None, self.oml0.M, None],
                                [None, None, self.oml0.M]], format='csc')
+
+        nQ = self.oml0.nQ
+        lins = numpy.array(numpy.linspace(0, nQ-1, nQ), int)
+        data = numpy.ones(3*nQ)
+        rows = numpy.zeros(3*nQ, int)
+        cols = numpy.zeros(3*nQ, int)
+        for k in xrange(3):
+            rows[k::3] = lins + k*nQ
+            cols[k*nQ:(k+1)*nQ] = lins + k*nQ
+        P = scipy.sparse.csr_matrix((data, (rows, cols)), 
+                                    shape=(3*nQ, 3*nQ))
+        M = M.dot(P)
         for comp in self.comps.values():
             for func in comp.funcs.values():
                 if func.name not in funcsSens:

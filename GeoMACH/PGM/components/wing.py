@@ -163,6 +163,13 @@ class WingThicknessFunction(WingFunction):
         self.func_array[:,:] = 0.0
         for k in xrange(3):
             self.func_array[:,:] += (self.pts_array[0,:,:,k] - self.pts_array[1,:,:,k])**2
+        #for i in xrange(self.nu):
+        #    for j in xrange(self.nv):
+        #        self.oml.export.write2TecScatter('thk'+str(i)+'_'+str(j)+'.dat', 
+        #                                         numpy.vstack([self.pts_array[0,i,j,:],
+        #                                                       self.pts_array[1,i,j,:]]), 
+        #                                         ['x','y','z'])
+                
 
     def get_jacobian(self):
         self.compute()
