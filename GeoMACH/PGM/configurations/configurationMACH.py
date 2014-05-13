@@ -18,8 +18,9 @@ class ConfigurationMACH(Configuration):
         points = numpy.array(points).real.astype('d')
         self.points[pt_name] = points
 
-        surf, indu, indv = self.oml0.evaluateProjection(points)
-        self.jacobians[pt_name] = self.oml0.evaluateBases(surf, indu, indv)
+        if self.points[pt_name].shape[0] > 0:
+            surf, indu, indv = self.oml0.evaluateProjection(points)
+            self.jacobians[pt_name] = self.oml0.evaluateBases(surf, indu, indv)
 
         self.updated[pt_name] = False
 
@@ -38,7 +39,8 @@ class ConfigurationMACH(Configuration):
 
     def update(self, pt_name, childDelta=True):
         self.compute()
-        self.points[pt_name] = self.jacobians[pt_name].dot(self.oml0.C[:,:3])
+        if self.points[pt_name].shape[0] > 0:
+            self.points[pt_name] = self.jacobians[pt_name].dot(self.oml0.C[:,:3])
         self.updated[pt_name] = True
         return self.points[pt_name]
 
