@@ -141,7 +141,7 @@ class WingFunction(object):
 
     def get_func(self):
         self.compute()
-        return self.factor * self.func0[:] - self.func[:]
+        return self.factor**2 * self.func0[:] - self.func[:]
 
 
 
@@ -163,7 +163,6 @@ class WingThicknessFunction(WingFunction):
         self.func_array[:,:] = 0.0
         for k in xrange(3):
             self.func_array[:,:] += (self.pts_array[0,:,:,k] - self.pts_array[1,:,:,k])**2
-        self.func_array[:,:] = self.func_array**0.5
 
     def get_jacobian(self):
         self.compute()
@@ -178,7 +177,7 @@ class WingThicknessFunction(WingFunction):
 
         for f in xrange(2):
             for k in xrange(3):
-                Da[f,:,:,k] = -(self.pts_array[f,:,:,k] - self.pts_array[1-f,:,:,k]) / self.func_array[:,:]
+                Da[f,:,:,k] = -2 * (self.pts_array[f,:,:,k] - self.pts_array[1-f,:,:,k])
                 Di[f,:,:,k] = numpy.linspace(0, nu*nv-1, nu*nv).reshape((nu,nv), order='F')
                 Dj[f,:,:,k] = pts_indices[f,:,:,k]
 

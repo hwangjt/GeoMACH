@@ -18,7 +18,7 @@ class Configuration(object):
     def __init__(self):
         """ Initializes the outer mold line (OML) and parametrization """
         self.comps = OrderedDict()
-        self.dvs = {}
+        self.dvs = OrderedDict()
 
         # Adds primitive components and separate them
         self.primitive_comps = self.define_primitive_comps()
