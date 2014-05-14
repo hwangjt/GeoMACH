@@ -28,8 +28,19 @@ class Configuration(object):
         self.interpolant_comps = self.define_interpolant_comps()
         self.comps.update(self.interpolant_comps)
 
-        for name in self.comps:
-            self.comps[name].name = name
+        comp_num = 0
+        for comp_name in self.comps:
+            comp = self.comps[comp_name]
+            comp.name = comp_name
+            comp.num = comp_num
+            comp_num += 1
+
+            face_num = 0
+            for face_name in comp.faces:
+                face = comp.faces[face_name]
+                face.name = face_name
+                face.num = face_num
+                face_num += 1
 
         self.initialize()
         self.initialize_dvs()
@@ -336,7 +347,8 @@ class Configuration(object):
                 in_vec[ind] = 0.0
 
                 self.dv_vec[ind] += h
-                self.compute()
+                self.compute_cp()
+                self.dof_vec0[:] = self.ddof_dcp.dot(self.cp_vec)
                 deriv_FD[:] = (self.dof_vec0 - dof) / h
                 self.dv_vec[ind] -= h
 
@@ -346,7 +358,7 @@ class Configuration(object):
                     (dv.name, k, 
                      numpy.linalg.norm(deriv_FD),
                      numpy.linalg.norm(deriv_AN),
-                     numpy.linalg.norm(deriv_FD - deriv_AN) / numpy.linalg.norm(deriv_FD))
+                     numpy.linalg.norm(deriv_FD - deriv_AN))
 
     def test_derivatives(self, comp_names=None, prop_names=None):
         if comp_names is None:
@@ -360,7 +372,7 @@ class Configuration(object):
         deriv_FD = numpy.array(self.dof_vec0)
         jac = self.ddof_dcp.dot(self.dcoons_dbezier.dot(self.dbezier_dprim.dot(self.dprim_dprop.dot(self.dprop_dparam))))
 
-        h = 1e-3
+        h = 1e-5
         in_vec = numpy.zeros(self.num_param)
         for comp_name in comp_names:
             comp = self.comps[comp_name]
@@ -379,14 +391,15 @@ class Configuration(object):
                                 in_vec[param.param_ind[i,j,0]] = 1.0
                                 deriv_AN[:] = jac.dot(in_vec)
                                 param.param_vec[i,j,0] += h     
-                                self.compute()
+                                self.compute_cp()
+                                self.dof_vec0[:] = self.ddof_dcp.dot(self.cp_vec)
                                 deriv_FD[:] = (self.dof_vec0 - dof) / h
                                 param.param_vec[i,j,0] -= h            
                                 print '%6s %6s %6s %3i %3i %17.10e %17.10e %17.10e' % \
                                     (comp_name, prop_name, param_name, i, j, 
                                      numpy.linalg.norm(deriv_FD),
                                      numpy.linalg.norm(deriv_AN),
-                                     numpy.linalg.norm(deriv_FD - deriv_AN) / numpy.linalg.norm(deriv_FD))
+                                     numpy.linalg.norm(deriv_FD - deriv_AN))
 
 
 class DV(object):

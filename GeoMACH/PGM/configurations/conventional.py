@@ -327,8 +327,8 @@ if __name__ == '__main__':
                                      numpy.linspace(0.1,0.9,10),
                                      0.25)
 
-    aircraft.test_derivatives_dv()
+    #aircraft.test_derivatives_dv()
     #aircraft.oml0.plot()
-    #aircraft.meshStructure()
+    aircraft.meshStructure()
 
 #    cProfile.run('aircraft.meshStructure()')

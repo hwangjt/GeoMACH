@@ -66,6 +66,7 @@ QUADsources = [
     'src/PSM/QUAD/addEdgePts.f90',
     'src/PSM/QUAD/addInteriorPts.f90',
     'src/PSM/QUAD/splitEdges.f90',
+    'src/PSM/QUAD/removeDegenerateEdges.f90',
     'src/PSM/QUAD/removeDuplicateEdges.f90',
     'src/PSM/QUAD/removeDuplicateQuads.f90',
     'src/PSM/QUAD/removeDuplicateTriangles.f90',

@@ -31,14 +31,16 @@ subroutine addGroupLengths(ni, nj, nsurf, nedge, ngroup, surfs, &
   do i=1,ni
      do j=1,nj
         s = surfs(i,j)
-        ugroup = edge_group(abs(surf_edge(s,1,1)))
-        vgroup = edge_group(abs(surf_edge(s,2,1)))
-        do k=1,2
-           groupLengths(ugroup) = groupLengths(ugroup) + surfEdgeLengths(s,1,k)
-           groupLengths(vgroup) = groupLengths(vgroup) + surfEdgeLengths(s,2,k)
-        end do
-        groupCount(ugroup) = groupCount(ugroup) + 2
-        groupCount(vgroup) = groupCount(vgroup) + 2
+        if (s .gt. 0) then
+           ugroup = edge_group(abs(surf_edge(s,1,1)))
+           vgroup = edge_group(abs(surf_edge(s,2,1)))
+           do k=1,2
+              groupLengths(ugroup) = groupLengths(ugroup) + surfEdgeLengths(s,1,k)
+              groupLengths(vgroup) = groupLengths(vgroup) + surfEdgeLengths(s,2,k)
+           end do
+           groupCount(ugroup) = groupCount(ugroup) + 2
+           groupCount(vgroup) = groupCount(vgroup) + 2
+        end if
      end do
   end do
 
@@ -76,15 +78,23 @@ subroutine computeFaceDimensions(ni, nj, nsurf, nedge, ngroup, &
   idims(1) = 0.
   do i=1,ni
      s = surfs(i,1)
-     ugroup = edge_group(abs(surf_edge(s,1,1)))
-     idims(i+1) = idims(i) + groupLengths(ugroup)
+     if (s .gt. 0) then
+        ugroup = edge_group(abs(surf_edge(s,1,1)))
+        idims(i+1) = idims(i) + groupLengths(ugroup)
+     else
+        idims(i+1) = idims(i)
+     end if
   end do
 
   jdims(1) = 0.
   do j=1,nj
      s = surfs(1,j)
-     vgroup = edge_group(abs(surf_edge(s,2,1)))
-     jdims(j+1) = jdims(j) + groupLengths(vgroup)
+     if (s .gt. 0) then
+        vgroup = edge_group(abs(surf_edge(s,2,1)))
+        jdims(j+1) = jdims(j) + groupLengths(vgroup)
+     else
+        jdims(j+1) = jdims(j)
+     end if
   end do
 
   idims(:) = idims(:)/idims(ni+1)

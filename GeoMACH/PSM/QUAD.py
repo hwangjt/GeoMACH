@@ -41,6 +41,7 @@ class QUAD(object):
         self.edges0 = self.edges
         self.verts[:,0] *= 0.5*numpy.sum(self.lengths[0,:])
         self.verts[:,1] *= 0.5*numpy.sum(self.lengths[1,:])
+        self.removeDegenerateEdges()
         self.computeCDT()
         self.splitEdges()
         self.removeDuplicateEdges()
@@ -50,6 +51,7 @@ class QUAD(object):
             print self.verts.shape[0]
             print self.edges.shape[0]
             self.plot(111,pv=True,pe=True)
+            import pylab
             pylab.show()
         self.computeAdjMap()
         self.computeTriangles()
@@ -71,6 +73,12 @@ class QUAD(object):
         nint = QUADlib.countintersectionpts(nvert, nedge, self.verts, self.edges)
         self.verts = QUADlib.addintersectionpts(nvert, nedge, nvert+nint, self.verts, self.edges)
         if self.output: print 'Done: addIntersectionPts'
+
+    def removeDegenerateEdges(self):
+        nedge = self.edges.shape[0]
+        ndeg = QUADlib.countdegenerateedges(nedge, self.edges)
+        self.edges = QUADlib.removedegenerateedges(nedge, nedge-ndeg, self.edges)
+        if self.output: print 'Done: removeDegenerateEdges'
 
     def removeDuplicateVerts(self):
         nvert0 = self.verts.shape[0]
@@ -221,6 +229,8 @@ class QUAD(object):
         if self.output: print 'Done: smooth2'
 
     def plot(self, plot, pv=False, pe=False, pt=False, pq=False, pv2=False, pe2=False):
+        import pylab
+
         verts = self.verts
         def draw(v1, v2, clr='k'):
             pylab.plot([verts[v1-1,0], verts[v2-1,0]],

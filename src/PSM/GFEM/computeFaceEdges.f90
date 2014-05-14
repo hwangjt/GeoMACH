@@ -44,30 +44,31 @@ subroutine computeFaceEdges(comp, face, ni, nj, nsurf, nmem, nadj, nedge, &
   do i=1,ni
      do j=1,nj
         isurf = face_surf(i,j)
-
-        iedge = (j-1)*ni + i
-        edges(iedge,1,:) = verts(i,j,:)        
-        edges(iedge,2,:) = verts(i+1,j,:)
-        edge_group(iedge) = surf_group(isurf,1,1)
-        edgeLengths(iedge) = surfEdgeLengths(isurf,1,1)
-
-        iedge = j*ni + i
-        edges(iedge,1,:) = verts(i,j+1,:)        
-        edges(iedge,2,:) = verts(i+1,j+1,:)
-        edge_group(iedge) = surf_group(isurf,1,2)
-        edgeLengths(iedge) = surfEdgeLengths(isurf,1,2)
-
-        iedge = (nj+1)*ni + (i-1)*nj + j
-        edges(iedge,1,:) = verts(i,j,:)
-        edges(iedge,2,:) = verts(i,j+1,:)
-        edge_group(iedge) = surf_group(isurf,2,1)
-        edgeLengths(iedge) = surfEdgeLengths(isurf,2,1)
-
-        iedge = (nj+1)*ni + i*nj + j
-        edges(iedge,1,:) = verts(i+1,j,:)
-        edges(iedge,2,:) = verts(i+1,j+1,:)
-        edge_group(iedge) = surf_group(isurf,2,2)
-        edgeLengths(iedge) = surfEdgeLengths(isurf,2,2)
+        if (isurf .gt. 0) then
+           iedge = (j-1)*ni + i
+           edges(iedge,1,:) = verts(i,j,:)        
+           edges(iedge,2,:) = verts(i+1,j,:)
+           edge_group(iedge) = surf_group(isurf,1,1)
+           edgeLengths(iedge) = surfEdgeLengths(isurf,1,1)
+           
+           iedge = j*ni + i
+           edges(iedge,1,:) = verts(i,j+1,:)        
+           edges(iedge,2,:) = verts(i+1,j+1,:)
+           edge_group(iedge) = surf_group(isurf,1,2)
+           edgeLengths(iedge) = surfEdgeLengths(isurf,1,2)
+           
+           iedge = (nj+1)*ni + (i-1)*nj + j
+           edges(iedge,1,:) = verts(i,j,:)
+           edges(iedge,2,:) = verts(i,j+1,:)
+           edge_group(iedge) = surf_group(isurf,2,1)
+           edgeLengths(iedge) = surfEdgeLengths(isurf,2,1)
+           
+           iedge = (nj+1)*ni + i*nj + j
+           edges(iedge,1,:) = verts(i+1,j,:)
+           edges(iedge,2,:) = verts(i+1,j+1,:)
+           edge_group(iedge) = surf_group(isurf,2,2)
+           edgeLengths(iedge) = surfEdgeLengths(isurf,2,2)
+        end if
      end do
   end do
 
