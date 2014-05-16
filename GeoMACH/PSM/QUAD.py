@@ -11,6 +11,10 @@ class QUAD(object):
 
     def __init__(self):
         self.output = False
+        self.verts = numpy.zeros((0,2))
+        self.edges = numpy.zeros((0,2), int)
+        self.triangles = numpy.zeros((0,3), int)
+        self.quads = numpy.zeros((0,4), int)
 
     def importEdges(self, lines):
         self.verts, self.edges = QUADlib.importedges(2*lines.shape[0], lines.shape[0], lines)
@@ -23,6 +27,16 @@ class QUAD(object):
         if self.output: print 'Done: importVertsNEdges'
 
     def mesh(self, maxL, lengths, plot=False, output=False):
+        def debug():
+            print '# verts:', self.verts.shape[0]
+            print '# edges:', self.edges.shape[0]
+            print '# triangles:', self.triangles.shape[0]
+            print '# quads:', self.quads.shape[0]
+            print self.quads
+            self.plot(111,pv=True,pe=True)
+            import pylab
+            pylab.show()
+
         self.maxL = maxL
         self.lengths = lengths
         self.output = output
@@ -47,12 +61,6 @@ class QUAD(object):
         self.removeDuplicateEdges()
         self.computeConstrainedEdges()
 
-        if plot:
-            print self.verts.shape[0]
-            print self.edges.shape[0]
-            self.plot(111,pv=True,pe=True)
-            import pylab
-            pylab.show()
         self.computeAdjMap()
         self.computeTriangles()
         self.computeQuadDominant()
@@ -62,8 +70,10 @@ class QUAD(object):
         self.computeAdjMap()
         self.computeQuads()
         self.computeQuad2Edge()
+        if plot: debug()
         self.computeConstrainedVerts()
         self.smooth1()
+        self.removeInvalidQuads()
 
         return self.verts, self.quads
 
@@ -73,6 +83,12 @@ class QUAD(object):
         nint = QUADlib.countintersectionpts(nvert, nedge, self.verts, self.edges)
         self.verts = QUADlib.addintersectionpts(nvert, nedge, nvert+nint, self.verts, self.edges)
         if self.output: print 'Done: addIntersectionPts'
+
+    def removeInvalidQuads(self):
+        nquad = self.quads.shape[0]
+        ninv = QUADlib.countinvalidquads(nquad, self.quads)
+        self.quads = QUADlib.removeinvalidquads(nquad, nquad-ninv, self.quads)
+        if self.output: print 'Done: removeInvalidQuads'
 
     def removeDegenerateEdges(self):
         nedge = self.edges.shape[0]

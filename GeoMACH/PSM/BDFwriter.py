@@ -2,7 +2,7 @@ from __future__ import division
 import numpy
 
 
-def writeBDF(filename, nodes, quads, symm):
+def writeBDF(filename, nodes, quads, symm, quad_groups, group_names):
     f = open(filename, 'w')
 
     def writeLine(line):
@@ -26,6 +26,11 @@ def writeBDF(filename, nodes, quads, symm):
     writeLine('CEND')
     writeLine('$')
     writeLine('BEGIN BULK')
+    for i in xrange(len(group_names)):
+        write('$CDSCRPT')
+        write(str(i+1), l=16)
+        write(group_names[i], l=32)
+        write('\n')
     writeLine('$')
     writeLine('$       grid data              0')
 
@@ -50,14 +55,18 @@ def writeBDF(filename, nodes, quads, symm):
     for i in range(quads.shape[0]):
         write('CQUAD4  ')
         write(str(i+1),l=8)
-        #write(str(i+1),l=8)
-        write('1',l=8)
+        write(str(quad_groups[i]+1),l=8)
+#        write('1',l=8)
         write(str(quads[i,0]),l=8)
         write(str(quads[i,1]),l=8)
         write(str(quads[i,2]),l=8)
         write(str(quads[i,3]),l=8)
         write(' ',l=24)
         write('\n')
+        q = quads[i,:]
+        if q[0]==q[1] or q[0]==q[2] or q[0]==q[3] or \
+           q[1]==q[2] or q[1]==q[3] or q[2]==q[3]:
+            print 'invalid quad', q, group_names[quad_groups[i]], quad_groups[i]
 
     for i in range(nodes.shape[0]):
         if symm[i]:

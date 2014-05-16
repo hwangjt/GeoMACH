@@ -78,6 +78,7 @@ QUADsources = [
     'src/PSM/QUAD/computeQuadDominant.f90',
     'src/PSM/QUAD/splitTrisNQuads.f90',
     'src/PSM/QUAD/computeQuad2Edge.f90',
+    'src/PSM/QUAD/removeInvalidQuads.f90',
     ]
 
 CDTsources = [

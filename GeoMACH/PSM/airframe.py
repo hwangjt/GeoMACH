@@ -87,17 +87,26 @@ class Airframe(object):
         mesh = []
         nodes = []
         quads = []
+        quad_groups = []
+        group_names = []
         nCount = 0
+        nGroup = 0
         for i in range(len(self.surfaceNames)):
             mesh.append([self.surfaceNames[i], nodes1[nnode1[i]:nnode1[i+1]], quads1[i]])
             nodes.append(nodes1[nnode1[i]:nnode1[i+1]])
             quads.append(quads1[i]+nCount)
             nCount = nCount + nnode1[i+1] - nnode1[i]
+            quad_groups.append(nGroup*numpy.ones(quads1[i].shape[0], int))
+            group_names.append(self.surfaceNames[i])
+            nGroup += 1
         for i in range(self.nmem):
             mesh.append([self.memberNames[i], nodes2[nnode2[i]:nnode2[i+1]], quads2[i]])
             nodes.append(nodes2[nnode2[i]:nnode2[i+1]])
             quads.append(quads2[i]+nCount)
             nCount = nCount + nnode2[i+1] - nnode2[i]
+            quad_groups.append(nGroup*numpy.ones(quads2[i].shape[0], int))
+            group_names.append(self.memberNames[i])
+            nGroup += 1
 
         self.geometry.oml0.export.write2TecFEquads(filename,mesh,self.geometry.oml0.var)
 
@@ -106,24 +115,26 @@ class Airframe(object):
 
         nnode = nodes.shape[0]
         nquad = quads.shape[0]
-        nid, ids = PSMlib.computeuniquenodes(nnode, nodes)
+        nid, ids = PSMlib.computeuniquenodes(nnode, nodes, 1e-7)
         nodes, quads = PSMlib.removeduplicatenodes(nnode, nid, nquad, ids, nodes, quads)
 
-        #nnode = nodes.shape[0]
-        #nquad = quads.shape[0]
-        #right = PSMlib.countrightquads(nnode, nquad, nodes, quads)
-        #quads = PSMlib.removerightquads(nquad, nquad-numpy.sum(right), quads, right)
+        nnode = nodes.shape[0]
+        nquad = quads.shape[0]
+        right = PSMlib.countrightquads(nnode, nquad, nodes, quads)
+        quads = PSMlib.removerightquads(nquad, nquad-numpy.sum(right), quads, right)
 
         nnode = nodes.shape[0]
         symm = PSMlib.identifysymmnodes(nnode, nodes)
 
         self.geometry.oml0.export.write2TecFEquads('test.dat',[['test',nodes,quads]],self.geometry.oml0.var[:3])
-        import BDFwriter
-        BDFwriter.writeBDF('test.bdf',nodes,quads,symm)
 
-        for i in range(3):
-            nodes[:,i] *= symm
-        self.geometry.oml0.export.write2TecScatter('symm.dat', nodes, ['x','y','z'])
+        import BDFwriter
+        quad_groups = numpy.concatenate(quad_groups)
+        BDFwriter.writeBDF(filename+'.bdf',nodes,quads,symm,quad_groups,group_names)
+
+        #for i in range(3):
+        #    nodes[:,i] *= symm
+        #self.geometry.oml0.export.write2TecScatter('symm.dat', nodes, ['x','y','z'])
 
     def computePreviewSurfaces(self):
         oml0 = self.geometry.oml0
@@ -367,12 +378,9 @@ class Airframe(object):
 
                             print comp.name, face.name, i, j
                             quad.importEdges(edges1)
-                            #if comp.name=='fu' and face.num==1 and i==0 and j==0:
-                            #    nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:])#,True,True)
-                            #else:
-                            #    nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:])
 
-                            nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:])#, comp.name is 'vt_fu', comp.name is 'vt_fu')
+                            output = False
+                            nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:], output, output)
                             
                             mu, mv = oml0.edgeProperty(surf,1)
                             for u in range(mu):
@@ -385,7 +393,7 @@ class Airframe(object):
 
                             B = oml0.evaluateBases(s,u,v)
 
-                            name = comp.name + ':' + str(face.name) + '-' + str(i) + '-' + str(j)
+                            name = comp.name + ':' + str(face.name) + ':' + str(i) + ':' + str(j)
 
                             self.surfaceNames.append(name)
                             B0.append(B)

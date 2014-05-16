@@ -38,18 +38,18 @@ end subroutine removeDuplicateNodes
 
 
 
-subroutine computeUniqueNodes(nnode, nodes, nid, ids)
+subroutine computeUniqueNodes(nnode, nodes, tol, nid, ids)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nnode, nodes
+  !f2py intent(in) nnode, nodes, tol
   !f2py intent(out) nid, ids
   !f2py depend(nnode) nodes, ids
 
   !Input
   integer, intent(in) ::  nnode
-  double precision, intent(in) ::  nodes(nnode,3)
+  double precision, intent(in) ::  nodes(nnode,3), tol
 
   !Output
   integer, intent(out) ::  nid, ids(nnode)
@@ -67,7 +67,7 @@ subroutine computeUniqueNodes(nnode, nodes, nid, ids)
         do i2=i1+1,nnode
            if (ids(i2) .eq. 0) then
               d = nodes(i1,:) - nodes(i2,:)
-              if (dot_product(d,d) .lt. 1e-5) then
+              if (dot_product(d,d) .lt. tol**2) then
                  ids(i2) = ids(i1)
               end if
            end if
