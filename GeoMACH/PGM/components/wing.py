@@ -193,7 +193,7 @@ class WingThicknessFunction(WingFunction):
         Dj = Dj.reshape(2*nu*nv*3, order='F')
         D = scipy.sparse.csr_matrix((Da, (Di, Dj)), 
                                     shape=(nu*nv, 2*nu*nv*3))
-        return D.dot(self.J)
+        return D.dot(self.J).todense()
 
 
 
