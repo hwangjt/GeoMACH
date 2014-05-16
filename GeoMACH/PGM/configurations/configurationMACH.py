@@ -144,5 +144,5 @@ class ConfigurationMACH(Configuration):
                                         shape=(self.num_dv, dv.size))
             for comp in self.comps.values():
                 for func in comp.funcs.values():
-                    funcsSens[func.name][dv.name] = func.get_jacobian().dot(M.dot(self.jac.dot(P)))
+                    funcsSens[func.name][dv.name] = func.get_jacobian().dot(M.dot(self.jac.dot(P))).todense()
             start += dv.size
