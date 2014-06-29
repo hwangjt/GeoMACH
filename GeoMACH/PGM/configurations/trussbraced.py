@@ -50,12 +50,69 @@ class Trussbraced(Configuration):
         return comps
 
     def define_dvs(self):
-        self.add_dv('dv1', [1], 19)
+        self.add_dv('jtn', [1], val=0.0, lower=-2, upper=3)
+        #self.add_dv('fuL', [25], val=0.0, lower=0, upper=1)
+        self.add_dv('lwU', [100], val=0.0, lower=0, upper=1)
+        self.add_dv('lwL', [100], val=0.0, lower=0, upper=1)
+        self.add_dv('lsU', [64], val=0.0, lower=0, upper=1)
+        self.add_dv('lsL', [64], val=0.0, lower=0, upper=1)
+        self.add_dv('lvU', [25], val=0.0, lower=0, upper=1)
+        self.add_dv('lvL', [25], val=0.0, lower=0, upper=1)
+        self.add_dv('ltU', [64], val=0.0, lower=0, upper=1)
+        self.add_dv('ltL', [64], val=0.0, lower=0, upper=1)
 
     def apply_dvs(self):
-        Das = [numpy.zeros(1)]
-        Dis = [numpy.zeros(1)]
-        Djs = [numpy.zeros(1)]
+        Das, Dis, Djs = [], [], []
+
+        def addShape(Das, Dis, Djs, 
+                     dv_name, comp_name, prop_name, param_name, 
+                     sgn, ni, nj):
+            Da = numpy.ones(ni*nj) * sgn
+            Di = numpy.zeros(ni*nj, int)
+            Dj = numpy.zeros(ni*nj, int)
+
+            param = self.comps[comp_name].props[prop_name].params[param_name]
+            dv = self.dvs[dv_name]
+
+            ind = 0
+            for j in xrange(nj):
+                for i in xrange(ni):
+                    param.param_vec[i,j] = sgn*dv.vec[ind]
+                    Di[ind] = param.param_ind[i,j]
+                    Dj[ind] = dv.ind[ind]
+                    ind += 1
+                    
+            Das.append(Da)
+            Dis.append(Di)
+            Djs.append(Dj)
+
+        def addNonZero(a, i, j):
+            Das.append(a)
+            Dis.append(i)
+            Djs.append(j)
+
+        #addShape(Das, Dis, Djs, 'fuL', 'fu', ('shX', 'lft'), 's', -1, 5, 5)
+        addShape(Das, Dis, Djs, 'lwU', 'lw', ('shY', 'upp'), 's',  1, 10, 10)
+        addShape(Das, Dis, Djs, 'lwL', 'lw', ('shY', 'low'), 's', -1, 10, 10)
+        addShape(Das, Dis, Djs, 'lsU', 'ls', ('shY', 'upp'), 's',  1,  8,  8)
+        addShape(Das, Dis, Djs, 'lsL', 'ls', ('shY', 'low'), 's', -1,  8,  8)
+        addShape(Das, Dis, Djs, 'lvU', 'lv', ('shY', 'upp'), 's',  1,  5,  5)
+        addShape(Das, Dis, Djs, 'lvL', 'lv', ('shY', 'low'), 's', -1,  5,  5)
+        addShape(Das, Dis, Djs, 'ltU', 'lt', ('shY', 'upp'), 's',  1,  8,  8)
+        addShape(Das, Dis, Djs, 'ltL', 'lt', ('shY', 'low'), 's', -1,  8,  8)
+
+        par_lw = self.comps['lw'].props['pos'].params['pos1']
+        par_ls = self.comps['ls'].props['pos'].params['pos1']
+        par_lv = self.comps['lv'].props['pos'].params['offset']
+        dv = self.dvs['jtn']
+
+        par_lw.param_vec[1,2,0] = 15 + dv.vec[0]
+        par_ls.param_vec[1,2,0] = (15 + dv.vec[0]) * 0.9
+        par_lv.param_vec[0,2,0] = 2 + (15 + dv.vec[0]) * 6.8/15
+
+        addNonZero(1, par_lw.param_ind[1,2,0], dv.ind[0])
+        addNonZero(0.9, par_ls.param_ind[1,2,0], dv.ind[0])
+        addNonZero(6.8/15, par_lv.param_ind[0,2,0], dv.ind[0])
 
         return Das, Dis, Djs
 
@@ -102,24 +159,30 @@ class Trussbraced(Configuration):
         c['fu'].props['flt'].addParam('flt2',[2,4],P=[[0.9,0.9,0,0],[0.9,0.9,0,0]],T=[0.32,0.55])
 
         c['lw'].props['pos'].addParam('offset',[1,3],P=[14,1.5,2.1])
-        c['lw'].props['pos'].addParam('pos1',[2,3],P=[[0,0,0],[3.8,1.5,30]])
+        c['lw'].props['pos'].addParam('pos1',[3,3],P=[[0,0,0],[1.9,0.75,15],[3.8,1.5,30]])
         c['lw'].props['scl'].addParam('scl1',[2,1],P=[4.9,0.9])
+        c['lw'].props['shY','upp'].addParam2('s',[10,10],Tu=[0.05,0.95])
+        c['lw'].props['shY','low'].addParam2('s',[10,10],Tu=[0.05,0.95])
 
         c['rw'].props['pos'].addParam('offset',[1,3],P=[14,1.5,-2.1])
         c['rw'].props['pos'].addParam('pos1',[2,3],P=[[3.8,1.5,-30],[0,0,0]])
         c['rw'].props['scl'].addParam('scl1',[2,1],P=[0.9,4.9])
 
         c['ls'].props['pos'].addParam('offset',[1,3],P=[15,-1.6,2.3])
-        c['ls'].props['pos'].addParam('pos1',[2,3],P=[[0,0,0],[1,3.0,30*0.45]])
+        c['ls'].props['pos'].addParam('pos1',[2,3],P=[[0,0,0],[1,3.0,15*0.9]])
         c['ls'].props['pos'].addParam('curv',[2,3],P=[[0,0,0],[0,0.6,0]],B=[True,False],T=[0.8,1.0])
         c['ls'].props['scl'].addParam('scl1',[2,1],P=[2.5,1.9])
         c['ls'].props['nor'].addParam('nor',[1,1],P=[1.0])
         c['ls'].props['rot'].addParam('rot',[2,3],P=[[0,0,0],[-60,0,0]],T=[0.7,1])
+        c['ls'].props['shY','upp'].addParam2('s',[8,8],Tu=[0.05,0.95])
+        c['ls'].props['shY','low'].addParam2('s',[8,8],Tu=[0.05,0.95])
 
         c['lv'].props['pos'].addParam('offset',[1,3],P=[15.5,0,8.8])
         c['lv'].props['pos'].addParam('pos1',[2,3],P=[[0,0,0],[0,1.58,0]])
         c['lv'].props['scl'].addParam('scl1',[2,1],P=[1,1.4])
         c['lv'].props['nor'].addParam('nor',[1,1],P=[1.0])
+        c['lv'].props['shY','upp'].addParam2('s',[5,5],Tu=[0.05,0.95])
+        c['lv'].props['shY','low'].addParam2('s',[5,5],Tu=[0.05,0.95])
 
         c['vt'].props['pos'].addParam('offset',[1,3],P=[31.3,2.1,0])
         c['vt'].props['pos'].addParam('pos1',[2,3],P=[[0,0,0],[3,6,0]])
@@ -129,6 +192,8 @@ class Trussbraced(Configuration):
         c['lt'].props['pos'].addParam('offset',[1,3],P=[33.9,6.7,0.25])
         c['lt'].props['pos'].addParam('pos1',[2,3],P=[[0,0,0],[3.3,0,5]])
         c['lt'].props['scl'].addParam('scl1',[2,1],P=[2.9,1])
+        c['lt'].props['shY','upp'].addParam2('s',[8,8],Tu=[0.05,0.95])
+        c['lt'].props['shY','low'].addParam2('s',[8,8],Tu=[0.05,0.95])
 
         c['fu_n'].props['fC1'].params['fC1'].setP([4])
         c['fu_t'].props['fC1'].params['fC1'].setP([4])
@@ -151,67 +216,67 @@ class Trussbraced(Configuration):
         c['lt_vt'].props['fC1'].params['fC1'].setP([0.1])
 
     def meshStructure(self):
-        afm = Airframe(self, 1) #0.2)
+        afm = Airframe(self, 0.4)
 
         idims = numpy.linspace(0.3,0.85,7)
         jdims = numpy.linspace(0,1,17)
         for i in range(idims.shape[0]-1):
             for j in range(jdims.shape[0]):
-                afm.addVertFlip('Mlw_1:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
+                afm.addVertFlip('Mlw1:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
         for i in range(idims.shape[0]):
             for j in range(jdims.shape[0]-1):
                 if i is 0 or i is idims.shape[0]-1:
-                    afm.addVertFlip('Mlw_2:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
+                    afm.addVertFlip('Mlw2:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
                 else:
-                    afm.addVertFlip('Mlw_2a:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1,0.85])
-                    afm.addVertFlip('Mlw_2b:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[0.15,0])
+                    afm.addVertFlip('Mlw2a:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1,0.85])
+                    afm.addVertFlip('Mlw2b:'+str(i)+':'+str(j),'lw',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[0.15,0])
 
         idims = numpy.linspace(0.3,0.85,7)
         jdims = numpy.linspace(0,0.9,17)
         for i in range(idims.shape[0]):
             if i is 0 or i is idims.shape[0]-1:
-                afm.addCtrVert('Mcw_2:'+str(i)+':'+str(j),'lw','rw',idims[i])
+                afm.addCtrVert('Mcw2:'+str(i)+':'+str(j),'lw','rw',idims[i])
             else:
-                afm.addCtrVert('Mcw_2a:'+str(i)+':'+str(j),'lw','rw',idims[i],w=[1,0.85])
-                afm.addCtrVert('Mcw_2b:'+str(i)+':'+str(j),'lw','rw',idims[i],w=[0.15,0])
+                afm.addCtrVert('Mcw2a:'+str(i)+':'+str(j),'lw','rw',idims[i],w=[1,0.85])
+                afm.addCtrVert('Mcw2b:'+str(i)+':'+str(j),'lw','rw',idims[i],w=[0.15,0])
         for i in range(idims.shape[0]-1):
-            afm.addCtr('Mcw_u:','lw','rw',0,[idims[i],idims[i+1]])
+            afm.addCtr('Mcwu:','lw','rw',0,[idims[i],idims[i+1]])
         for i in range(idims.shape[0]-1):
-            afm.addCtr('Mcw_l:','lw','rw',1,[1-idims[i],1-idims[i+1]])
-        afm.addCtrVert('Mcw_sec:'+str(i)+':'+str(j),'lw','rw',0.18)
+            afm.addCtr('Mcwl:','lw','rw',1,[1-idims[i],1-idims[i+1]])
+        afm.addCtrVert('Mcwsec:'+str(i)+':'+str(j),'lw','rw',0.18)
 
         idims = numpy.linspace(0.25,0.65,2)
         jdims = numpy.linspace(0,1,11)
         for i in range(idims.shape[0]-1):
             for j in range(jdims.shape[0]):
-                afm.addVertFlip('Mlt_1:'+str(i)+':'+str(j),'lt',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
-                afm.addVertFlip('Mvt_1:'+str(i)+':'+str(j),'vt',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
-                afm.addVertFlip('Mls_1:'+str(i)+':'+str(j),'ls',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
-                afm.addVertFlip('Mlv_1:'+str(i)+':'+str(j),'lv',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
+                afm.addVertFlip('Mlt1:'+str(i)+':'+str(j),'lt',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
+                afm.addVertFlip('Mvt1:'+str(i)+':'+str(j),'vt',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
+                afm.addVertFlip('Mls1:'+str(i)+':'+str(j),'ls',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
+                afm.addVertFlip('Mlv1:'+str(i)+':'+str(j),'lv',[idims[i],jdims[j]],[idims[i+1],jdims[j]])
         for i in range(idims.shape[0]):
             for j in range(jdims.shape[0]-1):
-                afm.addVertFlip('Mlt_2:'+str(i)+':'+str(j),'lt',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
-                afm.addVertFlip('Mvt_2:'+str(i)+':'+str(j),'vt',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
-                afm.addVertFlip('Mls_2:'+str(i)+':'+str(j),'ls',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
-                afm.addVertFlip('Mlv_2:'+str(i)+':'+str(j),'lv',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
+                afm.addVertFlip('Mlt2:'+str(i)+':'+str(j),'lt',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
+                afm.addVertFlip('Mvt2:'+str(i)+':'+str(j),'vt',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
+                afm.addVertFlip('Mls2:'+str(i)+':'+str(j),'ls',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
+                afm.addVertFlip('Mlv2:'+str(i)+':'+str(j),'lv',[idims[i],jdims[j]],[idims[i],jdims[j+1]])
 
         idims = numpy.linspace(0,1,5)
         jdims = numpy.linspace(0,1,21)
         for i in range(idims.shape[0]-1):
             for j in range(jdims.shape[0]):
-                afm.addVert('Mfu_F1:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[0,2])
-                afm.addVert('Mfu_F2:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[1,3])
-                afm.addVert('Mfu_F3:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[2,0])
-                afm.addVert('Mfu_F4:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[3,1])
+                afm.addVert('MfuF1:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[0,2])
+                afm.addVert('MfuF2:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[1,3])
+                afm.addVert('MfuF3:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[2,0])
+                afm.addVert('MfuF4:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i+1],jdims[j]],w=[1.0,0.94],i=[3,1])
         for i in range(idims.shape[0]-1):
             for j in range(jdims.shape[0]-1):
-                afm.addVert('Mfu_L1:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[0,2])
-                afm.addVert('Mfu_L2:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[1,3])
-                afm.addVert('Mfu_L3:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[2,0])
-                afm.addVert('Mfu_L4:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[3,1])
+                afm.addVert('MfuL1:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[0,2])
+                afm.addVert('MfuL2:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[1,3])
+                afm.addVert('MfuL3:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[2,0])
+                afm.addVert('MfuL4:'+str(i)+':'+str(j),'fu',[idims[i],jdims[j]],[idims[i],jdims[j+1]],w=[1.0,0.97],i=[3,1])
         for j in range(jdims.shape[0]-1):
-            afm.addVertFlip('Mfu_0a:'+str(j),'fu',[0.4,jdims[j]],[0.4,jdims[j+1]],w=[1.0,0.5],i=[0,2])
-            afm.addVertFlip('Mfu_0b:'+str(j),'fu',[0.4,jdims[j]],[0.4,jdims[j+1]],w=[0.5,0.0],i=[0,2])
+            afm.addVertFlip('Mfu0a:'+str(j),'fu',[0.4,jdims[j]],[0.4,jdims[j+1]],w=[1.0,0.5],i=[0,2])
+            afm.addVertFlip('Mfu0b:'+str(j),'fu',[0.4,jdims[j]],[0.4,jdims[j+1]],w=[0.5,0.0],i=[0,2])
 
         afm.preview('trussbraced_pvw.dat')
         afm.mesh()
@@ -240,6 +305,7 @@ if __name__ == '__main__':
                                      numpy.linspace(0.1,0.9,10),
                                      0.25)
 
+    #aircraft.test_derivatives_dv()
     aircraft.meshStructure()
 
     #aircraft.test_derivatives()

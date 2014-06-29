@@ -146,7 +146,7 @@ subroutine computeQuadDominant(nvert, nedge, ntri, &
         else if (edges(iedge,1) .eq. triangles(itri,3)) then
            angles1 = (/ anglesT(itri,3), anglesT(itri,1), anglesT(itri,2) /)
         else
-           print *, 'Error in computeQuadDominant1: edge2tri wrong'
+           print *, 'Error in computeQuadDominant1: edge2tri wrong', edges(iedge,1), triangles(itri,:)
            call exit(1)
         end if
         itri = edge2tri(iedge,2)
@@ -157,7 +157,7 @@ subroutine computeQuadDominant(nvert, nedge, ntri, &
         else if (edges(iedge,1) .eq. triangles(itri,3)) then
            angles2 = (/ anglesT(itri,3), anglesT(itri,1), anglesT(itri,2) /)
         else
-           print *, 'Error in computeQuadDominant2: edge2tri wrong'
+           print *, 'Error in computeQuadDominant2: edge2tri wrong', edges(iedge,1), triangles(itri,:)
            call exit(1)
         end if
         angles(1) = angles1(1) + angles2(1)

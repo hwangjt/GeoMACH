@@ -110,6 +110,8 @@ class Airframe(object):
 
         self.geometry.oml0.export.write2TecFEquads(filename,mesh,self.geometry.oml0.var)
 
+        quad_groups = numpy.concatenate(quad_groups)
+
         nodes = numpy.array(numpy.concatenate(nodes,axis=0)[:,:3], order='F')
         quads = numpy.array(numpy.concatenate(quads,axis=0), order='F')
 
@@ -123,13 +125,17 @@ class Airframe(object):
         right = PSMlib.countrightquads(nnode, nquad, nodes, quads)
         quads = PSMlib.removerightquads(nquad, nquad-numpy.sum(right), quads, right)
 
+        temp = numpy.zeros((nquad,4), int)
+        temp[:,0] = quad_groups[:]
+        temp = PSMlib.removerightquads(nquad, nquad-numpy.sum(right), temp, right)
+        quad_groups = temp[:,0]
+
         nnode = nodes.shape[0]
         symm = PSMlib.identifysymmnodes(nnode, nodes)
 
         self.geometry.oml0.export.write2TecFEquads('test.dat',[['test',nodes,quads]],self.geometry.oml0.var[:3])
 
         import BDFwriter
-        quad_groups = numpy.concatenate(quad_groups)
         BDFwriter.writeBDF(filename+'.bdf',nodes,quads,symm,quad_groups,group_names)
 
         #for i in range(3):
@@ -380,6 +386,8 @@ class Airframe(object):
                             quad.importEdges(edges1)
 
                             output = False
+                            if comp.name=='lw' and face.name=='upp' and i==0 and j==2:
+                                output = True
                             nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:], output, output)
                             
                             mu, mv = oml0.edgeProperty(surf,1)

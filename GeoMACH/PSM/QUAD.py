@@ -41,6 +41,7 @@ class QUAD(object):
         self.lengths = lengths
         self.output = output
 
+        if plot: debug()
         self.addIntersectionPts()
         self.removeDuplicateVerts()
         self.splitEdges()
@@ -50,6 +51,7 @@ class QUAD(object):
         #self.splitEdges()
         self.addInteriorPts()
         self.removeDuplicateVerts()
+        if plot: debug()
 
         self.reorderCollinear()
         self.edges0 = self.edges
@@ -60,10 +62,12 @@ class QUAD(object):
         self.splitEdges()
         self.removeDuplicateEdges()
         self.computeConstrainedEdges()
+        if plot: debug()
 
         self.computeAdjMap()
         self.computeTriangles()
         self.computeQuadDominant()
+        if plot: debug()
         self.splitTrisNQuads()
         self.removeDuplicateVerts()
         self.splitEdges()
@@ -74,6 +78,7 @@ class QUAD(object):
         self.computeConstrainedVerts()
         self.smooth1()
         self.removeInvalidQuads()
+        if plot: debug()
 
         return self.verts, self.quads
 
@@ -255,6 +260,7 @@ class QUAD(object):
 
         pylab.subplot(plot)
         pylab.axis('equal')
+        pylab.axis('off')
         if pe2:
             edges = self.edges
             for e in range(edges.shape[0]):
