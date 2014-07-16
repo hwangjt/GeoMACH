@@ -15,52 +15,54 @@ from GeoMACH.PGM.core.PGMvec import PGMvec
 
 
 class PGMconfiguration(object):
-    """ Base class for an aircraft configuration"""
+    """
+    Base class for an aircraft configuration
+
+    Attributes
+    ----------
+    **comps** : ``OrderedDict``
+       Dictionary of ``PGMcomp`` objects
+    **dvs** : ``OrderedDict``
+       Dictionary of ``PGMdv`` objects
+    **_vecs** : ``OrderedDict``
+       Dictionary of ``PGMvec`` objects
+
+       == ======== ===================== ========= ================
+       #  Vec key   Description          Stored in Computed in
+       == ======== ===================== ========= ================
+       1  dv       design variables      PGMdv     ..
+       2  param    parameters            PGMparam  PGMconfiguration
+       3  prop     properties            PGMprop   PGMparam
+       4  cp_prim  control points        PGMface   PGMcomponent
+       .. ..       (primitives)          ..        ..
+       5  cp_bez   control points        PGMface   PGMcomponent
+       .. ..       (prims. + wireframes) ..        ..
+       6  cp_coons control points        PGMface   PGMcomponent
+       .. ..       (all)                 ..        ..
+       7  df_surf  ordered by surface    PGMsurf   PGMface
+       == ======== ===================== ========= ================
+
+    **_jacs** : ``OrderedDict``
+       Dictionary of sparse Jacobian matrices
+
+       == ======================
+       #  Jac key
+       == ======================
+       1  d(param)/d(dv)
+       2  d(prop)/d(param)
+       3  d(cp_prim)/d(prop)
+       4  d(cp_bez)/d(cp_prim)
+       5  d(cp_coons)/d(cp_bez)
+       6  d(df_surf)/d(cp_coons)
+       7  d(df_str)/d(df_surf)
+       == ======================
+
+    **_bse** : ``BSEmodel``
+       GeoMACH B-spline Surface-modeling Engine (BSE) object
+    """
 
     def __init__(self):
-        """
-        Attributes
-        ----------
-        **comps** : ``OrderedDict``
-           Dictionary of ``PGMcomp`` objects
-        **dvs** : ``OrderedDict``
-           Dictionary of ``PGMdv`` objects
-        **_vecs** : ``OrderedDict``
-           Dictionary of ``PGMvec`` objects
-
-           == ======== ===================== ========= ================
-           #  Vec key   Description          Stored in Computed in
-           == ======== ===================== ========= ================
-           1  dv       design variables      PGMdv     ..
-           2  param    parameters            PGMparam  PGMconfiguration
-           3  prop     properties            PGMprop   PGMparam
-           4  cp_prim  control points        PGMface   PGMcomponent
-           .. ..       (primitives)          ..        ..
-           5  cp_bez   control points        PGMface   PGMcomponent
-           .. ..       (prims. + wireframes) ..        ..
-           6  cp_coons control points        PGMface   PGMcomponent
-           .. ..       (all)                 ..        ..
-           7  df_surf  ordered by surface    PGMsurf   PGMface
-           == ======== ===================== ========= ================
-
-        **_jacs** : ``OrderedDict``
-           Dictionary of sparse Jacobian matrices
-
-           == ======================
-           #  Jac key
-           == ======================
-           1  d(param)/d(dv)
-           2  d(prop)/d(param)
-           3  d(cp_prim)/d(prop)
-           4  d(cp_bez)/d(cp_prim)
-           5  d(cp_coons)/d(cp_bez)
-           6  d(df_surf)/d(cp_coons)
-           7  d(df_str)/d(df_surf)
-           == ======================
-
-        **_bse** : ``BSEmodel``
-           GeoMACH B-spline Surface-modeling Engine (BSE) object
-        """
+        """ Initialize attributes """
         self.comps = OrderedDict()
         self.dvs = OrderedDict()
 
@@ -74,7 +76,7 @@ class PGMconfiguration(object):
 
         Returns
         -------
-        ***bse*** : ``BSEmodel``
+        **bse** : ``BSEmodel``
            A pointer to the BSE object 
         """
         self._define_comps()
