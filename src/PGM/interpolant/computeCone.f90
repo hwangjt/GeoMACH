@@ -60,12 +60,12 @@ end subroutine computeConeCoons
 
 
 
-subroutine computeConeWireframe(nD, nu, nv, a, f0, m0, W, E, N, S, inds, Da, Di, Dj)
+subroutine computeConeWireframe(nD, nu, nv, a, f0, W, E, N, S, inds, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nD, nu, nv, a, f0, m0, W, E, N, S, inds
+  !f2py intent(in) nD, nu, nv, a, f0, W, E, N, S, inds
   !f2py intent(out) Da, Di, Dj
   !f2py depend(nu) W, E
   !f2py depend(nv) N, S
@@ -74,7 +74,7 @@ subroutine computeConeWireframe(nD, nu, nv, a, f0, m0, W, E, N, S, inds, Da, Di,
 
   !Input
   integer, intent(in) ::  nD, nu, nv
-  double precision, intent(in) ::  a, f0, m0
+  double precision, intent(in) ::  a, f0
   integer, intent(in) ::  W(nu,2,3), E(nu,2,3)
   integer, intent(in) ::  N(nv,2,3), S(nv,2,3)
   integer, intent(in) ::  inds(nu,nv,3)

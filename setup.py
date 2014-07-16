@@ -2,38 +2,35 @@ import setuptools
 from numpy.distutils.core import setup
 from numpy.distutils.misc_util import Configuration
 
-PUBSsources = [
-    'src/PUBS/bspline/basis.f90',
-    'src/PUBS/bspline/knotopen.f90',
-    'src/PUBS/bspline/paramuni.f90',
-    'src/PUBS/tensor/curve.f90',
-    'src/PUBS/tensor/surface.f90',
-    'src/PUBS/patchwork/initializeTopology.f90',
-    'src/PUBS/patchwork/initializeBsplines.f90',
-    'src/PUBS/patchwork/initializePoints.f90',
-    'src/PUBS/patchwork/computeIndices.f90',
-    'src/PUBS/patchwork/computeKnots.f90',
-    'src/PUBS/patchwork/computeParameters.f90',
-    'src/PUBS/patchwork/computeJacobian.f90',
-    'src/PUBS/patchwork/computeDOFmapping.f90', 
-    'src/PUBS/patchwork/evaluatePoints.f90',
-    'src/PUBS/patchwork/evaluateProjections.f90',
-    'src/PUBS/patchwork/getSurface.f90',
+BSEsources = [
+    'src/BSE/compute_topology.f90',
+    'src/BSE/compute_indices.f90',
+    'src/BSE/compute_in_jacobian.f90',
+    'src/BSE/compute_df_jacobian.f90',
+    'src/BSE/compute_cp_jacobian.f90',
+    'src/BSE/compute_pt_jacobian.f90',
+    'src/BSE/compute_bs_jacobian.f90',
+    'src/BSE/compute_sc_jacobian.f90',
+    'src/BSE/compute_projection.f90',
+    'src/BSE/bspline_knot.f90',
+    'src/BSE/bspline_param.f90',
+    'src/BSE/bspline_basis.f90',
     ]
 
 PGMsources = [
-    'src/PGM/component.f90',
-    'src/PGM/parameter.f90',
+    'src/PGM/parameter/compute_bspline.f90',
+    'src/PGM/parameter/bspline_knot.f90',
+    'src/PGM/parameter/bspline_param.f90',
+    'src/PGM/parameter/bspline_basis.f90',
     'src/PGM/primitive/computeAngles.f90',
     'src/PGM/primitive/computeRotations.f90',
+    'src/PGM/primitive/computeRtnMtx.f90',
     'src/PGM/primitive/computeSections.f90',
     'src/PGM/primitive/computeShape.f90',
     'src/PGM/interpolant/computeCone.f90',
     'src/PGM/interpolant/computeJunction.f90',
     'src/PGM/interpolant/computeTip.f90',
-    'src/PGM/interpolant/coonsPatch.f90',
     'src/PGM/interpolant/interpolant.f90',
-    'src/PGM/interpolant/misc.f90',
     ]
 
 PSMsources = [
@@ -108,12 +105,12 @@ GeoMACH.PGM.configurations.configuration.GeoMACHSender = GeoMACH.PGM.configurati
 addLib = lambda name, srcs: config.add_extension(name, sources=srcs, extra_compile_args=['-fbounds-check'])#, f2py_options=['--debug-capi'])
 
 config = Configuration(name='GeoMACH')
-addLib('PUBS.PUBSlib', PUBSsources)
 addLib('PGM.PGMlib', PGMsources)
 addLib('PSM.PSMlib', PSMsources)
 addLib('PSM.QUADlib', QUADsources)
 addLib('PSM.CDTlib', CDTsources)
 addLib('PSM.BLSlib', BLSsources)
+addLib('BSE.BSElib', BSEsources)
 
 kwds = {'install_requires':['numpy','scipy'],
         'version': '0.1',

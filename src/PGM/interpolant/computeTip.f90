@@ -1,9 +1,9 @@
-subroutine computeTip(nD, nu, nv, f0, m0, N, S, inds, Da, Di, Dj)
+subroutine computeTip(nD, nu, nv, f0, N, S, inds, Da, Di, Dj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nD, nu, nv, f0, m0, N, S, inds
+  !f2py intent(in) nD, nu, nv, f0, N, S, inds
   !f2py intent(out) Da, Di, Dj
   !f2py depend(nv) N, S
   !f2py depend(nu,nv) inds
@@ -11,7 +11,7 @@ subroutine computeTip(nD, nu, nv, f0, m0, N, S, inds, Da, Di, Dj)
 
   !Input
   integer, intent(in) ::  nD, nu, nv
-  double precision, intent(in) ::  f0, m0
+  double precision, intent(in) ::  f0
   integer, intent(in) ::  N(nv,2,3), S(nv,2,3)
   integer, intent(in) ::  inds(nu,nv,3)
 

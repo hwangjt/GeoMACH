@@ -1,1 +1,0 @@
-python setup.py build_src --inplace build_ext --inplace build
