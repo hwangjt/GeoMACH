@@ -248,7 +248,9 @@ class PGMconfiguration(object):
         for comp in self.comps.values():
             surf_index = comp.initialize_bse(surfs_list, surf_index)
 
-        bse = BSEmodel(surfs_list)
+        self._bse = BSEmodel(surfs_list)
+
+        bse = self._bse
 
         comp_num = 0
         for comp_name in self.comps:
@@ -259,9 +261,12 @@ class PGMconfiguration(object):
             comp_num += 1
         self._set_bspline_options()
 
-        bse.assemble()
+        for isurf in xrange(len(surfs_list)):
+            surf = surfs_list[isurf]
+            if numpy.average(surf[:, :, 2]) < 0:
+                bse.hidden[isurf] = True
 
-        self._bse = bse
+        bse.assemble()
 
     def _apply_jacobian(self, vec2, jac, vec1):
         """
@@ -332,4 +337,3 @@ class PGMconfiguration(object):
     def compute(self, name):
         """ Compute the *dv* to *param* mapping """
         return self._compute_params()
-        

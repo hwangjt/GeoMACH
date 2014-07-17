@@ -46,10 +46,6 @@ class BSEvec(object):
     def _close_file(self):
         self._file.close()
 
-
-
-class BSEvecUns(BSEvec):
-
     def export_tec_scatter(self, filename=None, var_names=None):
         if filename is None:
             filename = self.name + '_scatter.dat'
@@ -61,6 +57,12 @@ class BSEvecUns(BSEvec):
         for ind in xrange(self.size):
             self._write_line(self.array[ind, :])
         self._close_file()
+
+
+
+class BSEvecUns(BSEvec):
+
+    pass
 
 
 

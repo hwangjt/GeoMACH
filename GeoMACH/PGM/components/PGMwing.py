@@ -69,7 +69,7 @@ class PGMwing(PGMprimitive):
             face.set_diff_surf(True)
             #C0 trailing edge
             face.set_diff_surf(False, ind_i=-ind, ind_u=2*ind)
-            face.set_diff_edge(True, 'u' + str(ind), ind_i=-1)
+            face.set_diff_edge(True, 'u' + str(ind), ind_i=-ind)
             #C0 left edge
             if not self._left_closed:
                 face.set_diff_surf(False, ind_j=-1, ind_v=2)

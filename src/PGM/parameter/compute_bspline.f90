@@ -1,21 +1,24 @@
 subroutine computebspline(nB, &
      ku, kv, mu, mv, nu, nv, &
      cp_indices, pt_indices, &
-     Ba, Bi, Bj)
+     pos_u, pos_v, Ba, Bi, Bj)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) nB, ku, kv, mu, mv, nu, nv, cp_indices, pt_indices
+  !f2py intent(in) nB, ku, kv, mu, mv, nu, nv, cp_indices, pt_indices, pos_u, pos_v
   !f2py intent(out) Ba, Bi, Bj
   !f2py depend(mu, mv) cp_indices
   !f2py depend(nu, nv) pt_indices
+  !f2py depend(mu) pos_u
+  !f2py depend(mv) pos_v
   !f2py depend(nB) Ba, Bi, Bj
 
   !Input
   integer, intent(in) ::  nB, ku, kv, mu, mv, nu, nv
   integer, intent(in) ::  cp_indices(mu, mv)
   integer, intent(in) ::  pt_indices(nu, nv)
+  double precision, intent(in) ::  pos_u(mu), pos_v(mv)
 
   !Output
   double precision, intent(out) ::  Ba(nB)
@@ -38,10 +41,15 @@ subroutine computebspline(nB, &
      offset_u(:) = 0
   else
      call knotopen(ku, ku + mu, knot_u)
-     call paramuni(ku + mu, mu, nu, knot_u, param_u)
+     call param_custom(ku + mu, mu, nu, knot_u, pos_u, param_u)
      do pt_u = 1, nu
-        call basis(ku, ku + mu, param_u(pt_u), knot_u, &
-             basis_u(:, pt_u), offset_u(pt_u))
+        if (param_u(pt_u) .ge. 0) then
+           call basis(ku, ku + mu, param_u(pt_u), knot_u, &
+                basis_u(:, pt_u), offset_u(pt_u))
+        else
+           basis_u(:, pt_u) = 0.0
+           offset_u(pt_u) = 0
+        end if
      end do
   end if
 
@@ -50,10 +58,15 @@ subroutine computebspline(nB, &
      offset_v(:) = 0
   else
      call knotopen(kv, kv + mv, knot_v)
-     call paramuni(kv + mv, mv, nv, knot_v, param_v)
+     call param_custom(kv + mv, mv, nv, knot_v, pos_v, param_v)
      do pt_v = 1, nv
-        call basis(kv, kv + mv, param_v(pt_v), knot_v, &
-             basis_v(:, pt_v), offset_v(pt_v))
+        if (param_v(pt_v) .ge. 0) then
+           call basis(kv, kv + mv, param_v(pt_v), knot_v, &
+                basis_v(:, pt_v), offset_v(pt_v))
+        else
+           basis_v(:, pt_v) = 0.0
+           offset_v(pt_v) = 0
+        end if
      end do
   end if
 
