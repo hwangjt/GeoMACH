@@ -12,6 +12,7 @@ from collections import OrderedDict
 
 from GeoMACH.BSE.BSEmodel import BSEmodel
 from GeoMACH.PGM.core.PGMvec import PGMvec
+from GeoMACH.PGM.core.PGMdv import PGMdv
 
 
 class PGMconfiguration(object):
@@ -119,7 +120,7 @@ class PGMconfiguration(object):
         Adds design variables to 
         ``self.comps[comp].props[prop].params[param].dvs``.
         """
-        pass
+        self.dvs[''] = PGMdv((1))
 
     def _compute_params(self):
         """
@@ -138,6 +139,7 @@ class PGMconfiguration(object):
         cols : ``list`` of ``numpy.ndarray``s, int[nnz]
            Column indices of non-zeros (0-based)
         """
+        return [], [], []
 
     def _set_bspline_options(self):
         """
@@ -148,6 +150,7 @@ class PGMconfiguration(object):
         ``self.comps[comp].faces[face].set_num_cp`` and
         ``self.comps[comp].faces[face].set_num_pt``
         """
+        pass
 
     def _initialize_pgm(self):
         """

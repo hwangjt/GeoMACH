@@ -9,8 +9,10 @@ Welcome to GeoMACH's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
+   src/GeoMACH
+   src/Tutorials
 
 
 Indices and tables

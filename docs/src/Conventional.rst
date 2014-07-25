@@ -1,11 +1,29 @@
-from __future__ import division
+Tutorial: Conventional configuration
+------------------------------------
 
-from GeoMACH.PGM.core import PGMconfiguration, PGMparameter, PGMdv
-from GeoMACH.PGM.components import PGMwing, PGMbody, PGMshell
-from GeoMACH.PGM.components import PGMjunction, PGMtip, PGMcone
+This tutorial walks through the creation of a
+conventional configuration aircraft from scratch.
 
+First, several classes must be imported to define
+the configuration. These are all contained within
+the ``core`` and ``components`` packages in ``PGM``::
 
-class Conventional(PGMconfiguration):
+  from __future__ import division
+
+  from GeoMACH.PGM.core import PGMconfiguration, PGMparameter, PGMdv
+  from GeoMACH.PGM.components import PGMwing, PGMbody, PGMshell
+  from GeoMACH.PGM.components import PGMjunction, PGMtip, PGMcone
+
+Creating a new configuration involves defining a
+class for that configuration that inherits from
+``PGMconfiguration`` and implementing four methods,
+which will be described later::
+
+  class Conventional(PGMconfiguration):
+
+In the first method, ``_define_comps``, the aircraft
+components must be defined and added to the ``comps``
+dictionary::
 
     def _define_comps(self):
         self.comps['fuse'] = PGMbody(num_x=12, num_y=4, num_z=2)
@@ -25,6 +43,30 @@ class Conventional(PGMconfiguration):
         self.comps['lpylon_lnac'] = PGMjunction(self, 'lnac', 'tp0', 'W', [1,0], 'lpylon', 'left')
         self.comps['ltail_fuse'] = PGMjunction(self, 'fuse', 'lft', 'E', [1,9], 'ltail', 'right')
         self.comps['vtail_fuse'] = PGMjunction(self, 'fuse', 'top', 'E', [0,8], 'vtail', 'right')
+
+Above, the first six are instances of ``primitive``
+component types, with only those on the left side of
+the aircraft included. 
+For components centered about the symmetry plane like
+the fuselage and the vertical tail, PGM automatically
+hides the surfaces right of the symmetry plane.
+A description of the parameters for each component's
+initialization method can be found in
+*GeoMACH/PGM/components/*.
+
+Next, the parameters are defined in ``_define_params``.
+Parameters control the properties of each component
+and are user-defined.
+The user is encouraged to read through the PGM package
+documentation first to understand the role of 
+parameters in PGM.
+The keys for the parameters are chosen by the user
+and many are simply the empty string since many
+properties are defined by only one parameter so a
+more descriptive key is not necessary.
+A description of the API for the PGMparameter class
+can be found in *GeoMACH/PGM/core/PGMparameter.py*.
+::
 
     def _define_params(self):
         fuse = self.comps['fuse'].props
@@ -68,6 +110,18 @@ class Conventional(PGMconfiguration):
         vtail['scl'].params[''] = PGMparameter(2, 1)
         vtail['rot'].params[''] = PGMparameter(2, 3)
         vtail['ogn'].params[''] = PGMparameter(1, 3)
+
+In the previous step, the parameters are instantiated 
+and their attributes were defined.
+Next, the values of the parameters are set in 
+``_compute_params`` with shapes that must match that
+specified in ``_define_params``.
+This method must return three empty lists, in the 
+simplest case, and later tutorials will explain that
+partials derivatives of DVs with respect to parameters
+must be provided in these lists when geometric 
+derivatives are needed from GeoMACH.
+::
 
     def _compute_params(self):
         fuse = self.comps['fuse'].props
@@ -113,6 +167,14 @@ class Conventional(PGMconfiguration):
         vtail['ogn'].params[''].val([0.25,0,0])
         return [], [], []
 
+Next, the number of control points, B-spline order,
+and the number of points in the default discretization
+can be set in ``_set_bspline_options``.
+They are set, one face and dimension at a time.
+The API can be found in
+*GeoMACH/PGM/core/PGMconfiguration*.
+::
+
     def _set_bspline_options(self):
         comps = self.comps
 
@@ -120,14 +182,20 @@ class Conventional(PGMconfiguration):
         comps['fuse'].faces['rgt'].set_option('num_cp', 'v', [18,4,4,4,4,8,4,15,4,4,10,4])
         comps['fuse'].faces['top'].set_option('num_cp', 'u', [8,8])
         comps['lwing'].faces['upp'].set_option('num_cp', 'v', [6,4,4,20])
-        
-        
 
-if __name__ == '__main__':
+Finally, in the execution script, the Conventional
+configuration is instantiated.
+Calling this object's initialize method performs
+all required set-up and assembly, including creating
+a BSE instance for this object, and returns a pointer
+to this object.
+To plot the geometry, the user must access the BSE
+instance's output vector and write a structured
+Tecplot data file in this case.
+::
+
+ if __name__ == '__main__':
 
     pgm = Conventional()
     bse = pgm.initialize()
     bse.vec['pt_str'].export_tec_str()
-    bse.vec['df'].export_tec_scatter()
-    bse.vec['cp'].export_tec_scatter()
-    bse.vec['pt'].export_tec_scatter()
