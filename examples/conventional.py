@@ -98,14 +98,14 @@ class Conventional(PGMconfiguration):
         lnac['thk'].params[''].val([0.08,0.2,0.08])
 
         ltail = self.comps['ltail'].props
-        ltail['pos'].params[''].val([44,0,1.7])
+        ltail['pos'].params[''].val([44,0,1.3])
         ltail['pos'].params['lin'].val([[0,0,0],[6,1.4,8]])
         ltail['scl'].params[''].val([4,1])
         ltail['rot'].params[''].val([[0,10,0],[0,0,0]])
         ltail['ogn'].params[''].val([0.25,0,0])
 
         vtail = self.comps['vtail'].props
-        vtail['pos'].params[''].val([42,2.0,0])
+        vtail['pos'].params[''].val([42,1.7,0])
         vtail['pos'].params['lin'].val([[0,0,0],[6,8,0]])
         vtail['nor'].params[''].val([1,0,0])
         vtail['scl'].params[''].val([5.8,2])
@@ -127,6 +127,10 @@ if __name__ == '__main__':
 
     pgm = Conventional()
     bse = pgm.initialize()
+
+    pgm.comps['lwing'].set_airfoil('rae2822.dat')
+    pgm.compute_all()
+
     bse.vec['pt_str'].export_tec_str()
     bse.vec['df'].export_tec_scatter()
     bse.vec['cp'].export_tec_scatter()

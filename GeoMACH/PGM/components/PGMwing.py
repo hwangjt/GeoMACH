@@ -5,8 +5,7 @@ John Hwang, July 2014
 # pylint: disable=E1101
 from __future__ import division
 import numpy
-import scipy.sparse
-import time
+import scipy.sparse, scipy.sparse.linalg
 from collections import OrderedDict
 
 from GeoMACH.BSE.BSEmodel import BSEmodel
@@ -47,7 +46,7 @@ class PGMwing(PGMprimitive):
     def assemble_sizes(self, bse):
         super(PGMwing, self).assemble_sizes(bse)
 
-        if self._bse is None or True:
+        if self._bse is None:
             upp = self._shapes['upp']
             low = self._shapes['low']
             upp[:, :, :] = 0.0
@@ -85,52 +84,88 @@ class PGMwing(PGMprimitive):
 
     def set_airfoil(self, filename='naca0012'):
         if filename[:4]=='naca' or filename[:4]=='NACA':
-            airfoil = self._get_airfoil_naca(filename[:4])
+            airfoil = self._get_airfoil_naca(filename[4:])
         else:
             airfoil = self._get_airfoil_file(filename)
 
-        Qs = {}
         for name in ['upp', 'low']:
-            nsurf = self.faces[name].num_surf[0]
-            ms = self.faces[name].num_cp_list[0]
-            ns = self.faces[name].num_pt_list[0]
+            ms = self.faces[name]._num_cp_list['u']
+            ns = self.faces[name]._num_pt_list['u']
             nP = sum(ns) + 1
 
-            P = _get_P(nP, airfoil[name])
-            Q = _get_Q(ms, ns, P)
-            Qs[name] = Q
+            P = self._get_P(nP, airfoil[name])
+            Q = self._get_Q(ms, ns, P)
+            for j in range(self.faces[name]._num_cp_total['v']):
+                self._shapes[name][:,j,:] = Q[:,:]
 
-        for name in self.shapes:
-            for j in range(self.faces[name].num_cp[1]):
-                self.shapes[name][:,j,:2] = Qs[name][:,:]
+    def _get_Q(self, ms, ns, P0):
+        nsurf = ns.shape[0]
+
+        Ps = []
+        for i in xrange(nsurf):
+            P = numpy.zeros((ns[i]+1,4,3), order='F')
+            for j in xrange(4):
+                P[:,j,:] = P0[sum(ns[:i]):sum(ns[:i+1])+1,:]
+                P[:,j,2] = j
+            Ps.append(P)
+
+        bse = BSEmodel(Ps)
+        for i in xrange(nsurf):
+            bse.set_bspline_option('num_cp', i, 'u', ms[i]+1)
+            bse.set_bspline_option('num_pt', i, 'u', ns[i]+1)
+            bse.set_bspline_option('num_pt', i, 'v', 4)
+        bse.assemble()
+        cp = bse.vec['cp_str'].array
+        pt = bse.vec['pt_str'].array
+        jac = bse.jac['d(pt_str)/d(cp_str)']
+
+        for i in xrange(nsurf):
+            bse.vec['pt_str'].surfs[i][:,:,:] = Ps[i]
+        mtx = jac.T.dot(jac)
+        rhs = jac.T.dot(pt)
+        for dim in xrange(3):
+            cp[:, dim] = scipy.sparse.linalg.cg(mtx, rhs[:, dim])[0]
+
+        Q = numpy.zeros((sum(ms) + 1,3),order='F')
+        for i in xrange(nsurf):
+            Q[sum(ms[:i]):sum(ms[:i+1])+1,:] = \
+                bse.vec['cp_str'].surfs[i][:,0,:]
+        return Q
 
     def _get_P(self, nP, airfoil):
         P = numpy.zeros((airfoil.shape[0],4,3),order='F')
         for j in range(4):
             P[:,j,:2] = airfoil[:,:]
             P[:,j,2] = j
-
         bse = BSEmodel([P])
+
         bse.set_bspline_option('num_pt', 0, 'u', 
                                airfoil.shape[0])
-        bse.vec['pt_str'].surfs[0][:, :, :] = P
-        jac1 = bse.jac['d(df)/d(df_str)']
-        jac2 = bse.jac['d(cp)/d(df)']
-        jac3 = bse.jac['d(cp_str)/d(cp)']
-        jac4 = bse.jac['d(pt_str)/d(cp_str)']
-        jac = jac4.dot(jac3.dot(jac2.dot(jac1)))
-        jacT = jac.transpose()
-        jacTjac = jacT.dot(jac)
+        bse.set_bspline_option('num_cp', 0, 'u', 
+                               int(airfoil.shape[0]/3))
+        bse.set_bspline_option('num_pt', 0, 'v', 4)
+        bse.set_bspline_option('num_cp', 0, 'v', 4)
         bse.assemble()
+        cp = bse.vec['cp_str'].array
+        pt = bse.vec['pt_str'].array
+        jac = bse.jac['d(pt_str)/d(cp_str)']
 
-        oml0 = PUBS.PUBS([P])
-        oml0.edgeProperty(0,2,0,nP)
-        oml0.updateEvaluation()
+        bse.vec['pt_str'].surfs[0][:, :, :] = P
+        mtx = jac.T.dot(jac)
+        rhs = jac.T.dot(pt)
+        for dim in xrange(3):
+            cp[:, dim] = scipy.sparse.linalg.cg(mtx, rhs[:, dim])[0]
+        fit = numpy.array(cp)
 
-        P = numpy.zeros((nP,2),order='F')
-        for i in range(nP):
-            P[i,:] = oml0.P[oml0.getIndex(0,i,0,0),:2]
-        return P
+        bse.set_bspline_option('num_pt', 0, 'u', nP)
+        bse.assemble()
+        cp = bse.vec['cp_str'].array
+        pt = bse.vec['pt_str'].array
+
+        cp[:, :] = fit[:, :]
+        bse.apply_jacobian('pt_str', 'd(pt_str)/d(cp_str)', 'cp_str')
+
+        return bse.vec['pt_str'].surfs[0][:, 0, :]
 
     def _get_airfoil_naca(self, naca):
         num = 50
@@ -143,7 +178,7 @@ class PGMwing(PGMprimitive):
                                  0.3516*x**2 + 0.2843*x**3 - 
                                  0.1036*x**4)
         y_cmb = numpy.zeros(num)
-        if p != 0:
+        if pos_cmb != 0:
             y1 = max_cmb * x / pos_cmb**2 * \
                  (2 * pos_cmb - x)
             y2 = max_cmb * (1-x) / (1-pos_cmb)**2 * \

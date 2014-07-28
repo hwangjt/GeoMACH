@@ -88,10 +88,10 @@ class PGMjunction(PGMinterpolant):
             face.set_diff_surf(False, ind_i=0, ind_j=ind_j, ind_u=2)
             face.set_diff_surf(False, ind_i=-1, ind_j=ind_j, ind_u=0)
 
-        #face.set_diff_surf(False, ind_i=0, ind_j=0, ind_u=2, ind_v=2)
-        #face.set_diff_surf(False, ind_i=-1, ind_j=0, ind_u=0, ind_v=2)
-        #face.set_diff_surf(False, ind_i=0, ind_j=-1, ind_u=2, ind_v=0)
-        #face.set_diff_surf(False, ind_i=-1, ind_j=-1, ind_u=0, ind_v=0)
+        face.set_diff_surf(False, ind_i=0, ind_j=0, ind_u=2, ind_v=2)
+        face.set_diff_surf(False, ind_i=-1, ind_j=0, ind_u=0, ind_v=2)
+        face.set_diff_surf(False, ind_i=0, ind_j=-1, ind_u=2, ind_v=0)
+        face.set_diff_surf(False, ind_i=-1, ind_j=-1, ind_u=0, ind_v=0)
 
     def set_hidden_surfaces(self):
         loc = self._loc
