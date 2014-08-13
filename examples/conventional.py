@@ -135,3 +135,4 @@ if __name__ == '__main__':
     bse.vec['df'].export_tec_scatter()
     bse.vec['cp'].export_tec_scatter()
     bse.vec['pt'].export_tec_scatter()
+    bse.vec['cp_str'].export_IGES()

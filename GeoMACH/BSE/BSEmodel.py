@@ -424,7 +424,7 @@ class BSEmodel(object):
                                   ndim, hidden)
         elif vec_type == 'cp_str':
             vec[name] = BSEvecStr(name, size['cp_str'],
-                                  ndim, num_cp, hidden)
+                                  ndim, num_cp, hidden, self)
         elif vec_type == 'pt_str':
             vec[name] = BSEvecStr(name, size['pt_str'],
                                   ndim, num_pt, hidden)
