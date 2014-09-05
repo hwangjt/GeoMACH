@@ -112,7 +112,7 @@ The properties of a given primitive component are listed below:
 +---------------+---------------+--------+-------------------------------------------------------+
 | Scaling       | *scl*         | nv, 3  | Scaling factors in x,y,z directions in local frame    |
 +---------------+---------------+--------+-------------------------------------------------------+
-| Orthogonality | *ort*         | nv, 3  | Whether each section is normal to path of *pos* [0,1] |
+| Orthogonality | *nor*         | nv, 3  | Whether each section is normal to path of *pos* [0,1] |
 +---------------+---------------+--------+-------------------------------------------------------+
 | Origin        | *ogn*         | nv, 3  | Coordinates of section origins in local frames        |
 +---------------+---------------+--------+-------------------------------------------------------+

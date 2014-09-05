@@ -494,4 +494,4 @@ class BSEmodel(object):
             = scipy.sparse.csr_matrix((data, (rows-1, cols-1)),
                                       shape=(npt,
                                              size['cp_str']))
-        vec[name] = BSEvecUns(name, npt, ndim)
+        vec[name] = BSEvecUns(name, npt, ndim, self.hidden)
