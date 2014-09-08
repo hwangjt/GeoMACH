@@ -118,6 +118,7 @@ class Conventional(PGMconfiguration):
 
         comps['fuse'].faces['rgt'].set_option('num_cp', 'u', [4,4,4,4])
         comps['fuse'].faces['rgt'].set_option('num_cp', 'v', [18,4,4,4,4,8,4,15,4,4,10,4])
+        comps['fuse'].faces['rgt'].set_option('num_pt', 'v', [40,16,16,16,16,60,16,60,16,16,70,16], both=False)
         comps['fuse'].faces['top'].set_option('num_cp', 'u', [8,8])
         comps['lwing'].faces['upp'].set_option('num_cp', 'v', [6,4,4,20])
         
@@ -129,6 +130,7 @@ if __name__ == '__main__':
     bse = pgm.initialize()
 
     pgm.comps['lwing'].set_airfoil('rae2822.dat')
+    pgm.comps['ltail'].set_airfoil()
     pgm.compute_all()
 
     bse.vec['pt_str'].export_tec_str()

@@ -17,7 +17,7 @@ class PGMwing(PGMprimitive):
     """ Wing component """
 
     def __init__(self, num_x=1, num_z=1,
-                 left_closed=False, right_closed=False):
+                 left_closed=False, right_closed=False, blunt_te=True):
         """
         Parameters
         ----------
@@ -36,6 +36,7 @@ class PGMwing(PGMprimitive):
 
         self._left_closed = left_closed
         self._right_closed = right_closed
+        self._blunt_te = blunt_te
 
         self._ax1 = 3
         self._ax2 = 2
@@ -67,33 +68,47 @@ class PGMwing(PGMprimitive):
              #C1 Everywhere
             face.set_diff_surf(True)
             #C0 trailing edge
-            face.set_diff_surf(False, ind_i=-ind, ind_u=2*ind)
-            face.set_diff_edge(True, 'u' + str(ind), ind_i=-ind)
+            if not self._blunt_te:
+                face.set_diff_surf(False, ind_i=-ind, ind_u=2*ind)
+                face.set_diff_edge(True, 'u' + str(ind), ind_i=-ind)
             #C0 left edge
             if not self._left_closed:
                 face.set_diff_surf(False, ind_j=-1, ind_v=2)
                 face.set_diff_edge(True, 'v1', ind_j=-1)
-                face.set_diff_corner(False, ind_i=-ind, ind_j=-1)
+                if not self._blunt_te:
+                    face.set_diff_corner(False, ind_i=-ind, ind_j=-1)
                 #face.set_diff_corner(False, ind_i=ind, ind_j=-1)
             #C0 right edge
             if not self._right_closed:
                 face.set_diff_surf(False, ind_j=0, ind_v=0)
                 face.set_diff_edge(True, 'v0', ind_j=0)
-                face.set_diff_corner(False, ind_i=-ind, ind_j=0)
+                if not self._blunt_te:
+                    face.set_diff_corner(False, ind_i=-ind, ind_j=0)
                 #face.set_diff_corner(False, ind_i=ind, ind_j=0)
 
-    def set_airfoil(self, filename='naca0012'):
+    def set_airfoil(self, filename='naca0012', blunt_thk=0.0025, blunt_pos=0.95, bunch_LE=1.0, bunch_TE=2.0):
         if filename[:4]=='naca' or filename[:4]=='NACA':
-            airfoil = self._get_airfoil_naca(filename[4:])
+            airfoils = self._get_airfoil_naca(filename[4:])
         else:
-            airfoil = self._get_airfoil_file(filename)
+            airfoils = self._get_airfoil_file(filename)
 
         for name in ['upp', 'low']:
             ms = self.faces[name]._num_cp_list['u']
             ns = self.faces[name]._num_pt_list['u']
             nP = sum(ns) + 1
 
-            P = self._get_P(nP, airfoil[name])
+            P = self._get_P(nP, airfoils, name, bunch_LE, bunch_TE)
+            P[:, 0] /= numpy.max(P[:, 0])
+            P[:, 1] -= numpy.linspace(P[0,1], P[-1,1], P.shape[0])
+
+            if name == 'upp':
+                sign = 1.0
+            elif name == 'low':
+                sign = -1.0
+            t, p, x = blunt_thk, blunt_pos, P[:, 0]
+            P[:, 1] += sign * t * (-2*(x/p)**3 + 3*(x/p)**2) * (x < p)
+            P[:, 1] += sign * t * numpy.sqrt(1 - (numpy.maximum(x,2*p-1) - p)**2/(1-p)**2) * (x >= p)
+
             Q = self._get_Q(ms, ns, P)
             for j in range(self.faces[name]._num_cp_total['v']):
                 self._shapes[name][:,j,:] = Q[:,:]
@@ -132,7 +147,14 @@ class PGMwing(PGMprimitive):
                 bse.vec['cp_str'].surfs[i][:,0,:]
         return Q
 
-    def _get_P(self, nP, airfoil):
+    def _get_P(self, nP, airfoils, name, bunch_LE, bunch_TE):
+        def bunch_start(ind, a):
+            ind[:] = ind**a
+        def bunch_end(ind, a):
+            ind[:] = 1 - (1-ind)**a
+
+        airfoil = airfoils[name]
+
         P = numpy.zeros((airfoil.shape[0],4,3),order='F')
         for j in range(4):
             P[:,j,:2] = airfoil[:,:]
@@ -163,9 +185,19 @@ class PGMwing(PGMprimitive):
         pt = bse.vec['pt_str'].array
 
         cp[:, :] = fit[:, :]
-        bse.apply_jacobian('pt_str', 'd(pt_str)/d(cp_str)', 'cp_str')
+        surfs = numpy.zeros(nP).astype(int)
+        ind_u = numpy.linspace(0, 1, nP)
+        if name == 'upp':
+            bunch_start(ind_u, bunch_TE)
+            bunch_end(ind_u, bunch_LE)
+        elif name == 'low':
+            bunch_start(ind_u, bunch_LE)
+            bunch_end(ind_u, bunch_TE)
+        ind_v = numpy.zeros(nP)
+        bse.add_jacobian('new', surfs, ind_u, ind_v, 3)
+        bse.apply_jacobian('new', 'd(new)/d(cp_str)', 'cp_str')
 
-        return bse.vec['pt_str'].surfs[0][:, 0, :]
+        return bse.vec['new'].array[:, :]
 
     def _get_airfoil_naca(self, naca):
         num = 50
@@ -213,5 +245,3 @@ class PGMwing(PGMprimitive):
             upper = data[mark::-1,:]
             lower = data[mark+1:,:]
         return {'upp': upper, 'low': lower}
-        
-            
