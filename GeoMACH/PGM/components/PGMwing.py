@@ -17,7 +17,7 @@ class PGMwing(PGMprimitive):
     """ Wing component """
 
     def __init__(self, num_x=1, num_z=1,
-                 left_closed=False, right_closed=False, blunt_te=True):
+                 left_closed=False, right_closed=False, blunt_te=False):
         """
         Parameters
         ----------
@@ -86,7 +86,7 @@ class PGMwing(PGMprimitive):
                     face.set_diff_corner(False, ind_i=-ind, ind_j=0)
                 #face.set_diff_corner(False, ind_i=ind, ind_j=0)
 
-    def set_airfoil(self, filename='naca0012', blunt_thk=0.0025, blunt_pos=0.95, bunch_LE=1.0, bunch_TE=2.0):
+    def set_airfoil(self, filename='naca0012', blunt_thk=0.0, blunt_pos=0.95, bunch_LE=1.0, bunch_TE=1.0):
         if filename[:4]=='naca' or filename[:4]=='NACA':
             airfoils = self._get_airfoil_naca(filename[4:])
         else:
