@@ -112,6 +112,7 @@ class PGMwing(PGMprimitive):
             Q = self._get_Q(ms, ns, P)
             for j in range(self.faces[name]._num_cp_total['v']):
                 self._shapes[name][:,j,:] = Q[:,:]
+                self._shapes[name][:,j,2] = 0.0
 
     def _get_Q(self, ms, ns, P0):
         nsurf = ns.shape[0]

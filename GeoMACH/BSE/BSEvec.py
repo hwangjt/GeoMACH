@@ -225,14 +225,16 @@ class BSEvecStr(BSEvec):
             dv = ds[1][s]
 
             for val in [128, mu-1, mv-1, ku-1, kv-1]:
-                self._write('%12i,' %(val))
+                self._write('%10i,' %(val))  
+            self._write('          ')
             self._write('%7i' %(dirID))   
             self._write('P')
             self._write('%7i\n' %(parID))
             parID += 1
 
             for val in [0, 0, 1, 0, 0]:
-                self._write('%12i,' %(val))
+                self._write('%10i,' %(val))
+            self._write('          ')
             self._write('%7i' %(dirID))   
             self._write('P')
             self._write('%7i\n' %(parID))

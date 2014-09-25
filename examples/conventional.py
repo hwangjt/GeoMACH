@@ -1,3 +1,5 @@
+# John Hwang
+
 from __future__ import division
 
 from GeoMACH.PGM.core import PGMconfiguration, PGMparameter, PGMdv
