@@ -29,6 +29,8 @@ class PGMvec(object):
             obj.initialize_vec(name, obj_data, obj_inds)
             start += numpy.prod(shape)
 
+            obj_data[:] = obj.value
+
         self._name = name
         self._objects = computing_objects
         self._size = size

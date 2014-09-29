@@ -15,6 +15,7 @@ class PGMobject(object):
         self._shape = None
         self.vec_data = {}
         self.vec_inds = {}
+        self.value = 0.0
 
     def get_vec_shape(self, name):
         return self._shape

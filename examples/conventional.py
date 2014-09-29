@@ -71,6 +71,11 @@ class Conventional(PGMconfiguration):
         vtail['rot'].params[''] = PGMparameter(2, 3)
         vtail['ogn'].params[''] = PGMparameter(1, 3)
 
+    def _define_dvs(self):
+        dvs = self.dvs
+        dvs['span'] = PGMdv((1), 23.3)
+        dvs['chord'] = PGMdv((2), [4.5, 1.2])
+
     def _compute_params(self):
         fuse = self.comps['fuse'].props
         fuse['pos'].params[''].val([[0,0,0],[50,0,0]])
@@ -113,7 +118,25 @@ class Conventional(PGMconfiguration):
         vtail['scl'].params[''].val([5.8,2])
         vtail['rot'].params[''].val([[0,10,0],[0,0,0]])
         vtail['ogn'].params[''].val([0.25,0,0])
-        return [], [], []
+
+        dv_span = self.dvs['span']
+        dv_chord = self.dvs['chord']
+        pr_span = lwing['pos'].params['lin']
+        pr_chord = lwing['scl'].params['']
+
+        Das, Dis, Djs = [], [], []
+        pr_span.vec_data['param'][1,2] = dv_span.vec_data['dv'][0]
+        pr_chord.vec_data['param'][1:3,0] = dv_chord.vec_data['dv'][:]
+
+        Das.append([1.0])
+        Dis.append([pr_span.vec_inds['param'][1,2]])
+        Djs.append([dv_span.vec_inds['dv'][0]])
+
+        Das.append([1.0,1.0])
+        Dis.append(pr_chord.vec_inds['param'][1:3,0])
+        Djs.append(dv_chord.vec_inds['dv'][:])
+
+        return Das, Dis, Djs
 
     def _set_bspline_options(self):
         comps = self.comps

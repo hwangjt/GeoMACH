@@ -11,11 +11,11 @@ from GeoMACH.PGM.core.PGMobject import PGMobject
 
 class PGMdv(PGMobject):
 
-    def __init__(self, shape, val=None, lower=None, upper=None, scale=None):
+    def __init__(self, shape, value=None, lower=None, upper=None, scale=None):
         super(PGMdv, self).__init__()
 
         self._shape = shape
-        self.val = val
+        self.value = value
         self.lower = lower
         self.upper = upper
         self.scale = scale

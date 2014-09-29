@@ -300,9 +300,6 @@ class PGMconfiguration(object):
         vecs = self._vecs
         mult = self._apply_jacobian
 
-        for vec in vecs.values():
-            vec()[:] = 0
-
         jacs['d(param)/d(dv)'] = vecs['param'].compute()
         mult('prop', 'd(prop)/d(param)', 'param')
         jacs['d(cp_prim)/d(prop)'] = vecs['cp_prim'].compute()
