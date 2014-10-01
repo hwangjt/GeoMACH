@@ -23,3 +23,5 @@ class PGMobject(object):
     def initialize_vec(self, name, data, inds):
         self.vec_data[name] = data
         self.vec_inds[name] = inds
+        self.data = data
+        self.inds = inds

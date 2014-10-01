@@ -42,6 +42,8 @@ class Conventional(PGMconfiguration):
         lwing['pos'].params[''] = PGMparameter(1, 3)
         lwing['scl'].params[''] = PGMparameter(3, 1, pos_u=[0,0.35,1.0])
         lwing['pos'].params['lin'] = PGMparameter(2, 3)
+	lwing['shY','upp'].params[''] = PGMparameter(10, 6, order_u=4, order_v=4)
+	lwing['shY','low'].params[''] = PGMparameter(10, 6, order_u=4, order_v=4)
 
         lpylon = self.comps['lpylon'].props
         lpylon['pos'].params[''] = PGMparameter(1, 3)
@@ -73,8 +75,11 @@ class Conventional(PGMconfiguration):
 
     def _define_dvs(self):
         dvs = self.dvs
-        dvs['span'] = PGMdv((1), 23.3)
-        dvs['chord'] = PGMdv((2), [4.5, 1.2])
+        dvs['span'] = PGMdv((1), 23.3).set_identity_param('lwing', 'pos', 'lin', (1,2))
+        dvs['mid_chord'] = PGMdv((1), 4.5).set_identity_param('lwing', 'scl', '', (1,0))
+        dvs['tip_chord'] = PGMdv((1), 1.2).set_identity_param('lwing', 'scl', '', (2,0))
+	dvs['shape_wing_upp'] = PGMdv((10,6)).set_identity_param('lwing', ('shY', 'upp'), '')
+	dvs['shape_wing_low'] = PGMdv((10,6)).set_identity_param('lwing', ('shY', 'low'), '')
 
     def _compute_params(self):
         fuse = self.comps['fuse'].props
@@ -119,24 +124,7 @@ class Conventional(PGMconfiguration):
         vtail['rot'].params[''].val([[0,10,0],[0,0,0]])
         vtail['ogn'].params[''].val([0.25,0,0])
 
-        dv_span = self.dvs['span']
-        dv_chord = self.dvs['chord']
-        pr_span = lwing['pos'].params['lin']
-        pr_chord = lwing['scl'].params['']
-
-        Das, Dis, Djs = [], [], []
-        pr_span.vec_data['param'][1,2] = dv_span.vec_data['dv'][0]
-        pr_chord.vec_data['param'][1:3,0] = dv_chord.vec_data['dv'][:]
-
-        Das.append([1.0])
-        Dis.append([pr_span.vec_inds['param'][1,2]])
-        Djs.append([dv_span.vec_inds['dv'][0]])
-
-        Das.append([1.0,1.0])
-        Dis.append(pr_chord.vec_inds['param'][1:3,0])
-        Djs.append(dv_chord.vec_inds['dv'][:])
-
-        return Das, Dis, Djs
+        return [], [], []
 
     def _set_bspline_options(self):
         comps = self.comps
@@ -156,6 +144,9 @@ if __name__ == '__main__':
 
     pgm.comps['lwing'].set_airfoil('rae2822.dat')
     pgm.comps['ltail'].set_airfoil()
+    pgm.dvs['shape_wing_upp'].data[2,2] = 0.0
+    pgm.dvs['span'].data[0] = 23.3
+    pgm.dvs['tip_chord'].data[0] = 1.2
     pgm.compute_all()
 
     bse.vec['pt_str'].export_tec_str()

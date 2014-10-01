@@ -19,3 +19,10 @@ class PGMdv(PGMobject):
         self.lower = lower
         self.upper = upper
         self.scale = scale
+        self.identity_param = None
+
+    def set_identity_param(self, comp_name, prop_name, param_name, inds=None):
+        if inds is not None:
+            assert self._shape == (1)
+        self.identity_param = [comp_name, prop_name, param_name, inds]
+        return self

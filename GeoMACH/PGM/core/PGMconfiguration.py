@@ -336,4 +336,20 @@ class PGMconfiguration(object):
 
     def compute(self, name):
         """ Compute the *dv* to *param* mapping """
-        return self._compute_params()
+        Das, Dis, Djs = self._compute_params()
+        for dv_name in self.dvs:
+            dv = self.dvs[dv_name]
+            if dv.identity_param is not None:
+                comp_name, prop_name, param_name, inds = dv.identity_param
+                param = self.comps[comp_name].props[prop_name].params[param_name]
+                if inds is None:
+                    param.data[:, :] = dv.data[:, :]
+                    Das.append([1.0]*param._num_cp['u']*param._num_cp['v'])
+                    Dis.append(param.inds.flatten())
+                    Djs.append(dv.inds.flatten())
+                else:
+                    param.data[inds] = dv.data[0]
+                    Das.append([1.0])
+                    Dis.append([param.inds[inds]])
+                    Djs.append([dv.inds[0]])
+        return Das, Dis, Djs
