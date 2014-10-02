@@ -1,4 +1,4 @@
-# John Hwang
+# John Hwang, 2014
 
 from __future__ import division
 

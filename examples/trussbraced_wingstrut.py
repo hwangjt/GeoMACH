@@ -1,4 +1,4 @@
-# Davide Ivaldi, John Hwang
+# Davide Ivaldi, John Hwang, 2014
 
 from __future__ import division
 
