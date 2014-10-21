@@ -15,6 +15,7 @@ class PGMdv(PGMobject):
         super(PGMdv, self).__init__()
 
         self._shape = shape
+        self.name = None
         self.value = value
         self.lower = lower
         self.upper = upper

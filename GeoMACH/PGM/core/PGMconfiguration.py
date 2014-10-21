@@ -87,6 +87,8 @@ class PGMconfiguration(object):
 
         self._define_params()
         self._define_dvs()
+        for dv_name in self.dvs:
+            self.dvs[dv_name].name = dv_name
 
         self._initialize_pgm()
         self._initialize_bse()
