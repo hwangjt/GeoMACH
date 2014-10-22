@@ -9,7 +9,7 @@ from GeoMACH.PGM.core.PGMconfiguration import PGMconfiguration
 class MACHconfiguration(PGMconfiguration):
 
     def __init__(self):
-        super(ConfigurationMACH, self).__init__()
+        super(MACHconfiguration, self).__init__()
         self.points = OrderedDict()
         self.jacobians = OrderedDict()
         self.updated = {}
