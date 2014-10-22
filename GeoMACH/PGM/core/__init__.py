@@ -1,3 +1,4 @@
+from MACHconfiguration import MACHconfiguration
 from PGMconfiguration import PGMconfiguration
 from PGMcomponent import PGMcomponent
 from PGMface import PGMface

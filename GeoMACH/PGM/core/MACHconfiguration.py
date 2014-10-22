@@ -6,7 +6,7 @@ from collections import OrderedDict
 from GeoMACH.PGM.core.PGMconfiguration import PGMconfiguration
 
 
-class ConfigurationMACH(PGMconfiguration):
+class MACHconfiguration(PGMconfiguration):
 
     def __init__(self):
         super(ConfigurationMACH, self).__init__()
