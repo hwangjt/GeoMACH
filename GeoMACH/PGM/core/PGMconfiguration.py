@@ -93,6 +93,7 @@ class PGMconfiguration(object):
         self._initialize_pgm()
         self._initialize_bse()
         self._initialize_pgm()
+        self._set_airfoils()
         self._compute_bse()
 
         return self._bse
@@ -151,6 +152,12 @@ class PGMconfiguration(object):
         and number of points for parallel edges using
         ``self.comps[comp].faces[face].set_num_cp`` and
         ``self.comps[comp].faces[face].set_num_pt``
+        """
+        pass
+
+    def _set_airfoils(self):
+        """
+        Optional method to specify airfoils for Wing objects
         """
         pass
 
