@@ -3,7 +3,6 @@ import numpy
 import time
 import scipy.sparse
 from collections import OrderedDict
-#import pylab
 
 from GeoMACH.PUBS import PUBSlib
 from GeoMACH.PSM import PSMlib, QUADlib, CDTlib
@@ -53,6 +52,38 @@ class Airframe(object):
                 [[index(comp2), i,0], [0,p[0],1.0], [0,p[1],1.0], [1,p[0],1.0], [1,p[1],1.0]],
                 ])
 
+    def writeTecHeader(self, filename, title, variables):
+        f = open(filename,'w')
+        f.write('title = ' + title + '\n')
+        f.write('variables = ')
+        for i in range(len(variables)):
+            f.write(variables[i] + ',')
+        f.write('\n')
+        return f
+
+    def writeLine(self, f, data, label=''):
+        f.write(label)
+        for k in range(data.shape[0]):
+            if data[k] == data[k]:
+                f.write(str(data[k]) + ' ')
+            else:
+                f.write(str(0.0) + ' ')
+        f.write('\n')
+
+    def write2TecFEquads(self, filename, zones, variables=['x','y','z'], title="PUBS output"):
+        f = self.writeTecHeader(filename,title,variables) 
+        for z in range(len(zones)):
+            name, nodes, quads = zones[z]
+            f.write('ZONE T=\"' + name +'\",')
+            f.write('N=' + str(nodes.shape[0]) + ',')
+            f.write('E=' + str(quads.shape[0]) + ',')
+            f.write('DATAPACKING=POINT, ZONETYPE = FEQUADRILATERAL\n')
+            for i in range(nodes.shape[0]):
+                self.writeLine(f, nodes[i,:])
+            for i in range(quads.shape[0]):
+                self.writeLine(f, quads[i,:])
+        f.close()  
+
     def preview(self, filename):
         self.preview = []
 
@@ -61,7 +92,7 @@ class Airframe(object):
         self.importMembers()
         self.computePreviewMembers()
 
-        self.geometry.oml0.export.write2TecFEquads(filename,self.preview,self.geometry.oml0.var)
+        self.write2TecFEquads(filename,self.preview)
 
     def mesh(self):
         self.meshS = []
@@ -75,14 +106,12 @@ class Airframe(object):
         self.computeMembers()
 
     def computeMesh(self, filename):
-        oml0 = self.geometry.oml0
-
-        oml0.computePoints()
+        bse = self.geometry._bse
 
         B1, quads1, nnode1 = self.meshS
         B2, quads2, nnode2 = self.meshM
-        nodes1 = B1.dot(oml0.C)
-        nodes2 = B2.dot(oml0.C)
+        nodes1 = B1 * bse.vec['cp_str'].array
+        nodes2 = B2 * bse.vec['cp_str'].array
 
         mesh = []
         nodes = []
@@ -108,7 +137,7 @@ class Airframe(object):
             group_names.append(self.memberNames[i])
             nGroup += 1
 
-        self.geometry.oml0.export.write2TecFEquads(filename,mesh,self.geometry.oml0.var)
+        self.write2TecFEquads(filename,mesh)
 
         quad_groups = numpy.concatenate(quad_groups)
 
@@ -133,36 +162,52 @@ class Airframe(object):
         nnode = nodes.shape[0]
         symm = PSMlib.identifysymmnodes(nnode, nodes)
 
-        self.geometry.oml0.export.write2TecFEquads('test.dat',[['test',nodes,quads]],self.geometry.oml0.var[:3])
+        self.write2TecFEquads('test.dat',[['test',nodes,quads]])
 
         import BDFwriter
         BDFwriter.writeBDF(filename+'.bdf',nodes,quads,symm,quad_groups,group_names)
 
-        #for i in range(3):
-        #    nodes[:,i] *= symm
-        #self.geometry.oml0.export.write2TecScatter('symm.dat', nodes, ['x','y','z'])
-
     def computePreviewSurfaces(self):
-        oml0 = self.geometry.oml0
-        nsurf = oml0.nsurf
+        bse = self.geometry._bse
+        nsurf = bse._num['surf']
 
         quads,s,u,v = PSMlib.computepreviewsurfaces(4*nsurf,nsurf)
-        B = oml0.evaluateBases(s,u,v)
-        nodes = B.dot(oml0.C)
+        bse.add_jacobian('temp', s, u, v, ndim=3)
+        bse.apply_jacobian('temp', 'd(temp)/d(cp_str)', 'cp_str')
+        nodes = bse.vec['temp'].array
         self.surfEdgeLengths = PSMlib.computeedgelengths(nodes.shape[1],nsurf,nodes,quads)
 
         self.preview.append(['surfs', nodes, quads])
 
+    def computeSurfEdge(self):
+        bse = self.geometry._bse
+        nsurf = bse._num['surf']
+        surf_ptrs = bse._topo['surf_ptrs']
+
+        surf_edge = numpy.zeros((nsurf, 2, 2), int, order='F')
+        surf_edge[:, 0, 0] = surf_ptrs[:, 1, 0]
+        surf_edge[:, 0, 1] = surf_ptrs[:, 1, 2]
+        surf_edge[:, 1, 0] = surf_ptrs[:, 0, 1]
+        surf_edge[:, 1, 1] = surf_ptrs[:, 2, 1]
+
+        return surf_edge
+        
     def computeFaceDimensions(self):
         geometry = self.geometry
-        oml0 = geometry.oml0
+        bse = geometry._bse
+        nsurf = bse._num['surf']
+        nedge = bse._num['edge']
+        ngroup = bse._num['group']
+        surf_edge = self.computeSurfEdge()
+        edge_group = bse._topo['edge_group']
 
-        groupLengths = numpy.zeros(oml0.ngroup)
-        groupCount = numpy.zeros(oml0.ngroup,int)
+        groupLengths = numpy.zeros(ngroup)
+        groupCount = numpy.zeros(ngroup,int)
         for comp in geometry.comps.values():
             for face in comp.faces.values():
-                ni, nj = face.num_surf
-                groupLengths[:], groupCount[:] = PSMlib.addgrouplengths(ni, nj, oml0.nsurf, oml0.nedge, oml0.ngroup, face.surf_indices+1, oml0.surf_edge, oml0.edge_group, self.surfEdgeLengths, groupLengths, groupCount)
+                ni, nj = face._num_surf['u'], face._num_surf['v']
+                surf_indices = face._surf_indices
+                groupLengths[:], groupCount[:] = PSMlib.addgrouplengths(ni, nj, nsurf, nedge, ngroup, surf_indices+1, surf_edge, edge_group, self.surfEdgeLengths, groupLengths, groupCount)
 
         groupLengths = groupLengths / groupCount
                  
@@ -170,30 +215,32 @@ class Airframe(object):
         for comp in geometry.comps.values():
             faceDimsComp = OrderedDict()
             for face in comp.faces.values():
-                ni, nj = face.num_surf
-                idims, jdims = PSMlib.computefacedimensions(ni, nj, oml0.nsurf, oml0.nedge, oml0.ngroup, face.surf_indices+1, oml0.surf_edge, oml0.edge_group, groupLengths)
-                faceDimsComp[face.name] = [idims,jdims]
-            faceDims[comp.name] = faceDimsComp
+                ni, nj = face._num_surf['u'], face._num_surf['v']
+                surf_indices = face._surf_indices
+                idims, jdims = PSMlib.computefacedimensions(ni, nj, nsurf, nedge, ngroup, surf_indices+1, surf_edge, edge_group, groupLengths)
+                faceDimsComp[face._name] = [idims,jdims]
+            faceDims[comp._name] = faceDimsComp
 
         self.faceDims = faceDims
 
     def computeFaceDimensions0(self):
         geometry = self.geometry
-        nsurf = self.geometry.oml0.nsurf
+        nsurf = bse._num['surf']
 
         faceDims = {}    
         for comp in geometry.comps.values():
             faceDimsComp = []
-            jdim0 = numpy.zeros(comp.faces.values()[0].num_surf[1]+1)
+            jdim0 = numpy.zeros(comp.faces.values()[0]._num_surf['v']+1)
             for face in comp.faces.values():
-                ni, nj = face.num_surf
-                idims, jdims = PSMlib.computefacedimensions0(ni,nj,nsurf,face.surf_indices+1,self.surfEdgeLengths)
+                ni, nj = face._num_surf['u'], face._num_surf['v']
+                surf_indices = face._surf_indices
+                idims, jdims = PSMlib.computefacedimensions0(ni,nj,nsurf,surf_indices+1,self.surfEdgeLengths)
                 jdim0 += jdims
-                faceDimsComp[face.name] = [idims,jdims]
+                faceDimsComp[face._name] = [idims,jdims]
             jdim0 /= len(comp.faces)
             for face in comp.faces.values():
-                faceDimsComp[face.name][1][:] = jdim0[:]
-            faceDims[comp.name] = faceDimsComp
+                faceDimsComp[face._name][1][:] = jdim0[:]
+            faceDims[comp._name] = faceDimsComp
 
         self.faceDims = faceDims
 
@@ -211,24 +258,27 @@ class Airframe(object):
 
         for comp in geometry.comps.values():
             for face in comp.faces.values():
-                ni, nj = face.num_surf
-                idims, jdims = self.faceDims[comp.name][face.name]
-                PSMlib.computepreviewmembercoords(comp.num+1,face.num+1,ni,nj,nmem,face.surf_indices+1,idims,jdims,membersInt,membersFlt)
+                ni, nj = face._num_surf['u'], face._num_surf['v']
+                surf_indices = face._surf_indices
+                idims, jdims = self.faceDims[comp._name][face._name]
+                PSMlib.computepreviewmembercoords(comp._num+1,face._num+1,ni,nj,nmem,surf_indices+1,idims,jdims,membersInt,membersFlt)
 
         self.membersInt = membersInt
         self.membersFlt = membersFlt
 
     def computePreviewMembers(self):
         nmem = self.nmem
-        oml0 = self.geometry.oml0
+        bse = self.geometry._bse
+        nsurf = bse._num['surf']
+        ncp = bse._size['cp_str']
 
         quads, Wa = PSMlib.computepreviewmemberweights(nmem, 4*nmem, self.membersFlt)
         linW = numpy.linspace(0,4*nmem-1,4*nmem)
 
-        B0 = scipy.sparse.csr_matrix((4*nmem,oml0.C.shape[0]))
+        B0 = scipy.sparse.csr_matrix((4*nmem,ncp))
         for src in range(4):
             W = scipy.sparse.csr_matrix((Wa[:,src],(linW,linW)))
-            for surf in range(oml0.nsurf):
+            for surf in range(nsurf):
                 npts = PSMlib.countpreviewmembers(surf+1, src+1, nmem, self.membersFlt)
                 if npts is not 0:
                     inds, P, Q = PSMlib.computepreviewmemberproj(surf+1, src+1, nmem, npts, self.membersFlt)
@@ -237,32 +287,40 @@ class Airframe(object):
                     Tj = numpy.linspace(0,npts-1,npts)
                     T = scipy.sparse.csr_matrix((Ta,(Ti,Tj)),shape=(4*nmem,npts))
 
-                    mu, mv = oml0.edgeProperty(surf,1)
+                    mu = bse.get_bspline_option('num_cp', surf, 'u')
+                    mv = bse.get_bspline_option('num_cp', surf, 'v')
+                    nu = bse.get_bspline_option('num_pt', surf, 'u')
+                    nv = bse.get_bspline_option('num_pt', surf, 'v')
+                    
                     for u in range(mu):
                         for v in range(mv):
-                            oml0.C[oml0.getIndex(surf,u,v,1),:3] = [u/(mu-1), v/(mv-1), 0]
-                    oml0.computePointsC()
+                            bse.vec['cp_str'](surf)[u, v, :] = [u/(mu-1), v/(mv-1), 0]
+                    for u in range(nu):
+                        for v in range(nv):
+                            bse.vec['pt_str'](surf)[u, v, :] = [u/(nu-1), v/(nv-1), 0]
 
-                    s,u,v = oml0.evaluateProjection(P, [surf], Q)
-                    B = oml0.evaluateBases(s, u, v)
-                    B0 = B0 + W.dot(T.dot(B))
+                    bse.compute_projection('temp', P, [surf], ndim=3)
+                    B = bse.jac['d(temp)/d(cp_str)']
+                    B0 = B0 + W * T * B
 
-        oml0.computePoints()
-        nodes = B0.dot(oml0.C)
+        bse.apply_jacobian('cp_str', 'd(cp_str)/d(cp)', 'cp')
+        nodes = B0 * bse.vec['cp_str'].array
         self.memEdgeLengths = PSMlib.computeedgelengths(nodes.shape[1],nmem,nodes,quads)
 
         self.preview.append(['members', nodes, quads])
 
     def computeTopology(self):
         nmem = self.nmem
-        oml0 = self.geometry.oml0
+        bse = self.geometry._bse
+        nsurf = bse._num['surf']
 
-        Ps = numpy.zeros((oml0.nsurf,3,3,3),order='F')
-        for s in range(oml0.nsurf):
+        Ps = numpy.zeros((nsurf,3,3,3),order='F')
+        for s in range(nsurf):
             for i in range(3):
                 for j in range(3):
-                    Ps[s,i,j] = oml0.evaluatePoint(s,i/2.0,j/2.0)[:3]
-        nvertS,ngroupS,surf_vert,surf_group = PUBSlib.initializeconnectivities(oml0.nsurf,1e-13,1e-5,Ps)
+                    bse.add_jacobian('temp', [s], [i/2.0], [j/2.0], ndim=3)
+                    Ps[s,i,j] = bse.jac['d(temp)/d(cp_str)'] * bse.vec['cp_str'].array
+        nvertS,ngroupS,surf_vert,surf_group = PUBSlib.initializeconnectivities(nsurf,1e-13,1e-5,Ps)
         nvertM,ngroupM,mem_vert,mem_group = PSMlib.computemembertopology(nmem, self.membersInt, self.membersFlt)
         mem_group[:,:,:] += ngroupS
 
@@ -283,7 +341,7 @@ class Airframe(object):
     def computeGroupIntersections(self):
         geometry = self.geometry
         quad = self.quad
-        nsurf = geometry.oml0.nsurf
+        nsurf = geometry._bse._num['surf']
         nmem = self.nmem
         ngroup = self.ngroupS + self.ngroupM
         nadj = self.adjoiningInt.shape[0]
@@ -292,10 +350,11 @@ class Airframe(object):
         groupIntCount = numpy.zeros(ngroup,int)
         for comp in geometry.comps.values():
             for face in comp.faces.values():
-                ni, nj = face.num_surf
-                idims, jdims = self.faceDims[comp.name][face.name]
-                nedge = PSMlib.countfaceedges(comp.num+1, face.num+1, ni, nj, nadj, self.adjoiningInt)
-                edge_group, edgeLengths, edges = PSMlib.computefaceedges(comp.num+1, face.num+1, ni, nj, nsurf, nmem, nadj, nedge, idims, jdims, face.surf_indices+1, self.surf_group, self.mem_group, self.adjoiningInt, self.adjoiningFlt, self.surfEdgeLengths, self.memEdgeLengths)
+                ni, nj = face._num_surf['u'], face._num_surf['v']
+                surf_indices = face._surf_indices
+                idims, jdims = self.faceDims[comp._name][face._name]
+                nedge = PSMlib.countfaceedges(comp._num+1, face._num+1, ni, nj, nadj, self.adjoiningInt)
+                edge_group, edgeLengths, edges = PSMlib.computefaceedges(comp._num+1, face._num+1, ni, nj, nsurf, nmem, nadj, nedge, idims, jdims, surf_indices+1, self.surf_group, self.mem_group, self.adjoiningInt, self.adjoiningFlt, self.surfEdgeLengths, self.memEdgeLengths)
                 quad.importEdges(edges)
                 quad.addIntersectionPts()
                 quad.removeDuplicateVerts()
@@ -357,7 +416,7 @@ class Airframe(object):
 
     def computeSurfaces(self):
         geometry = self.geometry
-        oml0 = geometry.oml0
+        bse = geometry._bse
         quad = self.quad
         premeshFaces = self.premeshFaces
 
@@ -372,41 +431,49 @@ class Airframe(object):
                 iList += 1
                 nvert = verts.shape[0]
                 nedge = edges.shape[0]
-                ni, nj = face.num_surf
-                idims, jdims = self.faceDims[comp.name][face.name]
-                print 'Computing skin elements:', comp.name, face.name
+                ni, nj = face._num_surf['u'], face._num_surf['v']
+                idims, jdims = self.faceDims[comp._name][face._name]
+                print 'Computing skin elements:', comp._name, face._name
                 for i in range(ni):
                     for j in range(nj):
-                        surf = face.surf_indices[i,j]
-                        if surf >= 0:# and oml0.visible[surf]:
+                        surf = face._surf_indices[i,j]
+                        if surf >= 0:
                             nedge1 = PSMlib.countsurfaceedges(nvert, nedge, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
                             edges1 = PSMlib.computesurfaceedges(nvert, nedge, nedge1, idims[i], idims[i+1], jdims[j], jdims[j+1], verts, edges)
 
-                            print comp.name, face.name, i, j
+                            print comp._name, face._name, i, j
                             quad.importEdges(edges1)
 
                             output = False
-                            if comp.name=='lw' and face.name=='upp' and i==0 and j==2:
+                            if comp._name=='lw' and face._name=='upp' and i==0 and j==2:
                                 output = True
                             nodes, quads = quad.mesh(self.maxL, self.surfEdgeLengths[surf,:,:], output, output)
                             
-                            mu, mv = oml0.edgeProperty(surf,1)
+                            mu = bse.get_bspline_option('num_cp', surf, 'u')
+                            mv = bse.get_bspline_option('num_cp', surf, 'v')
+                            nu = bse.get_bspline_option('num_pt', surf, 'u')
+                            nv = bse.get_bspline_option('num_pt', surf, 'v')
+
                             for u in range(mu):
                                 for v in range(mv):
-                                    oml0.C[oml0.getIndex(surf,u,v,1),:3] = [u/(mu-1), v/(mv-1), 0]
-                            oml0.computePointsC()
+                                    bse.vec['cp_str'](surf)[u, v, :] = [u/(mu-1), v/(mv-1), 0]
+                            for u in range(nu):
+                                for v in range(nv):
+                                    bse.vec['pt_str'](surf)[u, v, :] = [u/(nu-1), v/(nv-1), 0]
 
                             P0, Q = PSMlib.computesurfaceprojections(nodes.shape[0], nodes)
-                            s,u,v = oml0.evaluateProjection(P0, [surf], Q)
 
-                            B = oml0.evaluateBases(s,u,v)
+                            bse.compute_projection('temp', P0, [surf], ndim=3)
+                            B = bse.jac['d(temp)/d(cp_str)']
 
-                            name = comp.name + ':' + str(face.name) + ':' + str(i) + ':' + str(j)
+                            name = comp._name + ':' + str(face._name) + ':' + str(i) + ':' + str(j)
 
                             self.surfaceNames.append(name)
                             B0.append(B)
                             nnode0.append(nnode0[-1] + P0.shape[0])
                             quads0.append(quads)
+
+        bse.apply_jacobian('cp_str', 'd(cp_str)/d(cp)', 'cp')
 
         B0 = scipy.sparse.vstack(B0)
 
@@ -415,7 +482,7 @@ class Airframe(object):
     def computeMembers(self):
         nmem = self.nmem
         geometry = self.geometry
-        oml0 = geometry.oml0
+        bse = geometry._bse
         groupIntPtr = self.groupIntPtr
         groupInts = self.groupInts
         groupSplitPtr = self.groupSplitPtr
@@ -424,6 +491,8 @@ class Airframe(object):
         ngroup = self.ngroupS + self.ngroupM
         nint = groupIntPtr[-1,-1]
         nsplit = groupSplitPtr[-1,-1]
+        nsurf = bse._num['surf']
+        ncp = bse._size['cp_str']
 
         nodesInt0 = []
         nodesFlt0 = []
@@ -450,15 +519,16 @@ class Airframe(object):
 
         for comp in geometry.comps.values():
             for face in comp.faces.values():
-                ni, nj = face.num_surf
-                idims, jdims = self.faceDims[comp.name][face.name]
-                PSMlib.computememberlocalcoords(comp.num+1, face.num+1, ni, nj, nnode, idims, jdims, face.surf_indices+1, nodesInt, nodesFlt)
+                ni, nj = face._num_surf['u'], face._num_surf['v']
+                surf_indices = face._surf_indices
+                idims, jdims = self.faceDims[comp._name][face._name]
+                PSMlib.computememberlocalcoords(comp._num+1, face._num+1, ni, nj, nnode, idims, jdims, surf_indices+1, nodesInt, nodesFlt)
 
         linW = numpy.linspace(0,nnode-1,nnode)
-        B0 = scipy.sparse.csr_matrix((nnode,oml0.C.shape[0]))
+        B0 = scipy.sparse.csr_matrix((nnode,ncp))
         for src in range(4):
             W = scipy.sparse.csr_matrix((nodesFlt[:,src,0],(linW,linW)))
-            for surf in range(oml0.nsurf):
+            for surf in range(nsurf):
                 npts = PSMlib.countmembers(surf+1, src+1, nnode, nodesInt)
                 if npts is not 0:
                     inds, P, Q = PSMlib.computememberproj(surf+1, src+1, nnode, npts, nodesInt, nodesFlt)
@@ -467,14 +537,22 @@ class Airframe(object):
                     Tj = numpy.linspace(0,npts-1,npts)
                     T = scipy.sparse.csr_matrix((Ta,(Ti,Tj)),shape=(nnode,npts))
 
-                    mu, mv = oml0.edgeProperty(surf,1)
+                    mu = bse.get_bspline_option('num_cp', surf, 'u')
+                    mv = bse.get_bspline_option('num_cp', surf, 'v')
+                    nu = bse.get_bspline_option('num_pt', surf, 'u')
+                    nv = bse.get_bspline_option('num_pt', surf, 'v')
+                    
                     for u in range(mu):
                         for v in range(mv):
-                            oml0.C[oml0.getIndex(surf,u,v,1),:3] = [u/(mu-1), v/(mv-1), 0]
-                    oml0.computePointsC()
+                            bse.vec['cp_str'](surf)[u, v, :] = [u/(mu-1), v/(mv-1), 0]
+                    for u in range(nu):
+                        for v in range(nv):
+                            bse.vec['pt_str'](surf)[u, v, :] = [u/(nu-1), v/(nv-1), 0]
 
-                    s,u,v = oml0.evaluateProjection(P, [surf], Q)
-                    B = oml0.evaluateBases(s, u, v)
-                    B0 = B0 + W.dot(T.dot(B))
+                    bse.compute_projection('temp', P, [surf], ndim=3)
+                    B = bse.jac['d(temp)/d(cp_str)']
+                    B0 = B0 + W * T * B
+
+        bse.apply_jacobian('cp_str', 'd(cp_str)/d(cp)', 'cp')
 
         self.meshM = [B0, quads0, nnode0]

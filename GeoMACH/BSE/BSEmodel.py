@@ -455,7 +455,7 @@ class BSEmodel(object):
         if surf_pts is None:
             surf_pts = numpy.linspace(1, num['surf'], num['surf'])
         else:
-            surf_pts = numpy.array(surfs, int) + 1
+            surf_pts = numpy.array(surf_pts, int) + 1
 
         npts = pts.shape[0]
         nsurf_pts = surf_pts.shape[0]
