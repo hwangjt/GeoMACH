@@ -4,7 +4,6 @@ import time
 import scipy.sparse
 from collections import OrderedDict
 
-from GeoMACH.PUBS import PUBSlib
 from GeoMACH.PSM import PSMlib, QUADlib, CDTlib
 from QUAD import QUAD
 
@@ -70,7 +69,7 @@ class Airframe(object):
                 f.write(str(0.0) + ' ')
         f.write('\n')
 
-    def write2TecFEquads(self, filename, zones, variables=['x','y','z'], title="PUBS output"):
+    def write2TecFEquads(self, filename, zones, variables=['x','y','z'], title="GeoMACH PSM output"):
         f = self.writeTecHeader(filename,title,variables) 
         for z in range(len(zones)):
             name, nodes, quads = zones[z]
@@ -320,7 +319,7 @@ class Airframe(object):
                 for j in range(3):
                     bse.add_jacobian('temp', [s], [i/2.0], [j/2.0], ndim=3)
                     Ps[s,i,j] = bse.jac['d(temp)/d(cp_str)'] * bse.vec['cp_str'].array
-        nvertS,ngroupS,surf_vert,surf_group = PUBSlib.initializeconnectivities(nsurf,1e-13,1e-5,Ps)
+        nvertS,ngroupS,surf_vert,surf_group = PSMlib.initializeconnectivities(nsurf,1e-13,1e-5,Ps)
         nvertM,ngroupM,mem_vert,mem_group = PSMlib.computemembertopology(nmem, self.membersInt, self.membersFlt)
         mem_group[:,:,:] += ngroupS
 

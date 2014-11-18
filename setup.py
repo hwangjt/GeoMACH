@@ -54,6 +54,7 @@ PSMsources = [
     'src/PSM/GFEM/removeDuplicateNodes.f90',
     'src/PSM/GFEM/removeRightQuads.f90',
     'src/PSM/GFEM/identifySymmNodes.f90',
+    'src/PSM/GFEM/misc.f90',
     ]
 
 QUADsources = [
