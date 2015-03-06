@@ -101,8 +101,7 @@ class PGMshell(PGMprimitive):
                                           theta1[fname], theta2[fname],
                                           numpy.ones((num_v, 3),
                                                      order='F') + sgn*thk/2.0, 
-                                          flt, numpy.zeros((num_u, num_v),
-                                                           order='F'))
+                                          flt)
             output = super(PGMshell, self).compute(name)
 
             for fname in ['rt', 'tp', 'lt', 'bt']:
