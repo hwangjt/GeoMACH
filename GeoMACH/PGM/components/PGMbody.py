@@ -69,7 +69,6 @@ class PGMbody(PGMprimitive):
                                           theta1[fname], theta2[fname],
                                           numpy.ones((num_v, 3),
                                                      order='F'), 
-                                          flt, numpy.zeros((num_u, num_v),
-                                                           order='F'))
+                                          flt)
 
         return super(PGMbody, self).compute(name)

@@ -1,18 +1,17 @@
-subroutine computeShape(ni, nj, t1, t2, radius, fillet, shape0, Q)
+subroutine computeShape(ni, nj, t1, t2, radius, fillet, Q)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) ni, nj, t1, t2, radius, fillet, shape0
+  !f2py intent(in) ni, nj, t1, t2, radius, fillet
   !f2py intent(out) Q
   !f2py depend(nj) radius, fillet
-  !f2py depend(ni,nj) shape0, Q
+  !f2py depend(ni,nj) Q
 
   !Input
   integer, intent(in) ::  ni, nj
   double precision, intent(in) ::  t1, t2
   double precision, intent(in) ::  radius(nj,3), fillet(nj,4)
-  double precision, intent(in) ::  shape0(ni,nj)
 
   !Output
   double precision, intent(out) ::  Q(ni,nj,3)
@@ -26,29 +25,29 @@ subroutine computeShape(ni, nj, t1, t2, radius, fillet, shape0, Q)
   Q(:,:,:) = 0.0
   do j=1,nj
      taU = atan(fillet(j,1))/pi
-     tbU = atan(1.0/fillet(j,2))/pi
+     tbU = 0.5 - atan(fillet(j,2))/pi
      taL = atan(fillet(j,3))/pi
-     tbL = atan(1.0/fillet(j,4))/pi
+     tbL = 0.5 - atan(fillet(j,4))/pi
      call computeRoundedSection(ni, radius(j,1), radius(j,2), taU, tbU, taL, tbL, &
-          t1, t2, shape0(:,j), Q(:,j,1), Q(:,j,2))
+          t1, t2, Q(:,j,1), Q(:,j,2))
   end do
      
 end subroutine computeShape
 
 
 
-subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, x, y)
+subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, x, y)
 
   implicit none
 
   !Fortran-python interface directives
-  !f2py intent(in) n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0
+  !f2py intent(in) n, rx, ry, taU, tbU, taL, tbL, t1, t2
   !f2py intent(out) x, y
-  !f2py depend(n) shape0, x, y
+  !f2py depend(n) x, y
 
   !Input
   integer, intent(in) ::  n
-  double precision, intent(in) ::  rx, ry, taU, tbU, taL, tbL, t1, t2, shape0(n)
+  double precision, intent(in) ::  rx, ry, taU, tbU, taL, tbL, t1, t2
 
   !Output
   double precision, intent(out) ::  x(n), y(n)
@@ -56,7 +55,7 @@ subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
   !Working
   integer i
   double precision xU, yU, xL, yL, sxU, syU, sxL, syL
-  double precision pi, t, tt, nx, ny, norm, nMap
+  double precision pi, t, tt, nMap
 
   pi = 2*acos(0.0)
   tt = (t2 - t1)/(n - 1)
@@ -79,56 +78,35 @@ subroutine computeRoundedSection(n, rx, ry, taU, tbU, taL, tbL, t1, t2, shape0, 
      if (t .le. taU) then
         x(i) = rx
         y(i) = rx*tan(t*pi)
-        nx = 1.0
-        ny = 0.0
      else if (t .le. tbU) then
         t = nMap(t, taU, tbU)/2.0
         x(i) = xU + sxU*cos(t*pi)
         y(i) = yU + syU*sin(t*pi)
-        nx = syU*cos(t*pi)
-        ny = sxU*sin(t*pi)
      else if (t .le. 1-tbU) then
         x(i) = ry*tan((0.5-t)*pi)
         y(i) = ry
-        nx = 0.0
-        ny = 1.0
      else if (t .le. 1-taU) then
         t = nMap(t, 1-tbU, 1-taU)/2.0 + 0.5
         x(i) = -xU + sxU*cos(t*pi)
         y(i) =  yU + syU*sin(t*pi)
-        nx = syU*cos(t*pi)
-        ny = sxU*sin(t*pi)
      else if (t .le. 1+taL) then
         x(i) = -rx
         y(i) = rx*tan((1-t)*pi)
-        nx = -1.0
-        ny =  0.0
      else if (t .le. 1+tbL) then
         t = nMap(t, 1+taL, 1+tbL)/2.0 + 1.0
         x(i) = -xL + sxL*cos(t*pi)
         y(i) = -yL + syL*sin(t*pi)
-        nx = syL*cos(t*pi)
-        ny = sxL*sin(t*pi)
      else if (t .le. 2-tbL) then
         x(i) = -ry*tan((1.5-t)*pi)
         y(i) = -ry
-        nx =  0.0
-        ny = -1.0
      else if (t .le. 2-taL) then
         t = nMap(t, 2-tbL, 2-taL)/2.0 + 1.5
         x(i) =  xL + sxL*cos(t*pi)
         y(i) = -yL + syL*sin(t*pi)
-        nx = syL*cos(t*pi)
-        ny = sxL*sin(t*pi)
      else
         x(i) = rx
-        y(i) = rx*tan(t*pi)  
-        nx = 1.0
-        ny = 0.0
+        y(i) = rx*tan(t*pi)
      end if
-     norm = (nx**2 + ny**2)**0.5
-     x(i) = x(i) + nx/norm*shape0(i)
-     y(i) = y(i) + ny/norm*shape0(i)
   end do
 
 end subroutine computeRoundedSection
