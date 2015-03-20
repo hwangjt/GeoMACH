@@ -59,8 +59,12 @@ class PGMjunction(PGMinterpolant):
         self._loc = {'u': loc[0], 'v': loc[1]}
         self._mcomp = config.comps[mcomp]
         self._side = side
-        self._fweight = fweight
-        self._mweight = mweight
+
+        #Check if the user gave a single weight for all the edges or if he specified one weight for each edge
+	self._fweight = numpy.zeros(6)
+	self._mweight = numpy.zeros(6)
+	self._fweight[:] = fweight
+	self._mweight[:] = mweight
 
         self._num_surf_wing = self._mcomp.faces['upp']._num_surf['u']
 
