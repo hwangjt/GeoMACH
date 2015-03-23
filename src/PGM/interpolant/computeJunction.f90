@@ -80,7 +80,7 @@ subroutine computeJunctionWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
 
   !Input
   integer, intent(in) ::  nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3
-  double precision, intent(in) ::  f0, m0
+  double precision, intent(in) ::  f0(6), m0(6)
   integer, intent(in) ::  W(nu2,2,3), E(nu2,2,3)
   integer, intent(in) ::  N(nv2,2,3), S(nv2,2,3)
   integer, intent(in) ::  fInds(nu,nv,3), inds(nu,nv,3)
@@ -201,11 +201,15 @@ subroutine computeJunctionWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
      end do
   end if
 
+
+  !The weights f0 and m0 are order from 1 to 6 counterclockwise, starting from North.
+  !The u2 and u3 rows share the same set of weights.
+
   j = iv(2)
   den = 1.0 / (iu(2)-iu(1))
   do i=iu(1)+1,iu(2)-1
      do k=1,3
-        call sparseBezier(den * (i-iu(1)), f0, m0, C)
+        call sparseBezier(den * (i-iu(1)), f0(1), m0(1), C)
         Da(iD+1:iD+4) = C(:)
         Di(iD+1:iD+4) = inds(i, j, k)
         Dj(iD+1) = fInds(iu(1), j, k)
@@ -220,7 +224,7 @@ subroutine computeJunctionWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
   den = 1.0 / (iu(2)-iu(1))
   do i=iu(1)+1,iu(2)-1
      do k=1,3
-        call sparseBezier(den * (i-iu(1)), f0, m0, C)
+        call sparseBezier(den * (i-iu(1)), f0(6), m0(6), C)
         Da(iD+1:iD+4) = C(:)
         Di(iD+1:iD+4) = inds(i, j, k)
         Dj(iD+1) = fInds(iu(1), j, k)
@@ -235,7 +239,7 @@ subroutine computeJunctionWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
   den = 1.0 / (iu(4)-iu(3))
   do i=iu(3)+1,iu(4)-1
      do k=1,3
-        call sparseBezier(den * (iu(4)-i), f0, m0, C)
+        call sparseBezier(den * (iu(4)-i), f0(3), m0(3), C)
         Da(iD+1:iD+4) = C(:)
         Di(iD+1:iD+4) = inds(i, j, k)
         Dj(iD+1) = fInds(iu(4), j, k)
@@ -250,7 +254,7 @@ subroutine computeJunctionWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
   den = 1.0 / (iu(4)-iu(3))
   do i=iu(3)+1,iu(4)-1
      do k=1,3
-        call sparseBezier(den * (iu(4)-i), f0, m0, C)
+        call sparseBezier(den * (iu(4)-i), f0(4), m0(4), C)
         Da(iD+1:iD+4) = C(:)
         Di(iD+1:iD+4) = inds(i, j, k)
         Dj(iD+1) = fInds(iu(4), j, k)
@@ -265,7 +269,7 @@ subroutine computeJunctionWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
   den = 1.0 / (iv(2)-iv(1))
   do j=iv(1)+1,iv(2)-1
      do k=1,3
-        call sparseBezier(den * (j-iv(1)), f0, m0, C)
+        call sparseBezier(den * (j-iv(1)), f0(2), m0(2), C)
         Da(iD+1:iD+4) = C(:)
         Di(iD+1:iD+4) = inds(i, j, k)
         Dj(iD+1) = fInds(i, iv(1), k)
@@ -280,7 +284,7 @@ subroutine computeJunctionWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
   den = 1.0 / (iv(4)-iv(3))
   do j=iv(3)+1,iv(4)-1
      do k=1,3
-        call sparseBezier(den * (iv(4)-j), f0, m0, C)
+        call sparseBezier(den * (iv(4)-j), f0(5), m0(5), C)
         Da(iD+1:iD+4) = C(:)
         Di(iD+1:iD+4) = inds(i, j, k)
         Dj(iD+1) = fInds(i, iv(4), k)
@@ -296,7 +300,7 @@ subroutine computeJunctionWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
      den = 1.0 / (iv(2)-iv(1))
      do j=iv(1)+1,iv(2)-1
         do k=1,3
-           call sparseBezier(den * (j-iv(1)), f0, m0, C)
+           call sparseBezier(den * (j-iv(1)), f0(2), m0(2), C)
            Da(iD+1:iD+4) = C(:)
            Di(iD+1:iD+4) = inds(i, j, k)
            Dj(iD+1) = fInds(i, iv(1), k)
@@ -311,7 +315,7 @@ subroutine computeJunctionWireframe(nD, nu, nv, nu1, nu2, nu3, nv1, nv2, nv3, &
      den = 1.0 / (iv(4)-iv(3))
      do j=iv(3)+1,iv(4)-1
         do k=1,3
-           call sparseBezier(den * (iv(4)-j), f0, m0, C)
+           call sparseBezier(den * (iv(4)-j), f0(5), m0(5), C)
            Da(iD+1:iD+4) = C(:)
            Di(iD+1:iD+4) = inds(i, j, k)
            Dj(iD+1) = fInds(i, iv(4), k)

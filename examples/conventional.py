@@ -12,7 +12,7 @@ import numpy
 class Conventional(PGMconfiguration):
 
     def _define_comps(self):
-        self.comps['fuse'] = PGMbody(num_x=12, num_y=4, num_z=2)
+        self.comps['fuse'] = PGMbody(num_x=12, num_y=4, num_z=2) #num_x is the number of surfacees
         self.comps['lwing'] = PGMwing(num_x=4, num_z=4, left_closed=True)
         self.comps['rwing'] = PGMwing(num_x=4, num_z=4, right_closed=True)
         self.comps['lpylon'] = PGMwing()
@@ -38,9 +38,9 @@ class Conventional(PGMconfiguration):
         self.comps['vtail_fuse'] = PGMjunction(self, 'fuse', 'top', 'E', [0,8], 'vtail', 'right')
 
     def _define_params(self):
-        fuse = self.comps['fuse'].props
-        fuse['pos'].params[''] = PGMparameter(2, 3)
-        fuse['nor'].params[''] = PGMparameter(1, 1)
+        fuse = self.comps['fuse'].props #1st parameter: streamwise
+        fuse['pos'].params[''] = PGMparameter(2, 3) #Specify the cylinder front and end
+        fuse['nor'].params[''] = PGMparameter(1, 1) #Normal of each section
         fuse['scl'].params[''] = PGMparameter(1, 1)
         fuse['flt'].params[''] = PGMparameter(2, 4, pos_u=[0.28,0.53])
         fuse['pos'].params['nose'] = PGMparameter(3, 3, pos_u=[0,0.065,0.13], order_u=3)
@@ -106,6 +106,7 @@ class Conventional(PGMconfiguration):
 
     def _compute_params(self):
         fuse = self.comps['fuse'].props
+#	fuse['pos'].params[''].data[:,:] = [[0,0,0],[50,0,0]]
         fuse['pos'].params[''].val([[0,0,0],[50,0,0]])
         fuse['nor'].params[''].val([1.0])
         fuse['scl'].params[''].val([2.6])
@@ -272,4 +273,4 @@ if __name__ == '__main__':
     bse.vec['pt'].export_tec_scatter()
     bse.vec['cp_str'].export_IGES()
 
-    pgm.meshStructure()
+    #pgm.meshStructure()
