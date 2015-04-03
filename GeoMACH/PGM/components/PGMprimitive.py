@@ -30,6 +30,10 @@ class PGMprimitive(PGMcomponent):
         props['ogn'] = PGMproperty()
         props['nor'] = PGMproperty()
         props['flt'] = PGMproperty()
+        for name in self.faces:
+            props['shX', name] = PGMproperty()
+            props['shY', name] = PGMproperty()
+            props['shZ', name] = PGMproperty()
 
     def assemble_sizes(self, bse):
         super(PGMprimitive, self).assemble_sizes(bse)
@@ -42,6 +46,14 @@ class PGMprimitive(PGMcomponent):
         props['ogn'].assemble_sizes(num, 3)
         props['nor'].assemble_sizes(num, 3)
         props['flt'].assemble_sizes(num, 4)
+        for name in self.faces:
+            num_u = self.faces[name]._num_cp_total['u']
+            num_v = self.faces[name]._num_cp_total['v']
+            props['shX', name].assemble_sizes(num_u, num_v)
+            props['shY', name].assemble_sizes(num_u, num_v)
+            props['shZ', name].assemble_sizes(num_u, num_v)
+            self._shapes[name] = numpy.zeros((num_u, num_v, 3), 
+                                             order='F')
 
     def compute(self, name):
         props = self.props

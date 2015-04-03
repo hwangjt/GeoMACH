@@ -484,14 +484,21 @@ class BSEmodel(object):
         nnz = BSElib.computesnnz(npt, num['surf'], num['group'],
                                  topo['surf_group'], bspline['order'],
                                  surfs)
-        data, rows, cols \
-            = BSElib.computesmtx(0, 0, nnz, npt,
-                                 num['surf'], num['group'],
-                                 str_indices['cp'], topo['surf_group'],
-                                 bspline['order'], bspline['num_cp'],
-                                 surfs, ind_u, ind_v)
-        jac['d(' + name + ')/d(cp_str)'] \
-            = scipy.sparse.csr_matrix((data, (rows-1, cols-1)),
-                                      shape=(npt,
-                                             size['cp_str']))
-        vec[name] = BSEvecUns(name, npt, ndim, self.hidden)
+        
+        quant = ['', '_du', '_dv']
+        der_u = [0, 1, 0]
+        der_v = [0, 0, 1]
+        for ind in xrange(3):
+            data, rows, cols \
+                = BSElib.computesmtx(der_u[ind], der_v[ind], 
+                                     nnz, npt,
+                                     num['surf'], num['group'],
+                                     str_indices['cp'], topo['surf_group'],
+                                     bspline['order'], bspline['num_cp'],
+                                     surfs, ind_u, ind_v)
+            qname = name + quant[ind]
+            jac['d(' + qname + ')/d(cp_str)'] \
+                = scipy.sparse.csr_matrix((data, (rows-1, cols-1)),
+                                          shape=(npt,
+                                                 size['cp_str']))
+            vec[qname] = BSEvecUns(qname, npt, ndim, self.hidden)

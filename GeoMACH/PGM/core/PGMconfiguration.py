@@ -72,7 +72,7 @@ class PGMconfiguration(object):
         self._bse = None
 
     def initialize(self):
-        """ 
+        """
         Builds the PGM model and computes it.
 
         Returns
@@ -362,3 +362,7 @@ class PGMconfiguration(object):
                     Dis.append([param.inds[inds]])
                     Djs.append([dv.inds[0]])
         return Das, Dis, Djs
+
+    def compute_normals(self):
+        for comp in self.comps.values():
+            comp.compute_normals()
