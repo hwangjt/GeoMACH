@@ -55,29 +55,28 @@ class PGMtip(PGMinterpolant):
             face.set_diff_edge(True, 'v1', ind_j=-1)
 
     def compute(self, name):
-        upp = self._comp.faces['upp']
-        low = self._comp.faces['low']
-        face = self.faces['']
+        if name == 'cp_prim': #If we are at the cp_prim step...
+            return super(PGMtip, self).compute(name) #Call the function that sets up the normal properties
+        elif name == 'cp_bez': #If we are at the cp_bez step...
+            upp = self._comp.faces['upp']
+            low = self._comp.faces['low']
+            face = self.faces['']
 
-        num_u = face._num_cp_total['u']
-        num_v = face._num_cp_total['v']
+            num_u = face._num_cp_total['u']
+            num_v = face._num_cp_total['v']
 
-        if self._side == 'right':
-            N = upp.vec_inds['cp_prim'][:,:2,:]
-            S = low.vec_inds['cp_prim'][::-1,:2,:]
-        elif self._side == 'left':
-            N = upp.vec_inds['cp_prim'][::-1,-1:-3:-1,:]
-            S = low.vec_inds['cp_prim'][:,-1:-3:-1,:]
+            if self._side == 'right':
+                N = upp.vec_inds['cp_prim'][:,:2,:]
+                S = low.vec_inds['cp_prim'][::-1,:2,:]
+            elif self._side == 'left':
+                N = upp.vec_inds['cp_prim'][::-1,-1:-3:-1,:]
+                S = low.vec_inds['cp_prim'][:,-1:-3:-1,:]
 
-        nD = 3 * 2 * num_v + 3 * 4 * (num_u-2) * num_v
-        Da, Di, Dj = PGMlib.computetip(nD, num_u, num_v, 
-                                       self._weight, N, S, 
-                                       face.vec_inds['cp_bez'])
-
-        Das, Dis, Djs = [Da], [Di], [Dj]
-        if name == 'cp_bez':
-            return Das, Dis, Djs
-        elif name == 'cp_coons':
-            return Das, Dis, Djs
-        elif name == 'cp_prim':
-            return [], [], []
+            nD = 3 * 2 * num_v + 3 * 4 * (num_u-2) * num_v
+            Da, Di, Dj = PGMlib.computetip(nD, num_u, num_v, 
+                                           self._weight, N, S, 
+                                           face.vec_inds['cp_bez'])
+            Das, Dis, Djs = super(PGMtip, self).compute(name)
+            return Das + [Da], Dis + [Di], Djs + [Dj] #We will recover identity matrices just to carry over the normal parameters (Check PGMinterpolant.py)
+        elif name == 'cp_coons': #If we are at the cp_coons step...
+            return super(PGMtip, self).compute(name) #We will recover identity matrices just to carry over the normal parameters (Check PGMinterpolant.py)

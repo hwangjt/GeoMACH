@@ -117,18 +117,6 @@ class PGMjunction(PGMinterpolant):
         fv2 = sum(fv[:loc['v']+2+self._num_surf_wing])
         fFace_inds = self._rotate(self._fcomp.vec_inds['cp_bez'])
         fFace_inds = fFace_inds[fu1:fu2+1,fv1:fv2+1]
-        
-        mcomp = self._mcomp
-        if self._side == 'right':
-            W = numpy.zeros((4,2,3),order='F')
-            E = numpy.zeros((4,2,3),order='F')
-            N = mcomp.faces['upp'].vec_inds['cp_prim'][::-1,:2,:]
-            S = mcomp.faces['low'].vec_inds['cp_prim'][:,:2,:]
-        elif self._side == 'left':
-            W = numpy.zeros((4,2,3),order='F')
-            E = numpy.zeros((4,2,3),order='F')
-            N = mcomp.faces['upp'].vec_inds['cp_prim'][:,-1:-3:-1,:]
-            S = mcomp.faces['low'].vec_inds['cp_prim'][::-1,-1:-3:-1,:]
 
         num_u = [fu[loc['u']] + 1, 4, fu[loc['u']+1] + 1]
         num_v = [fv[loc['v']] + 1, 
@@ -136,45 +124,55 @@ class PGMjunction(PGMinterpolant):
                  fv[loc['v'] + 1 + self._num_surf_wing] + 1]
         nu0 = sum(num_u) - 2
         nv0 = sum(num_v) - 2
-        fInds = -numpy.ones((nu0, nv0, 3), dtype=int, order='F')
-        fInds[:num_u[0],:] = fFace_inds[:num_u[0],:]
-        fInds[-num_u[2]:,:] = fFace_inds[-num_u[2]:,:]
 
-        nD = 3 * 2 * nv0 + 3 * 2 * (nu0 - 2)
-        nD += 3 * 2
-        if num_u[1] != 1:
+
+        if name == 'cp_prim': #If we are at the cp_prim step...
+            return super(PGMjunction, self).compute(name) #Call the function that sets up the normal properties
+        elif name == 'cp_bez':        
+            mcomp = self._mcomp
+            if self._side == 'right':
+                W = numpy.zeros((4,2,3),order='F')
+                E = numpy.zeros((4,2,3),order='F')
+                N = mcomp.faces['upp'].vec_inds['cp_prim'][::-1,:2,:]
+                S = mcomp.faces['low'].vec_inds['cp_prim'][:,:2,:]
+            elif self._side == 'left':
+                W = numpy.zeros((4,2,3),order='F')
+                E = numpy.zeros((4,2,3),order='F')
+                N = mcomp.faces['upp'].vec_inds['cp_prim'][:,-1:-3:-1,:]
+                S = mcomp.faces['low'].vec_inds['cp_prim'][::-1,-1:-3:-1,:]
+
+            fInds = -numpy.ones((nu0, nv0, 3), dtype=int, order='F')
+            fInds[:num_u[0],:] = fFace_inds[:num_u[0],:]
+            fInds[-num_u[2]:,:] = fFace_inds[-num_u[2]:,:]
+
+            nD = 3 * 2 * nv0 + 3 * 2 * (nu0 - 2)
             nD += 3 * 2
-        nD += 3 * 2 * (num_v[1] - 2)
-        if num_u[1] != 1:
-            nD += 3 * 2 * (num_u[1] - 2)
-        nD += 3 * 4 * 2 * (num_u[0] - 2)
-        nD += 3 * 4 * 2 * (num_u[2] - 2)
-        nD += 3 * 4 * (num_v[0] - 2)
-        nD += 3 * 4 * (num_v[2] - 2)
-        if num_u[1] != 1:
+            if num_u[1] != 1:
+                nD += 3 * 2
+            nD += 3 * 2 * (num_v[1] - 2)
+            if num_u[1] != 1:
+                nD += 3 * 2 * (num_u[1] - 2)
+            nD += 3 * 4 * 2 * (num_u[0] - 2)
+            nD += 3 * 4 * 2 * (num_u[2] - 2)
             nD += 3 * 4 * (num_v[0] - 2)
             nD += 3 * 4 * (num_v[2] - 2)
+            if num_u[1] != 1:
+                nD += 3 * 4 * (num_v[0] - 2)
+                nD += 3 * 4 * (num_v[2] - 2)
 
-        Da, Di, Dj = PGMlib.computejunctionwireframe(nD, nu0, nv0, num_u[0], num_u[1], num_u[2], num_v[0], num_v[1], num_v[2], self._fweight, self._mweight, W, E, N, S, fInds, self.faces[''].vec_inds['cp_bez'])
-        Da = Da * (-1 != Dj)
-        Dj = numpy.maximum(0, Dj)
+            Da, Di, Dj = PGMlib.computejunctionwireframe(nD, nu0, nv0, num_u[0], num_u[1], num_u[2], num_v[0], num_v[1], num_v[2], self._fweight, self._mweight, W, E, N, S, fInds, self.faces[''].vec_inds['cp_bez'])
+            Da = Da * (-1 != Dj)
+            Dj = numpy.maximum(0, Dj)
 
-        Das, Dis, Djs = [Da], [Di], [Dj]
-        if name == 'cp_bez':
-            return Das, Dis, Djs
-        elif name == 'cp_coons':
+            Das, Dis, Djs = super(PGMjunction, self).compute(name) #We will recover identity matrices just to carry over the normal parameters (Check PGMinterpolant.py)
+            return Das + [Da], Dis + [Di], Djs + [Dj]
+        elif name == 'cp_coons': #If we are at the cp_coons step...
             nD = 0
             for i in range(3):
                 for j in range(3):
                     if (num_u[1] != 1) or (i !=1):
                         nD += 3 * 8 * (num_u[i]-2) * (num_v[j]-2)
         
+            Das, Dis, Djs = super(PGMjunction, self).compute(name) #We will recover identity matrices just to carry over the normal parameters (Check PGMinterpolant.py)
             Da, Di, Dj = PGMlib.computejunctioncoons(nD, nu0, nv0, num_u[0], num_u[1], num_u[2], num_v[0], num_v[1], num_v[2], self.faces[''].vec_inds['cp_coons'])
-            Das.append(Da)
-            Dis.append(Di)
-            Djs.append(Dj)
-            return Das, Dis, Djs
-        elif name == 'cp_prim':
-            return [], [], []
-
-            
+            return Das + [Da], Dis + [Di], Djs + [Dj]

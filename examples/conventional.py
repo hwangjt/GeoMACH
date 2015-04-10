@@ -96,6 +96,9 @@ class Conventional(PGMconfiguration):
         vtail['rot'].params[''] = PGMparameter(2, 3)
         vtail['ogn'].params[''] = PGMparameter(1, 3)
 
+        lwing_fuse = self.comps['lwing_fuse'].props
+        lwing_fuse['shN',''].params[''] = PGMparameter(7,7)
+
     def _define_dvs(self):
         dvs = self.dvs
         dvs['span'] = PGMdv((1), 23.3).set_identity_param('lwing', 'pos', 'lin', (1,2))
@@ -103,8 +106,10 @@ class Conventional(PGMconfiguration):
         dvs['tip_chord'] = PGMdv((1), 1.2).set_identity_param('lwing', 'scl', '', (2,0))
 	dvs['shape_wing_upp'] = PGMdv((10,6)).set_identity_param('lwing', ('shY', 'upp'), '')
 	dvs['shape_wing_low'] = PGMdv((10,6)).set_identity_param('lwing', ('shY', 'low'), '')
+	dvs['lwing_fuse_normal'] = PGMdv((7,7)).set_identity_param('lwing_fuse', ('shN', ''), '')
 
     def _compute_params(self):
+
         fuse = self.comps['fuse'].props
 #	fuse['pos'].params[''].data[:,:] = [[0,0,0],[50,0,0]]
         fuse['pos'].params[''].val([[0,0,0],[50,0,0]])
@@ -159,6 +164,9 @@ class Conventional(PGMconfiguration):
         vtail['scl'].params[''].val([5.8,2])
         vtail['rot'].params[''].val([[0,10,0],[0,0,0]])
         vtail['ogn'].params[''].val([0.25,0,0])
+
+        lwing_fuse = self.comps['lwing_fuse'].props
+        lwing_fuse['shN',''].params[''].data[:,:] = 0.0 #No normal perturbation initially
 
         return [], [], []
 
@@ -264,6 +272,9 @@ if __name__ == '__main__':
     pgm.dvs['shape_wing_upp'].data[2,2] = 0.0
     pgm.dvs['span'].data[0] = 23.3
     pgm.dvs['tip_chord'].data[0] = 1.2
+    pgm.dvs['lwing_fuse_normal'].data[:,:] = 0.0 #Select normal perturbation for wing-fuselage junction
+    pgm.compute_all()
+    pgm.compute_normals()
     pgm.compute_all()
 
     #bse.vec['pt_str']._hidden[:] = False
@@ -272,5 +283,3 @@ if __name__ == '__main__':
     bse.vec['cp'].export_tec_scatter()
     bse.vec['pt'].export_tec_scatter()
     bse.vec['cp_str'].export_IGES()
-
-    #pgm.meshStructure()
