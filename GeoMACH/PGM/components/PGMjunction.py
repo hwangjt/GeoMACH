@@ -96,6 +96,25 @@ class PGMjunction(PGMinterpolant):
         face.set_diff_surf(False, ind_i=-1, ind_j=0, ind_u=0, ind_v=2)
         face.set_diff_surf(False, ind_i=0, ind_j=-1, ind_u=2, ind_v=0)
         face.set_diff_surf(False, ind_i=-1, ind_j=-1, ind_u=0, ind_v=0)
+	
+        for ind_j in xrange(2 + self._num_surf_wing):
+            face.set_diff_surf(False, ind_i=0, ind_j=ind_j, ind_u=0)
+            face.set_diff_surf(False, ind_i=-1, ind_j=ind_j, ind_u=2)
+	for ind_i in [0,-1]:
+            face.set_diff_surf(False, ind_i=ind_i, ind_j=0, ind_v=0)
+            face.set_diff_surf(False, ind_i=ind_i, ind_j=-1, ind_v=2)
+
+        loc = self._loc
+
+        fu = self._fcomp._num_cp_list['u']
+        fv = self._fcomp._num_cp_list['v']
+        fu,fv = self._flip(fu,fv)
+        fu1 = sum(fu[:loc['u']])
+        fu2 = sum(fu[:loc['u']+2])
+        fv1 = sum(fv[:loc['v']])
+        fv2 = sum(fv[:loc['v']+2+self._num_surf_wing])
+        fFace_inds = self._rotate(self._fcomp.vec_inds['cp_bez'])
+        fFace_inds = fFace_inds[fu1:fu2+1,fv1:fv2+1]
 
     def set_hidden_surfaces(self):
         loc = self._loc
