@@ -107,10 +107,19 @@ class Airframe(object):
     def computeMesh(self, filename):
         bse = self.geometry._bse
 
-        B1, quads1, nnode1 = self.meshS
-        B2, quads2, nnode2 = self.meshM
+        B1, quads1, nnode1, mem1, ucoord1, vcoord1 = self.meshS
+        B2, quads2, nnode2, mem2, ucoord2, vcoord2 = self.meshM
         nodes1 = B1 * bse.vec['cp_str'].array
         nodes2 = B2 * bse.vec['cp_str'].array
+
+        new_nodes = numpy.vstack([nodes1, nodes2])
+        new_ucoord = numpy.concatenate(ucoord1+ucoord2)
+        new_vcoord = numpy.concatenate(vcoord1+vcoord2)
+
+        mem1 = numpy.concatenate(mem1).astype(int)
+        mem2 = numpy.concatenate(mem2).astype(int)
+        mem2 += numpy.max(mem1) + 1
+        new_mem = numpy.concatenate([mem1, mem2]).astype(int)
 
         mesh = []
         nodes = []
@@ -164,7 +173,8 @@ class Airframe(object):
         self.write2TecFEquads('test.dat',[['test',nodes,quads]])
 
         import BDFwriter
-        BDFwriter.writeBDF(filename+'.bdf',nodes,quads,symm,quad_groups,group_names)
+        BDFwriter.writeBDF(filename+'.bdf',nodes,quads,symm,quad_groups,group_names,
+                           new_mem, new_nodes, new_ucoord, new_vcoord)
 
     def computePreviewSurfaces(self):
         bse = self.geometry._bse
@@ -423,7 +433,11 @@ class Airframe(object):
         B0 = []
         quads0 = []
         nnode0 = [0]
+        mem0 = []
+        ucoord0 = []
+        vcoord0 = []
         iList = 0
+        imem = 0
         for comp in geometry.comps.values():
             for face in comp.faces.values():
                 verts,edges,edge_group,edgeLengths = premeshFaces[iList]
@@ -471,12 +485,16 @@ class Airframe(object):
                             B0.append(B)
                             nnode0.append(nnode0[-1] + P0.shape[0])
                             quads0.append(quads)
+                            mem0.append(imem*numpy.ones(P0.shape[0]))
+                            imem += 1
+                            ucoord0.append(P0[:,0])
+                            vcoord0.append(P0[:,1])
 
         bse.apply_jacobian('cp_str', 'd(cp_str)/d(cp)', 'cp')
 
         B0 = scipy.sparse.vstack(B0)
 
-        self.meshS = [B0, quads0, nnode0]
+        self.meshS = [B0, quads0, nnode0, mem0, ucoord0, vcoord0]
 
     def computeMembers(self):
         nmem = self.nmem
@@ -497,6 +515,9 @@ class Airframe(object):
         nodesFlt0 = []
         quads0 = []
         nnode0 = [0]
+        mem0 = []
+        ucoord0 = []
+        vcoord0 = []
         for imem in range(nmem):
             print 'Computing internal members:', self.memberNames[imem]
             edges, edge_group = PSMlib.computememberedges(imem+1, nmem, self.mem_group)
@@ -511,6 +532,10 @@ class Airframe(object):
             nodesFlt0.append(nodesFlt)
             quads0.append(quads)
             nnode0.append(nnode0[-1] + nodes.shape[0])
+            P0, Q = PSMlib.computesurfaceprojections(nodes.shape[0], nodes)
+            mem0.append(imem*numpy.ones(P0.shape[0]))
+            ucoord0.append(P0[:,0])
+            vcoord0.append(P0[:,1])
 
         nodesInt = numpy.array(numpy.vstack(nodesInt0),order='F')
         nodesFlt = numpy.array(numpy.vstack(nodesFlt0),order='F')
@@ -554,4 +579,4 @@ class Airframe(object):
 
         bse.apply_jacobian('cp_str', 'd(cp_str)/d(cp)', 'cp')
 
-        self.meshM = [B0, quads0, nnode0]
+        self.meshM = [B0, quads0, nnode0, mem0, ucoord0, vcoord0]
