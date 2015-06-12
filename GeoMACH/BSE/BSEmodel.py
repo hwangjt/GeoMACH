@@ -459,10 +459,12 @@ class BSEmodel(object):
 
         npts = pts.shape[0]
         nsurf_pts = surf_pts.shape[0]
+        nrefine = 10
         surfs, ind_u, ind_v \
             = BSElib.computeproj(npts, nsurf_pts, 
                                  size['cp_str'], size['pt_str'], 
-                                 num['surf'], num['group'], surf_pts,
+                                 num['surf'], num['group'], nrefine,
+                                 surf_pts,
                                  str_indices['cp'], str_indices['pt'],
                                  topo['surf_group'], bspline['order'],
                                  bspline['num_cp'], bspline['num_pt'],
