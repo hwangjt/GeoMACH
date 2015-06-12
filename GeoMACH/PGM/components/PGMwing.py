@@ -44,8 +44,6 @@ class PGMwing(PGMprimitive):
         self.faces['upp'] = PGMface(num_x, num_z)
         self.faces['low'] = PGMface(num_x, num_z)
 
-        self.funcs = {}
-
     def assemble_sizes(self, bse):
         super(PGMwing, self).assemble_sizes(bse)
 

@@ -95,7 +95,7 @@ class PGMinterpolant(PGMcomponent):
                 self._bse.apply_jacobian(qname, 'd(' + qname + ')/d(cp_str)', 'cp_str')
 
             cross = numpy.cross(self._bse.vec[name + '_du'].array, self._bse.vec[name + '_dv'].array)
-            norms = numpy.linalg.norm(cross, axis=1)
+            norms = numpy.sqrt(numpy.sum(cross**2,axis=1))
 
             for ind in xrange(3):
                 cross[:, ind] /= norms
