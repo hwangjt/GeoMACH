@@ -106,11 +106,11 @@ GeoMACH.PGM.configurations.configuration.GeoMACHSender = GeoMACH.PGM.configurati
 addLib = lambda name, srcs: config.add_extension(name, sources=srcs, extra_compile_args=['-fbounds-check'])#, f2py_options=['--debug-capi'])
 
 config = Configuration(name='GeoMACH')
-#addLib('PGM.PGMlib', PGMsources)
-#addLib('PSM.PSMlib', PSMsources)
-#addLib('PSM.QUADlib', QUADsources)
-#addLib('PSM.CDTlib', CDTsources)
-#addLib('PSM.BLSlib', BLSsources)
+addLib('PGM.PGMlib', PGMsources)
+addLib('PSM.PSMlib', PSMsources)
+addLib('PSM.QUADlib', QUADsources)
+addLib('PSM.CDTlib', CDTsources)
+addLib('PSM.BLSlib', BLSsources)
 addLib('BSE.BSElib', BSEsources)
 
 kwds = {'install_requires':['numpy','scipy'],
