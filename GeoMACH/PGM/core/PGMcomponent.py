@@ -42,6 +42,8 @@ class PGMcomponent(object):
         self._num_surf = {}
         self._shapes = {}
 
+        self.funcs = {}
+
     def initialize_props(self):
         """ Adds the *X*, *Y*, and *Z* shape properties """
         props = self.props

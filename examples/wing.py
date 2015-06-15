@@ -62,6 +62,7 @@ if __name__ == '__main__':
     bse = pgm.initialize()
     pgm.comps['wing'].set_airfoil('rae2822.dat')
     bse.vec['pt_str'].export_tec_str()
-
+    bse.vec['cp_str'].export_IGES()
+    exit()
     for num in [20]:#[5, 10, 20, 50, 100]:
         pgm.meshStructure(num, 'wing_'+str(num))

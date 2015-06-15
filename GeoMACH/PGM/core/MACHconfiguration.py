@@ -26,6 +26,12 @@ class MACHconfiguration(PGMconfiguration):
 	    self.jacobians[pt_name] = bse.jac['d(' + pt_name + ')/d(cp_str)']
             self.diff[pt_name] = points - self.jacobians[pt_name].dot(bse.vec['cp_str'].array)
 
+        ### FOR DEBUGGING
+        bse.apply_jacobian(pt_name, 'd(' + pt_name + ')/d(cp_str)', 'cp_str')
+        bse.vec[pt_name].export_tec_scatter('projected_points.dat')
+        bse.vec[pt_name].array[:, :] = points
+        bse.vec[pt_name].export_tec_scatter('CFD_surf_points.dat')
+
         self.updated[pt_name] = False
 
     def setDesignVars(self, dv_dict):
