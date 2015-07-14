@@ -28,3 +28,21 @@ Installing and getting started (linux or Mac)
 5. Run the example:
    $ cd [GeoMACH-top]/examples
    $ python conventional.py
+
+Installing on a local directory (linux or Mac, for clusters)
+---------------------------------------------
+[GeoMACH-top] = path to the top-level GeoMACH directory
+
+1. Install (or load) numpy, scipy
+
+2. Install GeoMACH:
+   $ cd [GeoMACH-top]
+   $ python setup.py build --fcompiler=intelem (you may use another compiler)
+   $ python setup.py install --user
+
+3. You have to manually copy all airfoils to the installation folder
+   $ cp -r GeoMACH/PGM/airfoils ~/.local/lib/python2.7/site-packages/GeoMACH-0.1-py2.7-linux-x86_64.egg/GeoMACH/PGM/
+
+4. Run the example:
+   $ cd examples
+   $ python conventional.py
