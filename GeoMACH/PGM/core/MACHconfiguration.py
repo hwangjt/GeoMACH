@@ -15,6 +15,7 @@ class MACHconfiguration(PGMconfiguration):
         self.diff = OrderedDict()
         self.jacobians = OrderedDict()
         self.updated = {}
+	self.debug = False
 
     def addPointSet(self, points, pt_name, origConfig=True, **kwargs):
         bse = self._bse
@@ -26,11 +27,12 @@ class MACHconfiguration(PGMconfiguration):
 	    self.jacobians[pt_name] = bse.jac['d(' + pt_name + ')/d(cp_str)']
             self.diff[pt_name] = points - self.jacobians[pt_name].dot(bse.vec['cp_str'].array)
 
-        ### FOR DEBUGGING
-        bse.apply_jacobian(pt_name, 'd(' + pt_name + ')/d(cp_str)', 'cp_str')
-        bse.vec[pt_name].export_tec_scatter('projected_points.dat')
-        bse.vec[pt_name].array[:, :] = points
-        bse.vec[pt_name].export_tec_scatter('CFD_surf_points.dat')
+        ### FOR DEBUGGING (Print projected points)
+	if self.debug is True:
+            bse.apply_jacobian(pt_name, 'd(' + pt_name + ')/d(cp_str)', 'cp_str')
+            bse.vec[pt_name].export_tec_scatter('projected_points.dat')
+            bse.vec[pt_name].array[:, :] = points
+            bse.vec[pt_name].export_tec_scatter('CFD_surf_points.dat')
 
         self.updated[pt_name] = False
 
